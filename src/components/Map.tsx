@@ -44,12 +44,12 @@ const Map: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative w-full h-full">
+    <div className="absolute inset-0 z-0">
       <div ref={mapContainer} className="absolute inset-0" />
       {!isLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background">
+        <div className="absolute inset-0 flex items-center justify-center bg-background z-[1]">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="w-10 h-10 border-[3px] border-primary border-t-transparent rounded-full animate-spin" />
             <span className="text-muted-foreground text-sm">Loading map...</span>
           </div>
         </div>
