@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Navigation, Fuel, DollarSign, Clock, Car } from 'lucide-react';
+import { MapPin, Navigation, Fuel, DollarSign, Clock, Car, RotateCcw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
@@ -9,6 +9,7 @@ interface TripPanelProps {
   onOriginChange: (value: string) => void;
   onDestinationChange: (value: string) => void;
   onCalculate: () => void;
+  onClear: () => void;
   tripData: {
     distance: number;
     duration: number;
@@ -25,6 +26,7 @@ const TripPanel: React.FC<TripPanelProps> = ({
   onOriginChange,
   onDestinationChange,
   onCalculate,
+  onClear,
   tripData,
   isCalculating
 }) => {
@@ -35,16 +37,16 @@ const TripPanel: React.FC<TripPanelProps> = ({
           <Navigation className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-foreground">Plan Your Trip</h2>
-          <p className="text-xs text-muted-foreground">Calculate costs instantly</p>
+          <h2 className="text-lg font-bold text-foreground">Trip Plan करें</h2>
+          <p className="text-xs text-muted-foreground">Cost instantly calculate करें</p>
         </div>
       </div>
 
       <div className="space-y-3 mb-5">
         <div className="relative">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-success" />
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
           <Input
-            placeholder="Starting point"
+            placeholder="Starting point (e.g., Delhi)"
             value={origin}
             onChange={(e) => onOriginChange(e.target.value)}
             className="pl-10 bg-muted/50 border-0 focus-visible:ring-primary"
@@ -56,9 +58,9 @@ const TripPanel: React.FC<TripPanelProps> = ({
         </div>
 
         <div className="relative">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-destructive" />
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500" />
           <Input
-            placeholder="Destination"
+            placeholder="Destination (e.g., Mumbai)"
             value={destination}
             onChange={(e) => onDestinationChange(e.target.value)}
             className="pl-10 bg-muted/50 border-0 focus-visible:ring-primary"
@@ -66,21 +68,33 @@ const TripPanel: React.FC<TripPanelProps> = ({
         </div>
       </div>
 
-      <Button 
-        onClick={onCalculate}
-        disabled={!origin || !destination || isCalculating}
-        variant="glow"
-        className="w-full mb-5"
-      >
-        {isCalculating ? (
-          <span className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-            Calculating...
-          </span>
-        ) : (
-          'Calculate Trip Cost'
+      <div className="flex gap-2 mb-5">
+        <Button 
+          onClick={onCalculate}
+          disabled={!origin || !destination || isCalculating}
+          variant="glow"
+          className="flex-1"
+        >
+          {isCalculating ? (
+            <span className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+              Calculating...
+            </span>
+          ) : (
+            'Navigate करें'
+          )}
+        </Button>
+        
+        {tripData && (
+          <Button 
+            onClick={onClear}
+            variant="glass"
+            size="icon"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </Button>
         )}
-      </Button>
+      </div>
 
       {tripData && (
         <div className="space-y-3 animate-fade-in">
@@ -92,7 +106,7 @@ const TripPanel: React.FC<TripPanelProps> = ({
                 <Car className="w-3.5 h-3.5" />
                 <span className="text-xs">Distance</span>
               </div>
-              <p className="text-lg font-bold text-foreground">{tripData.distance} mi</p>
+              <p className="text-lg font-bold text-foreground">{tripData.distance} km</p>
             </div>
             
             <div className="bg-muted/30 rounded-xl p-3">
@@ -113,23 +127,23 @@ const TripPanel: React.FC<TripPanelProps> = ({
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground flex items-center gap-2">
-                  <Fuel className="w-3.5 h-3.5" /> Fuel
+                  <Fuel className="w-3.5 h-3.5" /> Fuel (₹105/L, 15km/L)
                 </span>
-                <span className="text-sm font-semibold text-foreground">${tripData.fuelCost.toFixed(2)}</span>
+                <span className="text-sm font-semibold text-foreground">₹{tripData.fuelCost}</span>
               </div>
               
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground flex items-center gap-2">
-                  <DollarSign className="w-3.5 h-3.5" /> Tolls
+                  <DollarSign className="w-3.5 h-3.5" /> Toll (approx)
                 </span>
-                <span className="text-sm font-semibold text-foreground">${tripData.tollCost.toFixed(2)}</span>
+                <span className="text-sm font-semibold text-foreground">₹{tripData.tollCost}</span>
               </div>
               
               <div className="h-px bg-border my-2" />
               
               <div className="flex justify-between items-center">
                 <span className="text-sm font-semibold text-foreground">Total</span>
-                <span className="text-xl font-bold text-primary">${tripData.totalCost.toFixed(2)}</span>
+                <span className="text-xl font-bold text-primary">₹{tripData.totalCost}</span>
               </div>
             </div>
           </div>

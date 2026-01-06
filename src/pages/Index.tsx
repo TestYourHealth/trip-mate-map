@@ -1,10 +1,12 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { MapPin, Menu, X } from 'lucide-react';
-import Map from '@/components/Map';
+import Map, { MapRef } from '@/components/Map';
 import TripPanel from '@/components/TripPanel';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 const Index = () => {
+  const mapRef = useRef<MapRef>(null);
   const [showPanel, setShowPanel] = useState(true);
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
@@ -17,36 +19,52 @@ const Index = () => {
     totalCost: number;
   } | null>(null);
 
-  const calculateTrip = useCallback(() => {
+  const calculateTrip = useCallback(async () => {
     if (!origin || !destination) return;
     
     setIsCalculating(true);
     
-    // Simulate calculation (in production, would use routing API)
-    setTimeout(() => {
-      const distance = Math.floor(Math.random() * 500) + 100;
-      const duration = Math.round((distance / 60) * 10) / 10;
-      const fuelPrice = 3.50;
-      const mpg = 28;
-      const fuelCost = (distance / mpg) * fuelPrice;
-      const tollCost = Math.floor(distance / 100) * 5 + Math.random() * 10;
+    try {
+      const result = await mapRef.current?.showRoute(origin, destination);
       
-      setTripData({
-        distance,
-        duration,
-        fuelCost,
-        tollCost: Math.round(tollCost * 100) / 100,
-        totalCost: Math.round((fuelCost + tollCost) * 100) / 100,
-      });
-      
+      if (result) {
+        const fuelPrice = 105; // ₹ per litre (average petrol price in India)
+        const kmpl = 15; // Average km per litre
+        const fuelCost = (result.distance / kmpl) * fuelPrice;
+        
+        // Estimate toll cost (approximately ₹1.5 per km on highways)
+        const tollCost = result.distance * 1.5;
+        
+        setTripData({
+          distance: result.distance,
+          duration: result.duration,
+          fuelCost: Math.round(fuelCost),
+          tollCost: Math.round(tollCost),
+          totalCost: Math.round(fuelCost + tollCost),
+        });
+        
+        toast.success('Route calculated successfully!');
+      } else {
+        toast.error('Could not find route. Please check the locations.');
+      }
+    } catch (error) {
+      toast.error('Error calculating route');
+    } finally {
       setIsCalculating(false);
-    }, 1500);
+    }
   }, [origin, destination]);
+
+  const clearTrip = useCallback(() => {
+    mapRef.current?.clearRoute();
+    setTripData(null);
+    setOrigin('');
+    setDestination('');
+  }, []);
 
   return (
     <div className="h-screen w-screen overflow-hidden relative">
       {/* Map Background */}
-      <Map />
+      <Map ref={mapRef} />
 
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 z-10 p-4">
@@ -78,6 +96,7 @@ const Index = () => {
             onOriginChange={setOrigin}
             onDestinationChange={setDestination}
             onCalculate={calculateTrip}
+            onClear={clearTrip}
             tripData={tripData}
             isCalculating={isCalculating}
           />
@@ -90,12 +109,12 @@ const Index = () => {
           <div className="glass-panel rounded-full px-6 py-3 flex items-center gap-6 animate-slide-up">
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground text-sm">Distance:</span>
-              <span className="font-bold text-foreground">{tripData.distance} mi</span>
+              <span className="font-bold text-foreground">{tripData.distance} km</span>
             </div>
             <div className="w-px h-6 bg-border" />
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground text-sm">Total Cost:</span>
-              <span className="font-bold text-primary">${tripData.totalCost.toFixed(2)}</span>
+              <span className="font-bold text-primary">₹{tripData.totalCost}</span>
             </div>
           </div>
         </div>
