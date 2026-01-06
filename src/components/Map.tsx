@@ -1,64 +1,47 @@
 import React, { useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
-interface MapProps {
-  accessToken: string;
-}
-
-const Map: React.FC<MapProps> = ({ accessToken }) => {
+const Map: React.FC = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
+  const map = useRef<L.Map | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    if (!mapContainer.current || !accessToken) return;
+    if (!mapContainer.current || map.current) return;
 
-    mapboxgl.accessToken = accessToken;
-
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
-      center: [-98.5795, 39.8283], // Center of USA
-      zoom: 4,
-      pitch: 45,
-      bearing: -10,
+    map.current = L.map(mapContainer.current, {
+      center: [39.8283, -98.5795], // Center of USA
+      zoom: 5,
+      zoomControl: false,
     });
 
-    map.current.addControl(
-      new mapboxgl.NavigationControl({
-        visualizePitch: true,
-      }),
-      'bottom-right'
-    );
+    // Dark theme tile layer from CartoDB
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 20,
+    }).addTo(map.current);
 
-    map.current.addControl(
-      new mapboxgl.GeolocateControl({
-        positionOptions: {
-          enableHighAccuracy: true
-        },
-        trackUserLocation: true,
-        showUserHeading: true
-      }),
-      'bottom-right'
-    );
+    // Add zoom control to bottom right
+    L.control.zoom({
+      position: 'bottomright',
+    }).addTo(map.current);
 
     map.current.on('load', () => {
       setIsLoaded(true);
-      
-      map.current?.setFog({
-        color: 'hsl(220, 20%, 10%)',
-        'high-color': 'hsl(220, 30%, 15%)',
-        'horizon-blend': 0.1,
-        'space-color': 'hsl(220, 30%, 5%)',
-        'star-intensity': 0.15,
-      });
+    });
+
+    // Set loaded after tiles load
+    map.current.whenReady(() => {
+      setIsLoaded(true);
     });
 
     return () => {
       map.current?.remove();
+      map.current = null;
     };
-  }, [accessToken]);
+  }, []);
 
   return (
     <div className="relative w-full h-full">
