@@ -1,17 +1,125 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet-routing-machine';
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 
-const Map: React.FC = () => {
+export interface MapRef {
+  showRoute: (origin: string, destination: string) => Promise<{ distance: number; duration: number } | null>;
+  clearRoute: () => void;
+}
+
+const Map = forwardRef<MapRef>((_, ref) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
+  const routingControl = useRef<L.Routing.Control | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    showRoute: async (origin: string, destination: string) => {
+      if (!map.current) return null;
+
+      // Clear existing route
+      if (routingControl.current) {
+        map.current.removeControl(routingControl.current);
+        routingControl.current = null;
+      }
+
+      try {
+        // Geocode origin
+        const originCoords = await geocodeLocation(origin);
+        const destCoords = await geocodeLocation(destination);
+
+        if (!originCoords || !destCoords) return null;
+
+        return new Promise((resolve) => {
+          const control = L.Routing.control({
+            waypoints: [
+              L.latLng(originCoords.lat, originCoords.lng),
+              L.latLng(destCoords.lat, destCoords.lng)
+            ],
+            routeWhileDragging: true,
+            showAlternatives: false,
+            addWaypoints: false,
+            fitSelectedRoutes: true,
+            show: false,
+            lineOptions: {
+              styles: [
+                { color: '#14b8a6', opacity: 0.8, weight: 6 },
+                { color: '#0d9488', opacity: 1, weight: 4 }
+              ],
+              extendToWaypoints: true,
+              missingRouteTolerance: 0
+            }
+          } as L.Routing.RoutingControlOptions);
+
+          // Add custom markers
+          const originMarker = L.marker([originCoords.lat, originCoords.lng], {
+            icon: L.divIcon({
+              className: 'custom-marker',
+              html: `<div style="
+                width: 24px;
+                height: 24px;
+                background: #22c55e;
+                border: 3px solid white;
+                border-radius: 50%;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+              "></div>`,
+              iconSize: [24, 24],
+              iconAnchor: [12, 12]
+            })
+          }).addTo(map.current!);
+
+          const destMarker = L.marker([destCoords.lat, destCoords.lng], {
+            icon: L.divIcon({
+              className: 'custom-marker',
+              html: `<div style="
+                width: 24px;
+                height: 24px;
+                background: #ef4444;
+                border: 3px solid white;
+                border-radius: 50%;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+              "></div>`,
+              iconSize: [24, 24],
+              iconAnchor: [12, 12]
+            })
+          }).addTo(map.current!);
+
+          control.addTo(map.current!);
+          routingControl.current = control;
+
+          control.on('routesfound', (e: L.Routing.RoutingResultEvent) => {
+            const route = e.routes[0];
+            const distance = route.summary.totalDistance / 1000; // km
+            const duration = route.summary.totalTime / 3600; // hours
+            resolve({ distance: Math.round(distance), duration: Math.round(duration * 10) / 10 });
+          });
+
+          control.on('routingerror', () => {
+            originMarker.remove();
+            destMarker.remove();
+            resolve(null);
+          });
+        });
+      } catch (error) {
+        console.error('Routing error:', error);
+        return null;
+      }
+    },
+    clearRoute: () => {
+      if (map.current && routingControl.current) {
+        map.current.removeControl(routingControl.current);
+        routingControl.current = null;
+      }
+    }
+  }));
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
     map.current = L.map(mapContainer.current, {
-      center: [39.8283, -98.5795], // Center of USA
+      center: [20.5937, 78.9629], // Center of India
       zoom: 5,
       zoomControl: false,
     });
@@ -28,11 +136,6 @@ const Map: React.FC = () => {
       position: 'bottomright',
     }).addTo(map.current);
 
-    map.current.on('load', () => {
-      setIsLoaded(true);
-    });
-
-    // Set loaded after tiles load
     map.current.whenReady(() => {
       setIsLoaded(true);
     });
@@ -56,6 +159,33 @@ const Map: React.FC = () => {
       )}
     </div>
   );
-};
+});
+
+Map.displayName = 'Map';
+
+// Geocode using Nominatim (free OpenStreetMap geocoding)
+async function geocodeLocation(query: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&limit=1`,
+      {
+        headers: {
+          'User-Agent': 'TripMate/1.0'
+        }
+      }
+    );
+    const data = await response.json();
+    if (data && data.length > 0) {
+      return {
+        lat: parseFloat(data[0].lat),
+        lng: parseFloat(data[0].lon)
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Geocoding error:', error);
+    return null;
+  }
+}
 
 export default Map;
