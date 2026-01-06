@@ -1,14 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { MapPin, Menu, Settings, X } from 'lucide-react';
+import { MapPin, Menu, X } from 'lucide-react';
 import Map from '@/components/Map';
 import TripPanel from '@/components/TripPanel';
-import TokenInput from '@/components/TokenInput';
 import { Button } from '@/components/ui/button';
 
 const Index = () => {
-  const [accessToken, setAccessToken] = useState<string>(() => {
-    return localStorage.getItem('mapbox_token') || '';
-  });
   const [showPanel, setShowPanel] = useState(true);
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
@@ -21,17 +17,12 @@ const Index = () => {
     totalCost: number;
   } | null>(null);
 
-  const handleTokenSubmit = useCallback((token: string) => {
-    localStorage.setItem('mapbox_token', token);
-    setAccessToken(token);
-  }, []);
-
   const calculateTrip = useCallback(() => {
     if (!origin || !destination) return;
     
     setIsCalculating(true);
     
-    // Simulate calculation (in production, would use Mapbox Directions API)
+    // Simulate calculation (in production, would use routing API)
     setTimeout(() => {
       const distance = Math.floor(Math.random() * 500) + 100;
       const duration = Math.round((distance / 60) * 10) / 10;
@@ -52,19 +43,10 @@ const Index = () => {
     }, 1500);
   }, [origin, destination]);
 
-  const handleLogout = useCallback(() => {
-    localStorage.removeItem('mapbox_token');
-    setAccessToken('');
-  }, []);
-
-  if (!accessToken) {
-    return <TokenInput onSubmit={handleTokenSubmit} />;
-  }
-
   return (
     <div className="h-screen w-screen overflow-hidden relative">
       {/* Map Background */}
-      <Map accessToken={accessToken} />
+      <Map />
 
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 z-10 p-4">
@@ -76,24 +58,14 @@ const Index = () => {
             <span className="text-lg font-bold text-foreground">Trip Mate</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="glass" 
-              size="icon"
-              onClick={() => setShowPanel(!showPanel)}
-              className="animate-fade-in"
-            >
-              {showPanel ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
-            <Button 
-              variant="glass" 
-              size="icon"
-              onClick={handleLogout}
-              className="animate-fade-in"
-            >
-              <Settings className="w-5 h-5" />
-            </Button>
-          </div>
+          <Button 
+            variant="glass" 
+            size="icon"
+            onClick={() => setShowPanel(!showPanel)}
+            className="animate-fade-in"
+          >
+            {showPanel ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </Button>
         </div>
       </header>
 
