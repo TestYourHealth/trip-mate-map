@@ -4,16 +4,21 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import VehicleSettings, { VehicleConfig } from './VehicleSettings';
 import WaypointInput from './WaypointInput';
+import RouteSelector from './RouteSelector';
+import { RouteInfo } from './Map';
 
 interface TripPanelProps {
   origin: string;
   destination: string;
   waypoints: string[];
   vehicleConfig: VehicleConfig;
+  routes: RouteInfo[];
+  selectedRouteIndex: number;
   onOriginChange: (value: string) => void;
   onDestinationChange: (value: string) => void;
   onWaypointsChange: (waypoints: string[]) => void;
   onVehicleConfigChange: (config: VehicleConfig) => void;
+  onRouteSelect: (index: number) => void;
   onCalculate: () => void;
   onClear: () => void;
   tripData: {
@@ -31,15 +36,20 @@ const TripPanel: React.FC<TripPanelProps> = ({
   destination,
   waypoints,
   vehicleConfig,
+  routes,
+  selectedRouteIndex,
   onOriginChange,
   onDestinationChange,
   onWaypointsChange,
   onVehicleConfigChange,
+  onRouteSelect,
   onCalculate,
   onClear,
   tripData,
   isCalculating
 }) => {
+  const selectedRoute = routes[selectedRouteIndex];
+
   return (
     <div className="glass-panel rounded-2xl p-5 w-full max-w-sm animate-slide-in-right">
       <div className="flex items-center gap-3 mb-5">
@@ -48,7 +58,7 @@ const TripPanel: React.FC<TripPanelProps> = ({
         </div>
         <div>
           <h2 className="text-lg font-bold text-foreground">Trip Plan करें</h2>
-          <p className="text-xs text-muted-foreground">Cost instantly calculate करें</p>
+          <p className="text-xs text-muted-foreground">Real-time traffic के साथ</p>
         </div>
       </div>
 
@@ -112,9 +122,46 @@ const TripPanel: React.FC<TripPanelProps> = ({
         )}
       </div>
 
+      {/* Route Selector */}
+      {routes.length > 1 && (
+        <div className="mb-4 animate-fade-in">
+          <RouteSelector
+            routes={routes}
+            selectedIndex={selectedRouteIndex}
+            onSelect={onRouteSelect}
+          />
+        </div>
+      )}
+
       {tripData && (
         <div className="space-y-3 animate-fade-in">
           <div className="h-px bg-border" />
+          
+          {/* Traffic Status */}
+          {selectedRoute && (
+            <div className={`rounded-xl p-3 ${
+              selectedRoute.trafficLevel === 'low' ? 'bg-green-500/10 border border-green-500/30' :
+              selectedRoute.trafficLevel === 'moderate' ? 'bg-amber-500/10 border border-amber-500/30' :
+              'bg-red-500/10 border border-red-500/30'
+            }`}>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${
+                  selectedRoute.trafficLevel === 'low' ? 'bg-green-500 animate-pulse' :
+                  selectedRoute.trafficLevel === 'moderate' ? 'bg-amber-500 animate-pulse' :
+                  'bg-red-500 animate-pulse'
+                }`} />
+                <span className={`text-sm font-medium ${
+                  selectedRoute.trafficLevel === 'low' ? 'text-green-500' :
+                  selectedRoute.trafficLevel === 'moderate' ? 'text-amber-500' :
+                  'text-red-500'
+                }`}>
+                  {selectedRoute.trafficLevel === 'low' ? 'Light Traffic - Good to go!' :
+                   selectedRoute.trafficLevel === 'moderate' ? 'Moderate Traffic - Some delays expected' :
+                   'Heavy Traffic - Consider alternate route'}
+                </span>
+              </div>
+            </div>
+          )}
           
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-muted/30 rounded-xl p-3">
