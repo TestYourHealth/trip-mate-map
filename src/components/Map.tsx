@@ -4,8 +4,17 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 
+export interface RouteInfo {
+  distance: number;
+  duration: number;
+  name: string;
+  isAlternate: boolean;
+  trafficLevel: 'low' | 'moderate' | 'heavy';
+}
+
 export interface MapRef {
-  showRoute: (origin: string, destination: string, waypoints?: string[]) => Promise<{ distance: number; duration: number } | null>;
+  showRoute: (origin: string, destination: string, waypoints?: string[]) => Promise<RouteInfo[] | null>;
+  selectRoute: (index: number) => void;
   clearRoute: () => void;
 }
 
@@ -14,11 +23,42 @@ const Map = forwardRef<MapRef>((_, ref) => {
   const map = useRef<L.Map | null>(null);
   const routingControl = useRef<L.Routing.Control | null>(null);
   const markers = useRef<L.Marker[]>([]);
+  const alternateRouteLines = useRef<L.Polyline[]>([]);
+  const selectedRouteIndex = useRef<number>(0);
+  const routesData = useRef<RouteInfo[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   const clearMarkers = () => {
     markers.current.forEach(m => m.remove());
     markers.current = [];
+  };
+
+  const clearAlternateLines = () => {
+    alternateRouteLines.current.forEach(line => line.remove());
+    alternateRouteLines.current = [];
+  };
+
+  // Simulate traffic levels based on time and route
+  const getTrafficLevel = (routeIndex: number): 'low' | 'moderate' | 'heavy' => {
+    const hour = new Date().getHours();
+    const isRushHour = (hour >= 8 && hour <= 10) || (hour >= 17 && hour <= 20);
+    
+    if (routeIndex === 0) {
+      return isRushHour ? 'moderate' : 'low';
+    } else if (routeIndex === 1) {
+      return isRushHour ? 'heavy' : 'moderate';
+    }
+    return 'moderate';
+  };
+
+  const getRouteColor = (trafficLevel: 'low' | 'moderate' | 'heavy', isSelected: boolean) => {
+    if (!isSelected) return '#6b7280'; // gray for unselected
+    switch (trafficLevel) {
+      case 'low': return '#22c55e'; // green
+      case 'moderate': return '#f59e0b'; // amber
+      case 'heavy': return '#ef4444'; // red
+      default: return '#14b8a6'; // teal
+    }
   };
 
   useImperativeHandle(ref, () => ({
@@ -31,6 +71,9 @@ const Map = forwardRef<MapRef>((_, ref) => {
         routingControl.current = null;
       }
       clearMarkers();
+      clearAlternateLines();
+      routesData.current = [];
+      selectedRouteIndex.current = 0;
 
       try {
         // Geocode all locations
@@ -59,14 +102,22 @@ const Map = forwardRef<MapRef>((_, ref) => {
           const control = L.Routing.control({
             waypoints: allWaypoints,
             routeWhileDragging: false,
-            showAlternatives: false,
+            showAlternatives: true,
             addWaypoints: false,
             fitSelectedRoutes: true,
             show: false,
+            altLineOptions: {
+              styles: [
+                { color: '#6b7280', opacity: 0.5, weight: 5 },
+                { color: '#9ca3af', opacity: 0.3, weight: 3 }
+              ],
+              extendToWaypoints: true,
+              missingRouteTolerance: 0
+            },
             lineOptions: {
               styles: [
-                { color: '#14b8a6', opacity: 0.8, weight: 6 },
-                { color: '#0d9488', opacity: 1, weight: 4 }
+                { color: '#22c55e', opacity: 0.8, weight: 6 },
+                { color: '#16a34a', opacity: 1, weight: 4 }
               ],
               extendToWaypoints: true,
               missingRouteTolerance: 0
@@ -139,10 +190,26 @@ const Map = forwardRef<MapRef>((_, ref) => {
           routingControl.current = control;
 
           control.on('routesfound', (e: L.Routing.RoutingResultEvent) => {
-            const route = e.routes[0];
-            const distance = route.summary.totalDistance / 1000; // km
-            const duration = route.summary.totalTime / 3600; // hours
-            resolve({ distance: Math.round(distance), duration: Math.round(duration * 10) / 10 });
+            const routes: RouteInfo[] = e.routes.map((route, index) => {
+              const distance = Math.round(route.summary.totalDistance / 1000);
+              const duration = Math.round((route.summary.totalTime / 3600) * 10) / 10;
+              const trafficLevel = getTrafficLevel(index);
+              
+              // Add time based on traffic
+              const trafficMultiplier = trafficLevel === 'heavy' ? 1.4 : trafficLevel === 'moderate' ? 1.2 : 1;
+              const adjustedDuration = Math.round(duration * trafficMultiplier * 10) / 10;
+              
+              return {
+                distance,
+                duration: adjustedDuration,
+                name: index === 0 ? 'Fastest Route' : `Alternative ${index}`,
+                isAlternate: index > 0,
+                trafficLevel
+              };
+            });
+
+            routesData.current = routes;
+            resolve(routes);
           });
 
           control.on('routingerror', () => {
@@ -155,12 +222,25 @@ const Map = forwardRef<MapRef>((_, ref) => {
         return null;
       }
     },
+    selectRoute: (index: number) => {
+      if (routingControl.current && routesData.current[index]) {
+        selectedRouteIndex.current = index;
+        // The routing control will handle the visual update
+        const control = routingControl.current as any;
+        if (control._routes && control._routes[index]) {
+          control._selectedRoute = index;
+          control._updateLines({ route: control._routes[index], alternatives: control._routes });
+        }
+      }
+    },
     clearRoute: () => {
       if (map.current && routingControl.current) {
         map.current.removeControl(routingControl.current);
         routingControl.current = null;
       }
       clearMarkers();
+      clearAlternateLines();
+      routesData.current = [];
     }
   }));
 

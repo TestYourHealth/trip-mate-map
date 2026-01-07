@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { MapPin, Menu, X } from 'lucide-react';
-import Map, { MapRef } from '@/components/Map';
+import Map, { MapRef, RouteInfo } from '@/components/Map';
 import TripPanel from '@/components/TripPanel';
 import { VehicleConfig } from '@/components/VehicleSettings';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,8 @@ const Index = () => {
     mileage: 15,
   });
   const [isCalculating, setIsCalculating] = useState(false);
+  const [routes, setRoutes] = useState<RouteInfo[]>([]);
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
   const [tripData, setTripData] = useState<{
     distance: number;
     duration: number;
@@ -26,31 +28,38 @@ const Index = () => {
     totalCost: number;
   } | null>(null);
 
+  const updateTripData = useCallback((route: RouteInfo) => {
+    const fuelCost = (route.distance / vehicleConfig.mileage) * vehicleConfig.fuelPrice;
+    const tollCost = route.distance * 1.5;
+    
+    setTripData({
+      distance: route.distance,
+      duration: route.duration,
+      fuelCost: Math.round(fuelCost),
+      tollCost: Math.round(tollCost),
+      totalCost: Math.round(fuelCost + tollCost),
+    });
+  }, [vehicleConfig]);
+
   const calculateTrip = useCallback(async () => {
     if (!origin || !destination) return;
     
     setIsCalculating(true);
     
     try {
-      // Filter out empty waypoints
       const validWaypoints = waypoints.filter(w => w.trim() !== '');
       const result = await mapRef.current?.showRoute(origin, destination, validWaypoints);
       
-      if (result) {
-        const fuelCost = (result.distance / vehicleConfig.mileage) * vehicleConfig.fuelPrice;
+      if (result && result.length > 0) {
+        setRoutes(result);
+        setSelectedRouteIndex(0);
+        updateTripData(result[0]);
         
-        // Estimate toll cost (approximately ₹1.5 per km on highways)
-        const tollCost = result.distance * 1.5;
-        
-        setTripData({
-          distance: result.distance,
-          duration: result.duration,
-          fuelCost: Math.round(fuelCost),
-          tollCost: Math.round(tollCost),
-          totalCost: Math.round(fuelCost + tollCost),
-        });
-        
-        toast.success('Route calculated successfully!');
+        if (result.length > 1) {
+          toast.success(`${result.length} routes found! Select your preferred route.`);
+        } else {
+          toast.success('Route calculated successfully!');
+        }
       } else {
         toast.error('Could not find route. Please check the locations.');
       }
@@ -59,11 +68,21 @@ const Index = () => {
     } finally {
       setIsCalculating(false);
     }
-  }, [origin, destination, waypoints, vehicleConfig]);
+  }, [origin, destination, waypoints, updateTripData]);
+
+  const handleRouteSelect = useCallback((index: number) => {
+    setSelectedRouteIndex(index);
+    mapRef.current?.selectRoute(index);
+    if (routes[index]) {
+      updateTripData(routes[index]);
+    }
+  }, [routes, updateTripData]);
 
   const clearTrip = useCallback(() => {
     mapRef.current?.clearRoute();
     setTripData(null);
+    setRoutes([]);
+    setSelectedRouteIndex(0);
     setOrigin('');
     setDestination('');
     setWaypoints([]);
@@ -103,10 +122,13 @@ const Index = () => {
             destination={destination}
             waypoints={waypoints}
             vehicleConfig={vehicleConfig}
+            routes={routes}
+            selectedRouteIndex={selectedRouteIndex}
             onOriginChange={setOrigin}
             onDestinationChange={setDestination}
             onWaypointsChange={setWaypoints}
             onVehicleConfigChange={setVehicleConfig}
+            onRouteSelect={handleRouteSelect}
             onCalculate={calculateTrip}
             onClear={clearTrip}
             tripData={tripData}
