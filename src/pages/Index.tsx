@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import { MapPin, Menu, X } from 'lucide-react';
 import Map, { MapRef } from '@/components/Map';
 import TripPanel from '@/components/TripPanel';
+import { VehicleConfig } from '@/components/VehicleSettings';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -10,6 +11,12 @@ const Index = () => {
   const [showPanel, setShowPanel] = useState(true);
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
+  const [waypoints, setWaypoints] = useState<string[]>([]);
+  const [vehicleConfig, setVehicleConfig] = useState<VehicleConfig>({
+    fuelType: 'petrol',
+    fuelPrice: 105,
+    mileage: 15,
+  });
   const [isCalculating, setIsCalculating] = useState(false);
   const [tripData, setTripData] = useState<{
     distance: number;
@@ -25,12 +32,12 @@ const Index = () => {
     setIsCalculating(true);
     
     try {
-      const result = await mapRef.current?.showRoute(origin, destination);
+      // Filter out empty waypoints
+      const validWaypoints = waypoints.filter(w => w.trim() !== '');
+      const result = await mapRef.current?.showRoute(origin, destination, validWaypoints);
       
       if (result) {
-        const fuelPrice = 105; // ₹ per litre (average petrol price in India)
-        const kmpl = 15; // Average km per litre
-        const fuelCost = (result.distance / kmpl) * fuelPrice;
+        const fuelCost = (result.distance / vehicleConfig.mileage) * vehicleConfig.fuelPrice;
         
         // Estimate toll cost (approximately ₹1.5 per km on highways)
         const tollCost = result.distance * 1.5;
@@ -52,13 +59,14 @@ const Index = () => {
     } finally {
       setIsCalculating(false);
     }
-  }, [origin, destination]);
+  }, [origin, destination, waypoints, vehicleConfig]);
 
   const clearTrip = useCallback(() => {
     mapRef.current?.clearRoute();
     setTripData(null);
     setOrigin('');
     setDestination('');
+    setWaypoints([]);
   }, []);
 
   return (
@@ -89,12 +97,16 @@ const Index = () => {
 
       {/* Trip Planning Panel */}
       {showPanel && (
-        <div className="absolute top-24 right-4 z-10">
+        <div className="absolute top-24 right-4 z-10 max-h-[calc(100vh-120px)] overflow-y-auto">
           <TripPanel
             origin={origin}
             destination={destination}
+            waypoints={waypoints}
+            vehicleConfig={vehicleConfig}
             onOriginChange={setOrigin}
             onDestinationChange={setDestination}
+            onWaypointsChange={setWaypoints}
+            onVehicleConfigChange={setVehicleConfig}
             onCalculate={calculateTrip}
             onClear={clearTrip}
             tripData={tripData}
