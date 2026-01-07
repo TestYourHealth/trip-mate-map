@@ -2,12 +2,18 @@ import React from 'react';
 import { MapPin, Navigation, Fuel, DollarSign, Clock, Car, RotateCcw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import VehicleSettings, { VehicleConfig } from './VehicleSettings';
+import WaypointInput from './WaypointInput';
 
 interface TripPanelProps {
   origin: string;
   destination: string;
+  waypoints: string[];
+  vehicleConfig: VehicleConfig;
   onOriginChange: (value: string) => void;
   onDestinationChange: (value: string) => void;
+  onWaypointsChange: (waypoints: string[]) => void;
+  onVehicleConfigChange: (config: VehicleConfig) => void;
   onCalculate: () => void;
   onClear: () => void;
   tripData: {
@@ -23,8 +29,12 @@ interface TripPanelProps {
 const TripPanel: React.FC<TripPanelProps> = ({
   origin,
   destination,
+  waypoints,
+  vehicleConfig,
   onOriginChange,
   onDestinationChange,
+  onWaypointsChange,
+  onVehicleConfigChange,
   onCalculate,
   onClear,
   tripData,
@@ -42,7 +52,7 @@ const TripPanel: React.FC<TripPanelProps> = ({
         </div>
       </div>
 
-      <div className="space-y-3 mb-5">
+      <div className="space-y-3 mb-4">
         <div className="relative">
           <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
           <Input
@@ -54,8 +64,10 @@ const TripPanel: React.FC<TripPanelProps> = ({
         </div>
         
         <div className="relative flex items-center">
-          <div className="absolute left-5 w-0.5 h-8 bg-border -top-5" />
+          <div className="absolute left-5 w-0.5 h-full bg-border" />
         </div>
+
+        <WaypointInput waypoints={waypoints} onWaypointsChange={onWaypointsChange} />
 
         <div className="relative">
           <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500" />
@@ -66,6 +78,10 @@ const TripPanel: React.FC<TripPanelProps> = ({
             className="pl-10 bg-muted/50 border-0 focus-visible:ring-primary"
           />
         </div>
+      </div>
+
+      <div className="mb-4">
+        <VehicleSettings config={vehicleConfig} onConfigChange={onVehicleConfigChange} />
       </div>
 
       <div className="flex gap-2 mb-5">
@@ -127,7 +143,7 @@ const TripPanel: React.FC<TripPanelProps> = ({
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground flex items-center gap-2">
-                  <Fuel className="w-3.5 h-3.5" /> Fuel (₹105/L, 15km/L)
+                  <Fuel className="w-3.5 h-3.5" /> {vehicleConfig.fuelType.charAt(0).toUpperCase() + vehicleConfig.fuelType.slice(1)} (₹{vehicleConfig.fuelPrice}/{vehicleConfig.fuelType === 'cng' ? 'kg' : 'L'}, {vehicleConfig.mileage}km/L)
                 </span>
                 <span className="text-sm font-semibold text-foreground">₹{tripData.fuelCost}</span>
               </div>

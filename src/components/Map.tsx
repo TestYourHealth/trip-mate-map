@@ -5,7 +5,7 @@ import 'leaflet-routing-machine';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 
 export interface MapRef {
-  showRoute: (origin: string, destination: string) => Promise<{ distance: number; duration: number } | null>;
+  showRoute: (origin: string, destination: string, waypoints?: string[]) => Promise<{ distance: number; duration: number } | null>;
   clearRoute: () => void;
 }
 
@@ -13,32 +13,52 @@ const Map = forwardRef<MapRef>((_, ref) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const routingControl = useRef<L.Routing.Control | null>(null);
+  const markers = useRef<L.Marker[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  const clearMarkers = () => {
+    markers.current.forEach(m => m.remove());
+    markers.current = [];
+  };
+
   useImperativeHandle(ref, () => ({
-    showRoute: async (origin: string, destination: string) => {
+    showRoute: async (origin: string, destination: string, waypoints: string[] = []) => {
       if (!map.current) return null;
 
-      // Clear existing route
+      // Clear existing route and markers
       if (routingControl.current) {
         map.current.removeControl(routingControl.current);
         routingControl.current = null;
       }
+      clearMarkers();
 
       try {
-        // Geocode origin
+        // Geocode all locations
         const originCoords = await geocodeLocation(origin);
         const destCoords = await geocodeLocation(destination);
-
+        
         if (!originCoords || !destCoords) return null;
+
+        // Geocode waypoints
+        const waypointCoords: { lat: number; lng: number }[] = [];
+        for (const wp of waypoints) {
+          if (wp.trim()) {
+            const coords = await geocodeLocation(wp);
+            if (coords) waypointCoords.push(coords);
+          }
+        }
+
+        // Build all waypoints array for routing
+        const allWaypoints = [
+          L.latLng(originCoords.lat, originCoords.lng),
+          ...waypointCoords.map(c => L.latLng(c.lat, c.lng)),
+          L.latLng(destCoords.lat, destCoords.lng)
+        ];
 
         return new Promise((resolve) => {
           const control = L.Routing.control({
-            waypoints: [
-              L.latLng(originCoords.lat, originCoords.lng),
-              L.latLng(destCoords.lat, destCoords.lng)
-            ],
-            routeWhileDragging: true,
+            waypoints: allWaypoints,
+            routeWhileDragging: false,
             showAlternatives: false,
             addWaypoints: false,
             fitSelectedRoutes: true,
@@ -53,7 +73,7 @@ const Map = forwardRef<MapRef>((_, ref) => {
             }
           } as L.Routing.RoutingControlOptions);
 
-          // Add custom markers
+          // Add origin marker (green)
           const originMarker = L.marker([originCoords.lat, originCoords.lng], {
             icon: L.divIcon({
               className: 'custom-marker',
@@ -69,7 +89,35 @@ const Map = forwardRef<MapRef>((_, ref) => {
               iconAnchor: [12, 12]
             })
           }).addTo(map.current!);
+          markers.current.push(originMarker);
 
+          // Add waypoint markers (amber)
+          waypointCoords.forEach((coords, index) => {
+            const wpMarker = L.marker([coords.lat, coords.lng], {
+              icon: L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="
+                  width: 20px;
+                  height: 20px;
+                  background: #f59e0b;
+                  border: 3px solid white;
+                  border-radius: 50%;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 10px;
+                  font-weight: bold;
+                  color: white;
+                ">${index + 1}</div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+              })
+            }).addTo(map.current!);
+            markers.current.push(wpMarker);
+          });
+
+          // Add destination marker (red)
           const destMarker = L.marker([destCoords.lat, destCoords.lng], {
             icon: L.divIcon({
               className: 'custom-marker',
@@ -85,6 +133,7 @@ const Map = forwardRef<MapRef>((_, ref) => {
               iconAnchor: [12, 12]
             })
           }).addTo(map.current!);
+          markers.current.push(destMarker);
 
           control.addTo(map.current!);
           routingControl.current = control;
@@ -97,8 +146,7 @@ const Map = forwardRef<MapRef>((_, ref) => {
           });
 
           control.on('routingerror', () => {
-            originMarker.remove();
-            destMarker.remove();
+            clearMarkers();
             resolve(null);
           });
         });
@@ -112,6 +160,7 @@ const Map = forwardRef<MapRef>((_, ref) => {
         map.current.removeControl(routingControl.current);
         routingControl.current = null;
       }
+      clearMarkers();
     }
   }));
 
