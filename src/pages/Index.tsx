@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { MapPin, Menu, X } from 'lucide-react';
+import { MapPin, Menu, X, Crosshair, Loader2 } from 'lucide-react';
 import Map, { MapRef, RouteInfo } from '@/components/Map';
 import TripPanel from '@/components/TripPanel';
 import NavigationPanel, { NavigationStep } from '@/components/NavigationPanel';
@@ -7,6 +7,7 @@ import { VehicleConfig } from '@/components/VehicleSettings';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useGeolocation } from '@/hooks/useGeolocation';
 
 const Index = () => {
   const mapRef = useRef<MapRef>(null);
@@ -37,6 +38,88 @@ const Index = () => {
   const [navigationSteps, setNavigationSteps] = useState<NavigationStep[]>([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+
+  // GPS tracking
+  const { 
+    position, 
+    isTracking, 
+    startTracking, 
+    stopTracking, 
+    getCurrentPosition,
+    error: geoError 
+  } = useGeolocation();
+
+  // Update map with user location
+  useEffect(() => {
+    if (position && mapRef.current) {
+      mapRef.current.updateUserLocation(position.lat, position.lng, position.heading);
+    }
+  }, [position]);
+
+  // Show geolocation errors
+  useEffect(() => {
+    if (geoError) {
+      toast.error(geoError);
+    }
+  }, [geoError]);
+
+  // Calculate distance between two points (Haversine formula)
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371000; // Earth's radius in meters
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  // Auto-advance navigation based on GPS position
+  useEffect(() => {
+    if (!isNavigating || !position || navigationSteps.length === 0) return;
+
+    const routeCoords = mapRef.current?.getRouteCoordinates();
+    if (!routeCoords || routeCoords.length === 0) return;
+
+    // Find the closest point on the route
+    let minDistance = Infinity;
+    let closestIndex = 0;
+
+    routeCoords.forEach((coord, index) => {
+      const distance = calculateDistance(position.lat, position.lng, coord.lat, coord.lng);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestIndex = index;
+      }
+    });
+
+    // Calculate progress through route (0 to 1)
+    const progress = closestIndex / routeCoords.length;
+    
+    // Map progress to navigation steps
+    const targetStepIndex = Math.min(
+      Math.floor(progress * navigationSteps.length),
+      navigationSteps.length - 1
+    );
+
+    if (targetStepIndex > currentStepIndex) {
+      setCurrentStepIndex(targetStepIndex);
+      
+      // Announce step change
+      if (targetStepIndex === navigationSteps.length - 1) {
+        toast.success('🎉 You have reached your destination!');
+        stopNavigation();
+      }
+    }
+
+    // Check if user is off route (more than 100m away)
+    if (minDistance > 100) {
+      toast.warning('You seem to be off route. Recalculating...', { id: 'off-route' });
+    }
+  }, [position, isNavigating, navigationSteps, currentStepIndex]);
 
   const updateTripData = useCallback((route: RouteInfo) => {
     const fuelCost = (route.distance / vehicleConfig.mileage) * vehicleConfig.fuelPrice;
@@ -50,6 +133,41 @@ const Index = () => {
       totalCost: Math.round(fuelCost + tollCost),
     });
   }, [vehicleConfig]);
+
+  const handleLocateMe = useCallback(async () => {
+    setIsLocating(true);
+    try {
+      const pos = await getCurrentPosition();
+      mapRef.current?.updateUserLocation(pos.lat, pos.lng, pos.heading);
+      mapRef.current?.centerOnUser();
+      toast.success('Location found!');
+    } catch (error) {
+      toast.error('Could not get your location');
+    } finally {
+      setIsLocating(false);
+    }
+  }, [getCurrentPosition]);
+
+  const useCurrentLocation = useCallback(async () => {
+    setIsLocating(true);
+    try {
+      const pos = await getCurrentPosition();
+      // Reverse geocode to get address
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.lat}&lon=${pos.lng}`,
+        { headers: { 'User-Agent': 'TripMate/1.0' } }
+      );
+      const data = await response.json();
+      const address = data.display_name?.split(',').slice(0, 3).join(',') || 'Current Location';
+      setOrigin(address);
+      mapRef.current?.updateUserLocation(pos.lat, pos.lng, pos.heading);
+      toast.success('Starting from your current location');
+    } catch (error) {
+      toast.error('Could not get your location');
+    } finally {
+      setIsLocating(false);
+    }
+  }, [getCurrentPosition]);
 
   const calculateTrip = useCallback(async () => {
     if (!origin || !destination) return;
@@ -120,14 +238,17 @@ const Index = () => {
       setIsNavigating(true);
       setCurrentStepIndex(0);
       setShowPanel(false);
-      toast.success('Navigation started! Follow the directions.');
+      startTracking(); // Start GPS tracking
+      mapRef.current?.centerOnUser();
+      toast.success('Navigation started! GPS tracking is active.');
     }
-  }, [tripData, navigationSteps]);
+  }, [tripData, navigationSteps, startTracking]);
 
   const stopNavigation = useCallback(() => {
     setIsNavigating(false);
     setShowPanel(true);
-  }, []);
+    stopTracking(); // Stop GPS tracking
+  }, [stopTracking]);
 
   const clearTrip = useCallback(() => {
     mapRef.current?.clearRoute();
@@ -140,25 +261,8 @@ const Index = () => {
     setNavigationSteps([]);
     setIsNavigating(false);
     setCurrentStepIndex(0);
-  }, []);
-
-  // Auto-advance navigation steps (simulation)
-  useEffect(() => {
-    if (!isNavigating || navigationSteps.length === 0) return;
-
-    const interval = setInterval(() => {
-      setCurrentStepIndex(prev => {
-        if (prev < navigationSteps.length - 1) {
-          return prev + 1;
-        }
-        toast.success('You have reached your destination!');
-        stopNavigation();
-        return prev;
-      });
-    }, 8000); // Advance every 8 seconds for demo
-
-    return () => clearInterval(interval);
-  }, [isNavigating, navigationSteps.length, stopNavigation]);
+    stopTracking();
+  }, [stopTracking]);
 
   return (
     <div className="h-screen w-screen overflow-hidden relative">
@@ -191,18 +295,65 @@ const Index = () => {
               <span className="text-lg font-bold text-foreground">Trip Mate</span>
             </div>
 
-            {!isMobile && (
+            <div className="flex items-center gap-2">
+              {/* Locate Me Button */}
               <Button 
                 variant="glass" 
                 size="icon"
-                onClick={() => setShowPanel(!showPanel)}
+                onClick={handleLocateMe}
+                disabled={isLocating}
                 className="animate-fade-in"
               >
-                {showPanel ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                {isLocating ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Crosshair className="w-5 h-5" />
+                )}
               </Button>
-            )}
+
+              {!isMobile && (
+                <Button 
+                  variant="glass" 
+                  size="icon"
+                  onClick={() => setShowPanel(!showPanel)}
+                  className="animate-fade-in"
+                >
+                  {showPanel ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                </Button>
+              )}
+            </div>
           </div>
         </header>
+      )}
+
+      {/* GPS Status Indicator during navigation */}
+      {isNavigating && isTracking && position && (
+        <div className="absolute top-48 left-4 z-20">
+          <div className="glass-panel rounded-xl px-3 py-2 flex items-center gap-2 animate-fade-in">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-xs text-foreground">GPS Active</span>
+            {position.speed && position.speed > 0 && (
+              <>
+                <span className="text-xs text-muted-foreground">•</span>
+                <span className="text-xs text-primary font-medium">
+                  {Math.round(position.speed * 3.6)} km/h
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Center on User Button during navigation */}
+      {isNavigating && (
+        <Button
+          variant="glass"
+          size="icon"
+          onClick={() => mapRef.current?.centerOnUser()}
+          className="absolute bottom-24 right-4 z-20 animate-fade-in"
+        >
+          <Crosshair className="w-5 h-5" />
+        </Button>
       )}
 
       {/* Trip Planning Panel - Desktop */}
@@ -228,6 +379,8 @@ const Index = () => {
             tripData={tripData}
             isCalculating={isCalculating}
             isMobile={false}
+            onUseCurrentLocation={useCurrentLocation}
+            isLocating={isLocating}
           />
         </div>
       )}
@@ -257,6 +410,8 @@ const Index = () => {
             isMobile={true}
             isExpanded={isPanelExpanded}
             onToggleExpand={() => setIsPanelExpanded(!isPanelExpanded)}
+            onUseCurrentLocation={useCurrentLocation}
+            isLocating={isLocating}
           />
         </div>
       )}

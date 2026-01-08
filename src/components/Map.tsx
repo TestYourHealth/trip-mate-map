@@ -28,6 +28,9 @@ export interface MapRef {
   showRoute: (origin: string, destination: string, waypoints?: string[]) => Promise<RouteResult | null>;
   selectRoute: (index: number) => void;
   clearRoute: () => void;
+  updateUserLocation: (lat: number, lng: number, heading?: number | null) => void;
+  centerOnUser: () => void;
+  getRouteCoordinates: () => L.LatLng[] | null;
 }
 
 const Map = forwardRef<MapRef>((_, ref) => {
@@ -35,9 +38,12 @@ const Map = forwardRef<MapRef>((_, ref) => {
   const map = useRef<L.Map | null>(null);
   const routingControl = useRef<L.Routing.Control | null>(null);
   const markers = useRef<L.Marker[]>([]);
+  const userMarker = useRef<L.Marker | null>(null);
+  const userAccuracyCircle = useRef<L.Circle | null>(null);
   const alternateRouteLines = useRef<L.Polyline[]>([]);
   const selectedRouteIndex = useRef<number>(0);
   const routesData = useRef<RouteInfo[]>([]);
+  const routeCoordinates = useRef<L.LatLng[] | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   const clearMarkers = () => {
@@ -233,6 +239,13 @@ const Map = forwardRef<MapRef>((_, ref) => {
               });
             }
 
+            // Store route coordinates for proximity checking
+            if (e.routes[0] && e.routes[0].coordinates) {
+              routeCoordinates.current = e.routes[0].coordinates.map(
+                (coord: any) => L.latLng(coord.lat, coord.lng)
+              );
+            }
+
             routesData.current = routes;
             resolve({ routes, instructions });
           });
@@ -266,6 +279,85 @@ const Map = forwardRef<MapRef>((_, ref) => {
       clearMarkers();
       clearAlternateLines();
       routesData.current = [];
+      routeCoordinates.current = null;
+    },
+    updateUserLocation: (lat: number, lng: number, heading?: number | null) => {
+      if (!map.current) return;
+
+      const rotation = heading !== null && heading !== undefined ? heading : 0;
+      
+      // Create or update user marker
+      if (userMarker.current) {
+        userMarker.current.setLatLng([lat, lng]);
+        // Update rotation
+        const iconElement = userMarker.current.getElement();
+        if (iconElement) {
+          const arrow = iconElement.querySelector('.user-arrow');
+          if (arrow) {
+            (arrow as HTMLElement).style.transform = `rotate(${rotation}deg)`;
+          }
+        }
+      } else {
+        userMarker.current = L.marker([lat, lng], {
+          icon: L.divIcon({
+            className: 'user-location-marker',
+            html: `
+              <div style="
+                position: relative;
+                width: 24px;
+                height: 24px;
+              ">
+                <div style="
+                  position: absolute;
+                  inset: 0;
+                  background: hsl(174 72% 50%);
+                  border: 3px solid white;
+                  border-radius: 50%;
+                  box-shadow: 0 2px 10px rgba(20, 184, 166, 0.5);
+                  animation: pulse 2s infinite;
+                "></div>
+                <div class="user-arrow" style="
+                  position: absolute;
+                  top: -8px;
+                  left: 50%;
+                  transform: translateX(-50%) rotate(${rotation}deg);
+                  width: 0;
+                  height: 0;
+                  border-left: 6px solid transparent;
+                  border-right: 6px solid transparent;
+                  border-bottom: 10px solid hsl(174 72% 50%);
+                  transform-origin: center 20px;
+                "></div>
+              </div>
+            `,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+          }),
+          zIndexOffset: 1000
+        }).addTo(map.current);
+      }
+
+      // Update or create accuracy circle
+      if (userAccuracyCircle.current) {
+        userAccuracyCircle.current.setLatLng([lat, lng]);
+      } else {
+        userAccuracyCircle.current = L.circle([lat, lng], {
+          radius: 50,
+          color: 'hsl(174, 72%, 50%)',
+          fillColor: 'hsl(174, 72%, 50%)',
+          fillOpacity: 0.15,
+          weight: 1
+        }).addTo(map.current);
+      }
+    },
+    centerOnUser: () => {
+      if (map.current && userMarker.current) {
+        const latlng = userMarker.current.getLatLng();
+        map.current.setView(latlng, 16, { animate: true });
+      }
+    },
+    getRouteCoordinates: () => {
+      return routeCoordinates.current;
     }
   }));
 

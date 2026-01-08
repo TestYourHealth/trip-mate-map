@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Navigation, Fuel, DollarSign, Clock, Car, RotateCcw, Play, ChevronUp, ChevronDown } from 'lucide-react';
+import { MapPin, Navigation, Fuel, DollarSign, Clock, Car, RotateCcw, Play, ChevronUp, ChevronDown, Locate, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import VehicleSettings, { VehicleConfig } from './VehicleSettings';
@@ -27,6 +27,7 @@ interface TripPanelProps {
   onCalculate: () => void;
   onClear: () => void;
   onStartNavigation: () => void;
+  onUseCurrentLocation?: () => void;
   tripData: {
     distance: number;
     duration: number;
@@ -35,6 +36,7 @@ interface TripPanelProps {
     totalCost: number;
   } | null;
   isCalculating: boolean;
+  isLocating?: boolean;
   isMobile?: boolean;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
@@ -57,8 +59,10 @@ const TripPanel: React.FC<TripPanelProps> = ({
   onCalculate,
   onClear,
   onStartNavigation,
+  onUseCurrentLocation,
   tripData,
   isCalculating,
+  isLocating = false,
   isMobile = false,
   isExpanded = true,
   onToggleExpand
@@ -120,8 +124,24 @@ const TripPanel: React.FC<TripPanelProps> = ({
               placeholder="Starting point (e.g., Delhi)"
               value={origin}
               onChange={(e) => onOriginChange(e.target.value)}
-              className="pl-10 bg-muted/50 border-0 focus-visible:ring-primary h-12"
+              className="pl-10 pr-12 bg-muted/50 border-0 focus-visible:ring-primary h-12"
             />
+            {onUseCurrentLocation && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={onUseCurrentLocation}
+                disabled={isLocating}
+                className="absolute right-2 top-1/2 -translate-y-1/2"
+                title="Use current location"
+              >
+                {isLocating ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Locate className="w-4 h-4 text-primary" />
+                )}
+              </Button>
+            )}
           </div>
           
           <div className="relative flex items-center">
