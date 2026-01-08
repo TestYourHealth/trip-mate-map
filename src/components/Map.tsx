@@ -12,8 +12,20 @@ export interface RouteInfo {
   trafficLevel: 'low' | 'moderate' | 'heavy';
 }
 
+export interface RouteInstruction {
+  text: string;
+  distance: number;
+  type: string;
+  modifier?: string;
+}
+
+export interface RouteResult {
+  routes: RouteInfo[];
+  instructions: RouteInstruction[];
+}
+
 export interface MapRef {
-  showRoute: (origin: string, destination: string, waypoints?: string[]) => Promise<RouteInfo[] | null>;
+  showRoute: (origin: string, destination: string, waypoints?: string[]) => Promise<RouteResult | null>;
   selectRoute: (index: number) => void;
   clearRoute: () => void;
 }
@@ -208,8 +220,21 @@ const Map = forwardRef<MapRef>((_, ref) => {
               };
             });
 
+            // Extract instructions from the first route
+            const instructions: RouteInstruction[] = [];
+            if (e.routes[0] && e.routes[0].instructions) {
+              e.routes[0].instructions.forEach((inst: any) => {
+                instructions.push({
+                  text: inst.text || 'Continue',
+                  distance: inst.distance || 0,
+                  type: inst.type || 'Straight',
+                  modifier: inst.modifier
+                });
+              });
+            }
+
             routesData.current = routes;
-            resolve(routes);
+            resolve({ routes, instructions });
           });
 
           control.on('routingerror', () => {
