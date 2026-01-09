@@ -28,7 +28,7 @@ export interface MapRef {
   showRoute: (origin: string, destination: string, waypoints?: string[]) => Promise<RouteResult | null>;
   selectRoute: (index: number) => void;
   clearRoute: () => void;
-  updateUserLocation: (lat: number, lng: number, heading?: number | null) => void;
+  updateUserLocation: (lat: number, lng: number, heading?: number | null, speed?: number | null, accuracy?: number) => void;
   centerOnUser: () => void;
   getRouteCoordinates: () => L.LatLng[] | null;
 }
@@ -281,58 +281,113 @@ const Map = forwardRef<MapRef>((_, ref) => {
       routesData.current = [];
       routeCoordinates.current = null;
     },
-    updateUserLocation: (lat: number, lng: number, heading?: number | null) => {
+    updateUserLocation: (lat: number, lng: number, heading?: number | null, speed?: number | null, accuracy?: number) => {
       if (!map.current) return;
 
       const rotation = heading !== null && heading !== undefined ? heading : 0;
+      const speedKmh = speed !== null && speed !== undefined ? Math.round(speed * 3.6) : 0;
+      const hasSpeed = speedKmh > 0;
+      const accuracyRadius = accuracy || 50;
+      
+      // Google Maps style icon with navigation arrow and speed popup
+      const createNavigationIcon = (rot: number, spd: number, showSpeed: boolean) => {
+        return L.divIcon({
+          className: 'user-location-marker',
+          html: `
+            <div class="gps-marker-container" style="
+              position: relative;
+              width: 60px;
+              height: 80px;
+              transform: translate(-30px, -60px);
+            ">
+              <!-- Speed Popup (Google Maps style) -->
+              ${showSpeed ? `
+              <div class="speed-popup" style="
+                position: absolute;
+                top: -8px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+                border: 2px solid #4ade80;
+                border-radius: 12px;
+                padding: 4px 10px;
+                box-shadow: 0 4px 20px rgba(74, 222, 128, 0.3), 0 0 0 1px rgba(255,255,255,0.1);
+                white-space: nowrap;
+                z-index: 10;
+                animation: fadeInScale 0.3s ease-out;
+              ">
+                <div style="
+                  font-size: 16px;
+                  font-weight: 700;
+                  color: #4ade80;
+                  text-align: center;
+                  line-height: 1.2;
+                  text-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+                ">${spd}</div>
+                <div style="
+                  font-size: 8px;
+                  font-weight: 600;
+                  color: rgba(255,255,255,0.7);
+                  text-align: center;
+                  text-transform: uppercase;
+                  letter-spacing: 0.5px;
+                ">km/h</div>
+              </div>
+              ` : ''}
+              
+              <!-- Navigation Arrow (Google Maps blue arrow style) -->
+              <div class="nav-arrow-wrapper" style="
+                position: absolute;
+                bottom: 0;
+                left: 50%;
+                transform: translateX(-50%) rotate(${rot}deg);
+                transform-origin: center center;
+                width: 44px;
+                height: 44px;
+                transition: transform 0.3s ease-out;
+              ">
+                <svg viewBox="0 0 44 44" style="width: 100%; height: 100%; filter: drop-shadow(0 2px 8px rgba(66, 133, 244, 0.5));">
+                  <!-- Outer glow -->
+                  <defs>
+                    <radialGradient id="arrowGlow" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" style="stop-color:#4285f4;stop-opacity:0.4" />
+                      <stop offset="100%" style="stop-color:#4285f4;stop-opacity:0" />
+                    </radialGradient>
+                    <linearGradient id="arrowGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" style="stop-color:#5c9aff" />
+                      <stop offset="50%" style="stop-color:#4285f4" />
+                      <stop offset="100%" style="stop-color:#2b6dd6" />
+                    </linearGradient>
+                  </defs>
+                  
+                  <!-- Pulsing outer ring -->
+                  <circle cx="22" cy="22" r="20" fill="url(#arrowGlow)" style="animation: pulseRing 2s ease-out infinite;" />
+                  
+                  <!-- White border circle -->
+                  <circle cx="22" cy="22" r="18" fill="white" />
+                  
+                  <!-- Blue inner circle -->
+                  <circle cx="22" cy="22" r="15" fill="url(#arrowGradient)" />
+                  
+                  <!-- Navigation arrow pointing UP (will be rotated by wrapper) -->
+                  <path d="M22 10 L28 26 L22 22 L16 26 Z" fill="white" />
+                </svg>
+              </div>
+            </div>
+          `,
+          iconSize: [60, 80],
+          iconAnchor: [30, 80]
+        });
+      };
       
       // Create or update user marker
       if (userMarker.current) {
         userMarker.current.setLatLng([lat, lng]);
-        // Update rotation
-        const iconElement = userMarker.current.getElement();
-        if (iconElement) {
-          const arrow = iconElement.querySelector('.user-arrow');
-          if (arrow) {
-            (arrow as HTMLElement).style.transform = `rotate(${rotation}deg)`;
-          }
-        }
+        // Update the icon with new rotation and speed
+        userMarker.current.setIcon(createNavigationIcon(rotation, speedKmh, hasSpeed));
       } else {
         userMarker.current = L.marker([lat, lng], {
-          icon: L.divIcon({
-            className: 'user-location-marker',
-            html: `
-              <div style="
-                position: relative;
-                width: 24px;
-                height: 24px;
-              ">
-                <div style="
-                  position: absolute;
-                  inset: 0;
-                  background: hsl(174 72% 50%);
-                  border: 3px solid white;
-                  border-radius: 50%;
-                  box-shadow: 0 2px 10px rgba(20, 184, 166, 0.5);
-                  animation: pulse 2s infinite;
-                "></div>
-                <div class="user-arrow" style="
-                  position: absolute;
-                  top: -8px;
-                  left: 50%;
-                  transform: translateX(-50%) rotate(${rotation}deg);
-                  width: 0;
-                  height: 0;
-                  border-left: 6px solid transparent;
-                  border-right: 6px solid transparent;
-                  border-bottom: 10px solid hsl(174 72% 50%);
-                  transform-origin: center 20px;
-                "></div>
-              </div>
-            `,
-            iconSize: [24, 24],
-            iconAnchor: [12, 12]
-          }),
+          icon: createNavigationIcon(rotation, speedKmh, hasSpeed),
           zIndexOffset: 1000
         }).addTo(map.current);
       }
@@ -340,13 +395,14 @@ const Map = forwardRef<MapRef>((_, ref) => {
       // Update or create accuracy circle
       if (userAccuracyCircle.current) {
         userAccuracyCircle.current.setLatLng([lat, lng]);
+        userAccuracyCircle.current.setRadius(accuracyRadius);
       } else {
         userAccuracyCircle.current = L.circle([lat, lng], {
-          radius: 50,
-          color: 'hsl(174, 72%, 50%)',
-          fillColor: 'hsl(174, 72%, 50%)',
-          fillOpacity: 0.15,
-          weight: 1
+          radius: accuracyRadius,
+          color: 'rgba(66, 133, 244, 0.8)',
+          fillColor: 'rgba(66, 133, 244, 0.15)',
+          fillOpacity: 0.2,
+          weight: 2
         }).addTo(map.current);
       }
     },

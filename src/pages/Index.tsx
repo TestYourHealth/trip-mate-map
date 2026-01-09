@@ -50,10 +50,16 @@ const Index = () => {
     error: geoError 
   } = useGeolocation();
 
-  // Update map with user location
+  // Update map with user location (including speed and accuracy)
   useEffect(() => {
     if (position && mapRef.current) {
-      mapRef.current.updateUserLocation(position.lat, position.lng, position.heading);
+      mapRef.current.updateUserLocation(
+        position.lat, 
+        position.lng, 
+        position.heading, 
+        position.speed,
+        position.accuracy
+      );
     }
   }, [position]);
 
