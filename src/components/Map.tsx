@@ -449,8 +449,8 @@ const Map = forwardRef<MapRef>((_, ref) => {
   }, []);
 
   return (
-    <div className="absolute inset-0 z-0">
-      <div ref={mapContainer} className="absolute inset-0" />
+    <div className="absolute inset-0 z-0" style={{ height: '100%', width: '100%' }}>
+      <div ref={mapContainer} className="h-full w-full" />
       {!isLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-background z-[1]">
           <div className="flex flex-col items-center gap-3">

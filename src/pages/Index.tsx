@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { MapPin, Menu, X, Crosshair, Loader2 } from 'lucide-react';
+import { Crosshair, Loader2 } from 'lucide-react';
 import Map, { MapRef, RouteInfo } from '@/components/Map';
 import TripPanel from '@/components/TripPanel';
 import NavigationPanel, { NavigationStep } from '@/components/NavigationPanel';
@@ -271,7 +271,7 @@ const Index = () => {
   }, [stopTracking]);
 
   return (
-    <div className="h-screen w-screen overflow-hidden relative">
+    <div className="h-screen w-full overflow-hidden relative">
       {/* Map Background */}
       <Map ref={mapRef} />
 
@@ -290,46 +290,23 @@ const Index = () => {
         />
       )}
 
-      {/* Header - Hidden during navigation */}
+      {/* Floating action buttons - visible when not navigating */}
       {!isNavigating && (
-        <header className="absolute top-0 left-0 right-0 z-10 p-4 safe-area-top">
-          <div className="flex items-center justify-between">
-            <div className="glass-panel rounded-2xl px-4 py-3 flex items-center gap-3 animate-fade-in">
-              <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-primary" />
-              </div>
-              <span className="text-lg font-bold text-foreground">Trip Mate</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Locate Me Button */}
-              <Button 
-                variant="glass" 
-                size="icon"
-                onClick={handleLocateMe}
-                disabled={isLocating}
-                className="animate-fade-in"
-              >
-                {isLocating ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Crosshair className="w-5 h-5" />
-                )}
-              </Button>
-
-              {!isMobile && (
-                <Button 
-                  variant="glass" 
-                  size="icon"
-                  onClick={() => setShowPanel(!showPanel)}
-                  className="animate-fade-in"
-                >
-                  {showPanel ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                </Button>
-              )}
-            </div>
-          </div>
-        </header>
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+          <Button 
+            variant="glass" 
+            size="icon"
+            onClick={handleLocateMe}
+            disabled={isLocating}
+            className="animate-fade-in"
+          >
+            {isLocating ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Crosshair className="w-5 h-5" />
+            )}
+          </Button>
+        </div>
       )}
 
       {/* GPS Status Indicator during navigation */}
