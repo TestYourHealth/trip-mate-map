@@ -271,7 +271,7 @@ const Index = () => {
   }, [stopTracking]);
 
   return (
-    <div className="h-screen w-full overflow-hidden relative">
+    <div style={{ position: 'absolute', inset: 0 }}>
       {/* Map Background */}
       <Map ref={mapRef} />
 
