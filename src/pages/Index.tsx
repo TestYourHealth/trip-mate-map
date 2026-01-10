@@ -271,7 +271,7 @@ const Index = () => {
   }, [stopTracking]);
 
   return (
-    <div style={{ position: 'absolute', inset: 0 }}>
+    <div className="h-full w-full relative">
       {/* Map Background */}
       <Map ref={mapRef} />
 
