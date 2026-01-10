@@ -15,20 +15,18 @@ const MainLayout = () => {
   if (isMapPage) {
     return (
       <SidebarProvider defaultOpen={!isMobile}>
-        <div className="min-h-screen flex w-full">
-          <AppSidebar />
-          <main className="flex-1 relative h-screen overflow-hidden">
-            {/* Floating sidebar trigger for map page */}
-            <div className="absolute top-4 left-4 z-50">
-              <SidebarTrigger asChild>
-                <Button variant="glass" size="icon" className="shadow-lg">
-                  <Menu className="w-5 h-5" />
-                </Button>
-              </SidebarTrigger>
-            </div>
-            <Outlet />
-          </main>
-        </div>
+        <AppSidebar />
+        <main style={{ flex: 1, height: '100svh', position: 'relative', overflow: 'hidden' }}>
+          {/* Floating sidebar trigger for map page */}
+          <div className="absolute top-4 left-4 z-50">
+            <SidebarTrigger asChild>
+              <Button variant="glass" size="icon" className="shadow-lg">
+                <Menu className="w-5 h-5" />
+              </Button>
+            </SidebarTrigger>
+          </div>
+          <Outlet />
+        </main>
       </SidebarProvider>
     );
   }
