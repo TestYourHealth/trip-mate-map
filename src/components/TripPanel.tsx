@@ -2,12 +2,13 @@ import React from 'react';
 import { MapPin, Navigation, Fuel, DollarSign, Clock, Car, RotateCcw, Play, ChevronUp, ChevronDown, Locate, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import VehicleSettings, { VehicleConfig } from './VehicleSettings';
+import VehicleSettingsPanel from './VehicleSettingsPanel';
 import WaypointInput from './WaypointInput';
 import RouteSelector from './RouteSelector';
 import DirectionsList from './DirectionsList';
 import { RouteInfo } from './Map';
 import { NavigationStep } from './NavigationPanel';
+import { VehicleConfig } from '@/types/vehicle';
 import { cn } from '@/lib/utils';
 
 interface TripPanelProps {
@@ -162,7 +163,7 @@ const TripPanel: React.FC<TripPanelProps> = ({
         </div>
 
         <div className="mb-4">
-          <VehicleSettings config={vehicleConfig} onConfigChange={onVehicleConfigChange} />
+          <VehicleSettingsPanel config={vehicleConfig} onConfigChange={onVehicleConfigChange} />
         </div>
 
         <div className="flex gap-2 mb-5">
