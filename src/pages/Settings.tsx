@@ -7,13 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 
 const Settings = () => {
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [voiceNav, setVoiceNav] = useState(false);
   const [autoReroute, setAutoReroute] = useState(true);
   const [distanceUnit, setDistanceUnit] = useState('km');
   const [language, setLanguage] = useState('en');
-
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-3 mb-8">

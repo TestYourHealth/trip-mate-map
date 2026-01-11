@@ -3,7 +3,7 @@ import { Crosshair, Loader2 } from 'lucide-react';
 import Map, { MapRef, RouteInfo } from '@/components/Map';
 import TripPanel from '@/components/TripPanel';
 import NavigationPanel, { NavigationStep } from '@/components/NavigationPanel';
-import { VehicleConfig } from '@/components/VehicleSettings';
+import { VehicleConfig } from '@/types/vehicle';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';

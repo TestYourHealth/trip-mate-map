@@ -15,14 +15,9 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
+import { VehicleConfig } from '@/types/vehicle';
 
-export interface VehicleConfig {
-  fuelType: 'petrol' | 'diesel' | 'cng';
-  fuelPrice: number;
-  mileage: number;
-}
-
-interface VehicleSettingsProps {
+interface VehicleSettingsPanelProps {
   config: VehicleConfig;
   onConfigChange: (config: VehicleConfig) => void;
 }
@@ -33,7 +28,7 @@ const defaultPrices = {
   cng: 85,
 };
 
-const VehicleSettings: React.FC<VehicleSettingsProps> = ({ config, onConfigChange }) => {
+const VehicleSettingsPanel: React.FC<VehicleSettingsPanelProps> = ({ config, onConfigChange }) => {
   const [isOpen, setIsOpen] = React.useState(false);
 
   const handleFuelTypeChange = (value: 'petrol' | 'diesel' | 'cng') => {
@@ -47,7 +42,7 @@ const VehicleSettings: React.FC<VehicleSettingsProps> = ({ config, onConfigChang
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <CollapsibleTrigger asChild>
-        <Button variant="ghost" className="w-full justify-between px-3 py-2 h-auto">
+        <Button variant="ghost" className="w-full justify-between px-3 py-2 h-auto hover:bg-muted/50">
           <div className="flex items-center gap-2">
             <Settings className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">Vehicle Settings</span>
@@ -103,4 +98,4 @@ const VehicleSettings: React.FC<VehicleSettingsProps> = ({ config, onConfigChang
   );
 };
 
-export default VehicleSettings;
+export default VehicleSettingsPanel;
