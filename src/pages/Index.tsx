@@ -272,8 +272,10 @@ const Index = () => {
 
   return (
     <div className="h-full w-full relative">
-      {/* Map Background */}
-      <Map ref={mapRef} />
+      {/* Map Background - lower z-index */}
+      <div className="absolute inset-0 z-0">
+        <Map ref={mapRef} />
+      </div>
 
       {/* Navigation Panel (when active) */}
       {isNavigating && (
@@ -292,13 +294,13 @@ const Index = () => {
 
       {/* Floating action buttons - visible when not navigating */}
       {!isNavigating && (
-        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        <div className="absolute top-4 right-4 z-[100] flex items-center gap-2">
           <Button 
-            variant="glass" 
+            variant="outline" 
             size="icon"
             onClick={handleLocateMe}
             disabled={isLocating}
-            className="animate-fade-in"
+            className="animate-fade-in bg-background shadow-md"
           >
             {isLocating ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -311,8 +313,8 @@ const Index = () => {
 
       {/* GPS Status Indicator during navigation */}
       {isNavigating && isTracking && position && (
-        <div className="absolute top-48 left-4 z-20">
-          <div className="glass-panel rounded-xl px-3 py-2 flex items-center gap-2 animate-fade-in">
+        <div className="absolute top-48 left-4 z-[100]">
+          <div className="bg-background rounded-xl px-3 py-2 flex items-center gap-2 animate-fade-in shadow-md border">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
             <span className="text-xs text-foreground">GPS Active</span>
             {position.speed && position.speed > 0 && (
@@ -330,10 +332,10 @@ const Index = () => {
       {/* Center on User Button during navigation */}
       {isNavigating && (
         <Button
-          variant="glass"
+          variant="outline"
           size="icon"
           onClick={() => mapRef.current?.centerOnUser()}
-          className="absolute bottom-24 right-4 z-20 animate-fade-in"
+          className="absolute bottom-24 right-4 z-[100] animate-fade-in bg-background shadow-md"
         >
           <Crosshair className="w-5 h-5" />
         </Button>
@@ -341,7 +343,7 @@ const Index = () => {
 
       {/* Trip Planning Panel - Desktop */}
       {!isMobile && showPanel && !isNavigating && (
-        <div className="absolute top-24 right-4 z-10">
+        <div className="absolute top-4 right-16 z-[100]">
           <TripPanel
             origin={origin}
             destination={destination}
@@ -370,7 +372,7 @@ const Index = () => {
 
       {/* Trip Planning Panel - Mobile (Bottom Sheet) */}
       {isMobile && !isNavigating && (
-        <div className="absolute bottom-0 left-0 right-0 z-10">
+        <div className="absolute bottom-0 left-0 right-0 z-[100]">
           <TripPanel
             origin={origin}
             destination={destination}
@@ -401,8 +403,8 @@ const Index = () => {
 
       {/* Quick Stats Footer - Desktop only, when not navigating */}
       {!isMobile && tripData && !isNavigating && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
-          <div className="glass-panel rounded-full px-6 py-3 flex items-center gap-6 animate-slide-up">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[100]">
+          <div className="bg-background rounded-full px-6 py-3 flex items-center gap-6 animate-slide-up shadow-lg border">
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground text-sm">Distance:</span>
               <span className="font-bold text-foreground">{tripData.distance} km</span>
