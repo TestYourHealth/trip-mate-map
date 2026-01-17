@@ -61,7 +61,7 @@ const VehicleSettingsPanel: React.FC<VehicleSettingsPanelProps> = ({ config, onC
             <SelectTrigger className="bg-muted/50 border-0">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[200] bg-background border shadow-lg">
               <SelectItem value="petrol">Petrol (₹{defaultPrices.petrol}/L)</SelectItem>
               <SelectItem value="diesel">Diesel (₹{defaultPrices.diesel}/L)</SelectItem>
               <SelectItem value="cng">CNG (₹{defaultPrices.cng}/kg)</SelectItem>
