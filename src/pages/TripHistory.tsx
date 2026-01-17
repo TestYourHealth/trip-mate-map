@@ -1,10 +1,23 @@
 import React from 'react';
 import { History, MapPin, Clock, Fuel, ArrowRight, Trash2 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
-interface Trip {
+export interface Trip {
   id: string;
   origin: string;
   destination: string;
@@ -14,41 +27,23 @@ interface Trip {
   date: string;
 }
 
-const mockTrips: Trip[] = [
-  {
-    id: '1',
-    origin: 'Mumbai',
-    destination: 'Pune',
-    distance: 148,
-    duration: 2.5,
-    cost: 1250,
-    date: '2025-01-08',
-  },
-  {
-    id: '2',
-    origin: 'Delhi',
-    destination: 'Agra',
-    distance: 233,
-    duration: 3.5,
-    cost: 1890,
-    date: '2025-01-05',
-  },
-  {
-    id: '3',
-    origin: 'Bangalore',
-    destination: 'Mysore',
-    distance: 145,
-    duration: 2.8,
-    cost: 1180,
-    date: '2025-01-02',
-  },
-];
-
 const TripHistory = () => {
+  const [trips, setTrips] = useLocalStorage<Trip[]>('tripHistory', []);
+
+  const handleDeleteTrip = (id: string) => {
+    setTrips(trips.filter(trip => trip.id !== id));
+    toast.success('Trip deleted');
+  };
+
+  const handleClearAll = () => {
+    setTrips([]);
+    toast.success('All trips cleared');
+  };
+
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
           <History className="w-6 h-6 text-primary" />
         </div>
         <div>
@@ -57,17 +52,19 @@ const TripHistory = () => {
         </div>
       </div>
 
-      {mockTrips.length === 0 ? (
+      {trips.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <History className="w-12 h-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-1">No trips yet</h3>
-            <p className="text-sm text-muted-foreground">Your trip history will appear here</p>
+            <p className="text-sm text-muted-foreground text-center max-w-xs">
+              Your trip history will appear here after you complete your first navigation
+            </p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
-          {mockTrips.map((trip) => (
+          {trips.map((trip) => (
             <Card key={trip.id} className="hover:bg-muted/50 transition-colors">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
@@ -79,9 +76,30 @@ const TripHistory = () => {
                       year: 'numeric'
                     })}
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Trip</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this trip from your history?
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => handleDeleteTrip(trip.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
                 
                 <div className="flex items-center gap-2 mb-4">
@@ -116,11 +134,32 @@ const TripHistory = () => {
         </div>
       )}
 
-      {mockTrips.length > 0 && (
-        <Button variant="outline" className="w-full text-destructive hover:bg-destructive/10">
-          <Trash2 className="w-4 h-4 mr-2" />
-          Clear All History
-        </Button>
+      {trips.length > 0 && (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" className="w-full text-destructive hover:bg-destructive/10">
+              <Trash2 className="w-4 h-4 mr-2" />
+              Clear All History
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Clear All Trip History</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete all {trips.length} trips from your history? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleClearAll}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Clear All
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </div>
   );

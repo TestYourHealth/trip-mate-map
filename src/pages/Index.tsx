@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGeolocation } from '@/hooks/useGeolocation';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { Trip } from '@/pages/TripHistory';
 
 const Index = () => {
   const mapRef = useRef<MapRef>(null);
@@ -49,6 +51,9 @@ const Index = () => {
     getCurrentPosition,
     error: geoError 
   } = useGeolocation();
+
+  // Trip history persistence
+  const [tripHistory, setTripHistory] = useLocalStorage<Trip[]>('tripHistory', []);
 
   // Update map with user location (including speed and accuracy)
   useEffect(() => {
@@ -117,6 +122,19 @@ const Index = () => {
       // Announce step change
       if (targetStepIndex === navigationSteps.length - 1) {
         toast.success('🎉 You have reached your destination!');
+        // Save trip to history
+        if (tripData && origin && destination) {
+          const newTrip: Trip = {
+            id: Date.now().toString(),
+            origin: origin.split(',')[0],
+            destination: destination.split(',')[0],
+            distance: tripData.distance,
+            duration: tripData.duration,
+            cost: tripData.totalCost,
+            date: new Date().toISOString(),
+          };
+          setTripHistory(prev => [newTrip, ...prev]);
+        }
         stopNavigation();
       }
     }

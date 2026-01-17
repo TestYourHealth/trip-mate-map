@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 export interface GeolocationPosition {
   lat: number;
@@ -24,7 +24,7 @@ export const useGeolocation = (options?: PositionOptions) => {
     isSupported: 'geolocation' in navigator
   });
 
-  const watchIdRef = { current: null as number | null };
+  const watchIdRef = React.useRef<number | null>(null);
 
   const startTracking = useCallback(() => {
     if (!state.isSupported) {

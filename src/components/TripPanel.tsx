@@ -94,28 +94,29 @@ const TripPanel: React.FC<TripPanelProps> = ({
         )}
       </div>
 
+      {/* Quick Stats on Mobile (collapsed view) - shown OUTSIDE the expandable div */}
+      {isMobile && tripData && !isExpanded && (
+        <div className="flex items-center justify-around py-3 border-t border-border">
+          <div className="text-center">
+            <p className="text-sm font-bold text-foreground">{tripData.distance} km</p>
+            <p className="text-xs text-muted-foreground">Distance</p>
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-bold text-foreground">{tripData.duration} hrs</p>
+            <p className="text-xs text-muted-foreground">Time</p>
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-bold text-primary">₹{tripData.totalCost}</p>
+            <p className="text-xs text-muted-foreground">Cost</p>
+          </div>
+        </div>
+      )}
+
       {/* Expandable Content */}
       <div className={cn(
         "transition-all duration-300 overflow-hidden",
         isMobile && !isExpanded ? "max-h-0 opacity-0" : "max-h-[2000px] opacity-100"
       )}>
-        {/* Quick Stats on Mobile (collapsed view) */}
-        {isMobile && tripData && !isExpanded && (
-          <div className="flex items-center justify-around py-2 border-t border-border">
-            <div className="text-center">
-              <p className="text-sm font-bold text-foreground">{tripData.distance} km</p>
-              <p className="text-xs text-muted-foreground">Distance</p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-bold text-foreground">{tripData.duration} hrs</p>
-              <p className="text-xs text-muted-foreground">Time</p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-bold text-primary">₹{tripData.totalCost}</p>
-              <p className="text-xs text-muted-foreground">Cost</p>
-            </div>
-          </div>
-        )}
 
         {/* Inputs */}
         <div className="space-y-3 mb-4">

@@ -1,22 +1,25 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Settings as SettingsIcon, Moon, Sun, Bell, MapPin, Volume2, Globe } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { useTheme } from '@/hooks/useTheme';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 const Settings = () => {
-  const [darkMode, setDarkMode] = useState(false);
-  const [notifications, setNotifications] = useState(true);
-  const [voiceNav, setVoiceNav] = useState(false);
-  const [autoReroute, setAutoReroute] = useState(true);
-  const [distanceUnit, setDistanceUnit] = useState('km');
-  const [language, setLanguage] = useState('en');
+  const { isDark, toggleTheme } = useTheme();
+  const [notifications, setNotifications] = useLocalStorage('notifications', true);
+  const [voiceNav, setVoiceNav] = useLocalStorage('voiceNav', false);
+  const [autoReroute, setAutoReroute] = useLocalStorage('autoReroute', true);
+  const [distanceUnit, setDistanceUnit] = useLocalStorage('distanceUnit', 'km');
+  const [language, setLanguage] = useLocalStorage('language', 'en');
+
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
           <SettingsIcon className="w-6 h-6 text-primary" />
         </div>
         <div>
@@ -29,7 +32,7 @@ const Settings = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            {darkMode ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            {isDark ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
             Appearance
           </CardTitle>
           <CardDescription>Customize how the app looks</CardDescription>
@@ -42,8 +45,8 @@ const Settings = () => {
             </Label>
             <Switch 
               id="dark-mode" 
-              checked={darkMode} 
-              onCheckedChange={setDarkMode}
+              checked={isDark} 
+              onCheckedChange={toggleTheme}
             />
           </div>
         </CardContent>
