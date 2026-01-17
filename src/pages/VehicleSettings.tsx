@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Car, Plus, Trash2, Edit2, Check, X, Save } from 'lucide-react';
+import { Car, Plus, Trash2, Edit2, X, Save } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,14 +28,24 @@ interface Vehicle {
   isDefault: boolean;
 }
 
+const defaultVehicles: Vehicle[] = [
+  { id: '1', name: 'My Car', fuelType: 'petrol', mileage: 15, isDefault: true },
+];
+
 const VehicleSettings = () => {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([
-    { id: '1', name: 'My Car', fuelType: 'petrol', mileage: 15, isDefault: true },
-  ]);
+  const [vehicles, setVehicles] = useLocalStorage<Vehicle[]>('vehicles', defaultVehicles);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [newVehicle, setNewVehicle] = useState<{ name: string; fuelType: Vehicle['fuelType']; mileage: number }>({ name: '', fuelType: 'petrol', mileage: 15 });
-  const [editVehicle, setEditVehicle] = useState<{ name: string; fuelType: Vehicle['fuelType']; mileage: number }>({ name: '', fuelType: 'petrol', mileage: 15 });
+  const [newVehicle, setNewVehicle] = useState<{ name: string; fuelType: Vehicle['fuelType']; mileage: number }>({ 
+    name: '', 
+    fuelType: 'petrol', 
+    mileage: 15 
+  });
+  const [editVehicle, setEditVehicle] = useState<{ name: string; fuelType: Vehicle['fuelType']; mileage: number }>({ 
+    name: '', 
+    fuelType: 'petrol', 
+    mileage: 15 
+  });
 
   const handleAddVehicle = () => {
     if (!newVehicle.name.trim()) {
@@ -46,14 +57,15 @@ const VehicleSettings = () => {
       return;
     }
     
-    setVehicles([
+    const updatedVehicles = [
       ...vehicles,
       {
         id: Date.now().toString(),
         ...newVehicle,
         isDefault: vehicles.length === 0,
       },
-    ]);
+    ];
+    setVehicles(updatedVehicles);
     setNewVehicle({ name: '', fuelType: 'petrol', mileage: 15 });
     setIsAdding(false);
     toast.success('Vehicle added successfully');
@@ -78,11 +90,12 @@ const VehicleSettings = () => {
       return;
     }
 
-    setVehicles(vehicles.map(v => 
+    const updatedVehicles = vehicles.map(v => 
       v.id === id 
         ? { ...v, name: editVehicle.name, fuelType: editVehicle.fuelType, mileage: editVehicle.mileage }
         : v
-    ));
+    );
+    setVehicles(updatedVehicles);
     setEditingId(null);
     toast.success('Vehicle updated successfully');
   };
@@ -92,7 +105,8 @@ const VehicleSettings = () => {
   };
 
   const handleSetDefault = (id: string) => {
-    setVehicles(vehicles.map(v => ({ ...v, isDefault: v.id === id })));
+    const updatedVehicles = vehicles.map(v => ({ ...v, isDefault: v.id === id }));
+    setVehicles(updatedVehicles);
     toast.success('Default vehicle updated');
   };
 
@@ -165,7 +179,7 @@ const VehicleSettings = () => {
                       <Label>Fuel Type</Label>
                       <Select 
                         value={editVehicle.fuelType} 
-                        onValueChange={(v: any) => setEditVehicle({ ...editVehicle, fuelType: v })}
+                        onValueChange={(v: Vehicle['fuelType']) => setEditVehicle({ ...editVehicle, fuelType: v })}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -222,7 +236,6 @@ const VehicleSettings = () => {
                         size="sm"
                         onClick={() => handleSetDefault(vehicle.id)}
                       >
-                        <Check className="w-4 h-4 mr-1" />
                         Set Default
                       </Button>
                     )}
@@ -291,7 +304,7 @@ const VehicleSettings = () => {
                 <Label htmlFor="fuel-type">Fuel Type</Label>
                 <Select 
                   value={newVehicle.fuelType} 
-                  onValueChange={(v: any) => setNewVehicle({ ...newVehicle, fuelType: v })}
+                  onValueChange={(v: Vehicle['fuelType']) => setNewVehicle({ ...newVehicle, fuelType: v })}
                 >
                   <SelectTrigger>
                     <SelectValue />

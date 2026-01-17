@@ -128,7 +128,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 
       {/* Next Step Preview */}
       {nextStep && (
-        <div className="glass-panel mx-4 -mt-2 rounded-xl p-3 flex items-center gap-3">
+        <div className="bg-background border shadow-md mx-4 -mt-2 rounded-xl p-3 flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
             {getDirectionIcon(nextStep.type, 'sm')}
           </div>
@@ -141,7 +141,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
       )}
 
       {/* Bottom Stats Bar */}
-      <div className="glass-panel mx-4 mt-3 rounded-xl p-3 flex items-center justify-around">
+      <div className="bg-background border shadow-md mx-4 mt-3 rounded-xl p-3 flex items-center justify-around">
         <div className="text-center">
           <p className="text-lg font-bold text-foreground">{formatTime(estimatedTime)}</p>
           <p className="text-xs text-muted-foreground">ETA</p>
