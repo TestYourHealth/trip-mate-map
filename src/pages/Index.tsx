@@ -2,7 +2,8 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Crosshair, Loader2 } from 'lucide-react';
 import Map, { MapRef, RouteInfo } from '@/components/Map';
 import TripPanel from '@/components/TripPanel';
-import NavigationPanel, { NavigationStep } from '@/components/NavigationPanel';
+import DriverNavigationView from '@/components/DriverNavigationView';
+import { NavigationStep } from '@/components/NavigationPanel';
 import { VehicleConfig } from '@/types/vehicle';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -290,27 +291,30 @@ const Index = () => {
 
   return (
     <div className="h-full w-full relative">
-      {/* Map Background - lower z-index */}
+      {/* Map Background - Full Screen */}
       <div className="absolute inset-0 z-0">
         <Map ref={mapRef} />
       </div>
 
-      {/* Navigation Panel (when active) */}
+      {/* Full-Screen Driver Navigation View (when navigating) */}
       {isNavigating && (
-        <NavigationPanel
+        <DriverNavigationView
           steps={navigationSteps}
           currentStepIndex={currentStepIndex}
           totalDistance={tripData?.distance || 0}
           remainingDistance={tripData ? tripData.distance * ((navigationSteps.length - currentStepIndex) / navigationSteps.length) : 0}
           estimatedTime={tripData ? tripData.duration * ((navigationSteps.length - currentStepIndex) / navigationSteps.length) : 0}
-          isActive={isNavigating}
+          speed={position?.speed ?? null}
+          accuracy={position?.accuracy ?? null}
+          isTracking={isTracking}
           isMuted={isMuted}
           onClose={stopNavigation}
           onToggleMute={() => setIsMuted(!isMuted)}
+          onCenterUser={() => mapRef.current?.centerOnUser()}
         />
       )}
 
-      {/* Floating action buttons - visible when not navigating */}
+      {/* Floating action button - visible when not navigating */}
       {!isNavigating && (
         <div className="absolute top-4 right-4 z-[100] flex items-center gap-2">
           <Button 
@@ -327,36 +331,6 @@ const Index = () => {
             )}
           </Button>
         </div>
-      )}
-
-      {/* GPS Status Indicator during navigation */}
-      {isNavigating && isTracking && position && (
-        <div className="absolute top-48 left-4 z-[100]">
-          <div className="bg-background rounded-xl px-3 py-2 flex items-center gap-2 animate-fade-in shadow-md border">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-xs text-foreground">GPS Active</span>
-            {position.speed && position.speed > 0 && (
-              <>
-                <span className="text-xs text-muted-foreground">•</span>
-                <span className="text-xs text-primary font-medium">
-                  {Math.round(position.speed * 3.6)} km/h
-                </span>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Center on User Button during navigation */}
-      {isNavigating && (
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => mapRef.current?.centerOnUser()}
-          className="absolute bottom-24 right-4 z-[100] animate-fade-in bg-background shadow-md"
-        >
-          <Crosshair className="w-5 h-5" />
-        </Button>
       )}
 
       {/* Trip Planning Panel - Desktop */}

@@ -1,11 +1,11 @@
 import React from 'react';
-import { MapPin, Navigation, Fuel, DollarSign, Clock, Car, RotateCcw, Play, ChevronUp, ChevronDown, Locate, Loader2 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { MapPin, Navigation, Fuel, DollarSign, Clock, Car, RotateCcw, ChevronUp, ChevronDown, Locate, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import VehicleSettingsPanel from './VehicleSettingsPanel';
 import WaypointInput from './WaypointInput';
 import RouteSelector from './RouteSelector';
 import DirectionsList from './DirectionsList';
+import LocationAutocomplete from './LocationAutocomplete';
 import { RouteInfo } from './Map';
 import { NavigationStep } from './NavigationPanel';
 import { VehicleConfig } from '@/types/vehicle';
@@ -118,33 +118,31 @@ const TripPanel: React.FC<TripPanelProps> = ({
         isMobile && !isExpanded ? "max-h-0 opacity-0" : "max-h-[2000px] opacity-100"
       )}>
 
-        {/* Inputs */}
+        {/* Inputs with Autocomplete */}
         <div className="space-y-3 mb-4">
-          <div className="relative">
-            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
-            <Input
-              placeholder="Starting point (e.g., Delhi)"
-              value={origin}
-              onChange={(e) => onOriginChange(e.target.value)}
-              className="pl-10 pr-12 bg-muted/50 border-0 focus-visible:ring-primary h-12"
-            />
-            {onUseCurrentLocation && (
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={onUseCurrentLocation}
-                disabled={isLocating}
-                className="absolute right-2 top-1/2 -translate-y-1/2"
-                title="Use current location"
-              >
-                {isLocating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Locate className="w-4 h-4 text-primary" />
-                )}
-              </Button>
-            )}
-          </div>
+          <LocationAutocomplete
+            value={origin}
+            onChange={onOriginChange}
+            placeholder="Starting point (e.g., Delhi)"
+            icon={<MapPin className="w-4 h-4 text-green-500" />}
+            rightElement={
+              onUseCurrentLocation && (
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={onUseCurrentLocation}
+                  disabled={isLocating}
+                  title="Use current location"
+                >
+                  {isLocating ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Locate className="w-4 h-4 text-primary" />
+                  )}
+                </Button>
+              )
+            }
+          />
           
           <div className="relative flex items-center">
             <div className="absolute left-5 w-0.5 h-full bg-border" />
@@ -152,47 +150,58 @@ const TripPanel: React.FC<TripPanelProps> = ({
 
           <WaypointInput waypoints={waypoints} onWaypointsChange={onWaypointsChange} />
 
-          <div className="relative">
-            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500" />
-            <Input
-              placeholder="Destination (e.g., Mumbai)"
-              value={destination}
-              onChange={(e) => onDestinationChange(e.target.value)}
-              className="pl-10 bg-muted/50 border-0 focus-visible:ring-primary h-12"
-            />
-          </div>
+          <LocationAutocomplete
+            value={destination}
+            onChange={onDestinationChange}
+            placeholder="Destination (e.g., Mumbai)"
+            icon={<MapPin className="w-4 h-4 text-red-500" />}
+          />
         </div>
 
         <div className="mb-4">
           <VehicleSettingsPanel config={vehicleConfig} onConfigChange={onVehicleConfigChange} />
         </div>
 
+        {/* Single Action Button */}
         <div className="flex gap-2 mb-5">
-          <Button 
-            onClick={onCalculate}
-            disabled={!origin || !destination || isCalculating}
-            variant="glow"
-            className="flex-1 h-12"
-          >
-            {isCalculating ? (
-              <span className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                Calculating...
-              </span>
-            ) : (
-              'Navigate करें'
-            )}
-          </Button>
-          
-          {tripData && (
+          {!tripData ? (
             <Button 
-              onClick={onClear}
-              variant="glass"
-              size="icon"
-              className="h-12 w-12"
+              onClick={onCalculate}
+              disabled={!origin || !destination || isCalculating}
+              variant="glow"
+              className="flex-1 h-14 text-base"
             >
-              <RotateCcw className="w-4 h-4" />
+              {isCalculating ? (
+                <span className="flex items-center gap-2">
+                  <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                  Route ढूंढ रहा है...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Navigation className="w-5 h-5" />
+                  Route ढूंढें
+                </span>
+              )}
             </Button>
+          ) : (
+            <>
+              <Button 
+                onClick={onStartNavigation}
+                variant="default"
+                className="flex-1 h-14 text-base bg-green-600 hover:bg-green-700 text-white"
+              >
+                <Navigation className="w-5 h-5 mr-2" />
+                Navigation शुरू करें
+              </Button>
+              <Button 
+                onClick={onClear}
+                variant="outline"
+                size="icon"
+                className="h-14 w-14"
+              >
+                <RotateCcw className="w-5 h-5" />
+              </Button>
+            </>
           )}
         </div>
 
@@ -238,17 +247,6 @@ const TripPanel: React.FC<TripPanelProps> = ({
               </div>
             )}
             
-            {/* Start Navigation Button */}
-            {tripData && !isNavigating && (
-              <Button 
-                onClick={onStartNavigation}
-                variant="default"
-                className="w-full h-12 bg-green-600 hover:bg-green-700 text-white"
-              >
-                <Play className="w-4 h-4 mr-2" />
-                Start Navigation
-              </Button>
-            )}
             
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-muted/30 rounded-xl p-3">

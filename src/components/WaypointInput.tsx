@@ -1,7 +1,7 @@
 import React from 'react';
 import { MapPin, Plus, X } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import LocationAutocomplete from './LocationAutocomplete';
 
 interface WaypointInputProps {
   waypoints: string[];
@@ -27,19 +27,18 @@ const WaypointInput: React.FC<WaypointInputProps> = ({ waypoints, onWaypointsCha
     <div className="space-y-2">
       {waypoints.map((waypoint, index) => (
         <div key={index} className="relative flex items-center gap-2 animate-fade-in">
-          <div className="relative flex-1">
-            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" />
-            <Input
-              placeholder={`Stop ${index + 1} (e.g., Jaipur)`}
+          <div className="flex-1">
+            <LocationAutocomplete
               value={waypoint}
-              onChange={(e) => updateWaypoint(index, e.target.value)}
-              className="pl-10 pr-10 bg-muted/50 border-0 focus-visible:ring-primary"
+              onChange={(value) => updateWaypoint(index, value)}
+              placeholder={`Stop ${index + 1} (e.g., Jaipur)`}
+              icon={<MapPin className="w-4 h-4 text-amber-500" />}
             />
           </div>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
             onClick={() => removeWaypoint(index)}
           >
             <X className="w-4 h-4" />
@@ -55,7 +54,7 @@ const WaypointInput: React.FC<WaypointInputProps> = ({ waypoints, onWaypointsCha
           onClick={addWaypoint}
         >
           <Plus className="w-4 h-4 mr-2" />
-          Add Stop
+          Stop जोड़ें
         </Button>
       )}
     </div>
