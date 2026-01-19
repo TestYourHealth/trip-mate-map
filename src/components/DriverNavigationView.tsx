@@ -1,0 +1,218 @@
+import React from 'react';
+import { X, Volume2, VolumeX, Navigation, Crosshair, ChevronUp, ChevronDown, CornerUpLeft, CornerUpRight, ArrowUp, MapPin } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { NavigationStep } from './NavigationPanel';
+import { cn } from '@/lib/utils';
+
+interface DriverNavigationViewProps {
+  steps: NavigationStep[];
+  currentStepIndex: number;
+  totalDistance: number;
+  remainingDistance: number;
+  estimatedTime: number;
+  speed: number | null;
+  accuracy: number | null;
+  isTracking: boolean;
+  isMuted: boolean;
+  onClose: () => void;
+  onToggleMute: () => void;
+  onCenterUser: () => void;
+}
+
+const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
+  steps,
+  currentStepIndex,
+  totalDistance,
+  remainingDistance,
+  estimatedTime,
+  speed,
+  accuracy,
+  isTracking,
+  isMuted,
+  onClose,
+  onToggleMute,
+  onCenterUser
+}) => {
+  const currentStep = steps[currentStepIndex];
+  const nextStep = steps[currentStepIndex + 1];
+
+  const getDirectionIcon = (type: NavigationStep['type']) => {
+    const iconClass = "w-16 h-16 text-white";
+    switch (type) {
+      case 'left':
+        return <CornerUpLeft className={iconClass} />;
+      case 'right':
+        return <CornerUpRight className={iconClass} />;
+      case 'slight-left':
+        return <ChevronUp className={cn(iconClass, "rotate-[-30deg]")} />;
+      case 'slight-right':
+        return <ChevronUp className={cn(iconClass, "rotate-[30deg]")} />;
+      case 'destination':
+        return <MapPin className={iconClass} />;
+      default:
+        return <ArrowUp className={iconClass} />;
+    }
+  };
+
+  const formatDistance = (meters: number) => {
+    if (meters < 1000) return `${Math.round(meters)} m`;
+    return `${(meters / 1000).toFixed(1)} km`;
+  };
+
+  const formatTime = (hours: number) => {
+    const mins = Math.round(hours * 60);
+    if (mins < 60) return `${mins} min`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${h}h ${m}m`;
+  };
+
+  const getETA = () => {
+    const now = new Date();
+    const eta = new Date(now.getTime() + estimatedTime * 60 * 60 * 1000);
+    return eta.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  if (!currentStep) return null;
+
+  return (
+    <div className="fixed inset-0 z-[1000] pointer-events-none">
+      {/* Top Navigation Card - Current Direction */}
+      <div className="absolute top-0 left-0 right-0 pointer-events-auto">
+        <div className="bg-primary m-3 rounded-2xl shadow-2xl overflow-hidden">
+          {/* Main Direction */}
+          <div className="p-4 flex items-center gap-4">
+            <div className="shrink-0">
+              {getDirectionIcon(currentStep.type)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-3xl font-bold text-white mb-1">
+                {formatDistance(currentStep.distance)}
+              </p>
+              <p className="text-white/90 text-lg font-medium line-clamp-2">
+                {currentStep.instruction}
+              </p>
+            </div>
+          </div>
+
+          {/* Next Turn Preview */}
+          {nextStep && (
+            <div className="bg-primary-foreground/10 px-4 py-3 flex items-center gap-3 border-t border-white/20">
+              <span className="text-white/70 text-sm">Then</span>
+              <div className="w-8 h-8 flex items-center justify-center">
+                {getDirectionIcon(nextStep.type)}
+              </div>
+              <span className="text-white text-sm font-medium truncate flex-1">
+                {nextStep.instruction}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Control Buttons Row */}
+        <div className="flex justify-between px-3 mt-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onClose}
+            className="bg-background/95 backdrop-blur shadow-lg h-12 w-12"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onToggleMute}
+            className="bg-background/95 backdrop-blur shadow-lg h-12 w-12"
+          >
+            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+          </Button>
+        </div>
+      </div>
+
+      {/* Speed Indicator - Left Side */}
+      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-auto">
+        <div className="bg-background/95 backdrop-blur rounded-2xl shadow-lg p-4 text-center min-w-[80px]">
+          <p className="text-3xl font-bold text-foreground">
+            {speed && speed > 0 ? Math.round(speed * 3.6) : '0'}
+          </p>
+          <p className="text-xs text-muted-foreground font-medium">km/h</p>
+        </div>
+      </div>
+
+      {/* GPS & Center Button - Right Side */}
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-auto flex flex-col gap-3">
+        {/* GPS Status */}
+        <div className="bg-background/95 backdrop-blur rounded-xl shadow-lg px-3 py-2 flex items-center gap-2">
+          <div className={cn(
+            "w-3 h-3 rounded-full",
+            isTracking ? "bg-green-500 animate-pulse" : "bg-red-500"
+          )} />
+          <span className="text-xs font-medium text-foreground">
+            {isTracking ? 'GPS' : 'No GPS'}
+          </span>
+        </div>
+
+        {/* Center on User Button */}
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={onCenterUser}
+          className="bg-background/95 backdrop-blur shadow-lg h-12 w-12"
+        >
+          <Crosshair className="w-5 h-5" />
+        </Button>
+      </div>
+
+      {/* Bottom Stats Bar */}
+      <div className="absolute bottom-0 left-0 right-0 pointer-events-auto">
+        <div className="bg-background/95 backdrop-blur m-3 rounded-2xl shadow-2xl">
+          <div className="flex items-center justify-around py-4 px-2">
+            {/* ETA */}
+            <div className="text-center flex-1">
+              <p className="text-2xl font-bold text-primary">{getETA()}</p>
+              <p className="text-xs text-muted-foreground font-medium">ETA</p>
+            </div>
+
+            <div className="w-px h-10 bg-border" />
+
+            {/* Remaining Distance */}
+            <div className="text-center flex-1">
+              <p className="text-2xl font-bold text-foreground">
+                {remainingDistance >= 1 
+                  ? `${remainingDistance.toFixed(1)} km`
+                  : `${Math.round(remainingDistance * 1000)} m`
+                }
+              </p>
+              <p className="text-xs text-muted-foreground font-medium">Distance</p>
+            </div>
+
+            <div className="w-px h-10 bg-border" />
+
+            {/* Remaining Time */}
+            <div className="text-center flex-1">
+              <p className="text-2xl font-bold text-foreground">{formatTime(estimatedTime)}</p>
+              <p className="text-xs text-muted-foreground font-medium">Time Left</p>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="px-4 pb-4">
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary rounded-full transition-all duration-500"
+                style={{ width: `${((currentStepIndex + 1) / steps.length) * 100}%` }}
+              />
+            </div>
+            <p className="text-center text-xs text-muted-foreground mt-1">
+              Step {currentStepIndex + 1} of {steps.length}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DriverNavigationView;
