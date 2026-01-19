@@ -31,9 +31,14 @@ export interface MapRef {
   updateUserLocation: (lat: number, lng: number, heading?: number | null, speed?: number | null, accuracy?: number) => void;
   centerOnUser: () => void;
   getRouteCoordinates: () => L.LatLng[] | null;
+  setNavigationMode: (isNavigating: boolean) => void;
 }
 
-const Map = forwardRef<MapRef>((_, ref) => {
+interface MapProps {
+  isNavigating?: boolean;
+}
+
+const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false }, ref) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const routingControl = useRef<L.Routing.Control | null>(null);
@@ -409,11 +414,33 @@ const Map = forwardRef<MapRef>((_, ref) => {
     centerOnUser: () => {
       if (map.current && userMarker.current) {
         const latlng = userMarker.current.getLatLng();
-        map.current.setView(latlng, 16, { animate: true });
+        map.current.setView(latlng, 17, { animate: true });
       }
     },
     getRouteCoordinates: () => {
       return routeCoordinates.current;
+    },
+    setNavigationMode: (navigating: boolean) => {
+      if (!map.current) return;
+      
+      const container = map.current.getContainer();
+      const zoomControl = container.querySelector('.leaflet-control-zoom');
+      const attribution = container.querySelector('.leaflet-control-attribution');
+      
+      if (navigating) {
+        // Hide controls during navigation
+        if (zoomControl) (zoomControl as HTMLElement).style.display = 'none';
+        if (attribution) (attribution as HTMLElement).style.display = 'none';
+        // Zoom in for navigation
+        if (userMarker.current) {
+          const latlng = userMarker.current.getLatLng();
+          map.current.setView(latlng, 17, { animate: true });
+        }
+      } else {
+        // Show controls when not navigating
+        if (zoomControl) (zoomControl as HTMLElement).style.display = '';
+        if (attribution) (attribution as HTMLElement).style.display = '';
+      }
     }
   }));
 
@@ -452,9 +479,29 @@ const Map = forwardRef<MapRef>((_, ref) => {
     };
   }, []);
 
+  // Handle navigation mode changes
+  useEffect(() => {
+    if (!map.current) return;
+    
+    const container = map.current.getContainer();
+    const zoomControl = container.querySelector('.leaflet-control-zoom');
+    const attribution = container.querySelector('.leaflet-control-attribution');
+    
+    if (isNavigating) {
+      if (zoomControl) (zoomControl as HTMLElement).style.display = 'none';
+      if (attribution) (attribution as HTMLElement).style.display = 'none';
+    } else {
+      if (zoomControl) (zoomControl as HTMLElement).style.display = '';
+      if (attribution) (attribution as HTMLElement).style.display = '';
+    }
+  }, [isNavigating]);
+
   return (
     <div className="h-full w-full relative">
-      <div ref={mapContainer} className="h-full w-full [&_.leaflet-pane]:z-[1] [&_.leaflet-control]:z-[1]" />
+      <div 
+        ref={mapContainer} 
+        className="h-full w-full [&_.leaflet-pane]:z-[1] [&_.leaflet-control]:z-[1]" 
+      />
       {!isLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-background z-[2]">
           <div className="flex flex-col items-center gap-3">

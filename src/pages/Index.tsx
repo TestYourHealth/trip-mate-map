@@ -293,7 +293,7 @@ const Index = () => {
     <div className="h-full w-full relative">
       {/* Map Background - Full Screen */}
       <div className="absolute inset-0 z-0">
-        <Map ref={mapRef} />
+        <Map ref={mapRef} isNavigating={isNavigating} />
       </div>
 
       {/* Full-Screen Driver Navigation View (when navigating) */}
