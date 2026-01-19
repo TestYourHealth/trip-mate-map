@@ -1,8 +1,104 @@
 import React from 'react';
-import { X, Volume2, VolumeX, Navigation, Crosshair, ChevronUp, ChevronDown, CornerUpLeft, CornerUpRight, ArrowUp, MapPin } from 'lucide-react';
+import { X, Volume2, VolumeX, Navigation, Crosshair, ChevronUp, ChevronDown, CornerUpLeft, CornerUpRight, ArrowUp, MapPin, MoveUp, MoveUpLeft, MoveUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NavigationStep } from './NavigationPanel';
 import { cn } from '@/lib/utils';
+
+// Lane guidance types
+interface Lane {
+  direction: 'left' | 'straight' | 'right' | 'slight-left' | 'slight-right';
+  isRecommended: boolean;
+}
+
+// Function to get lane guidance based on turn type
+const getLaneGuidance = (turnType: NavigationStep['type']): Lane[] => {
+  switch (turnType) {
+    case 'left':
+      return [
+        { direction: 'left', isRecommended: true },
+        { direction: 'straight', isRecommended: false },
+        { direction: 'straight', isRecommended: false },
+      ];
+    case 'right':
+      return [
+        { direction: 'straight', isRecommended: false },
+        { direction: 'straight', isRecommended: false },
+        { direction: 'right', isRecommended: true },
+      ];
+    case 'slight-left':
+      return [
+        { direction: 'slight-left', isRecommended: true },
+        { direction: 'straight', isRecommended: true },
+        { direction: 'straight', isRecommended: false },
+      ];
+    case 'slight-right':
+      return [
+        { direction: 'straight', isRecommended: false },
+        { direction: 'straight', isRecommended: true },
+        { direction: 'slight-right', isRecommended: true },
+      ];
+    case 'straight':
+      return [
+        { direction: 'straight', isRecommended: false },
+        { direction: 'straight', isRecommended: true },
+        { direction: 'straight', isRecommended: false },
+      ];
+    default:
+      return [];
+  }
+};
+
+// Lane arrow component
+const LaneArrow: React.FC<{ lane: Lane }> = ({ lane }) => {
+  const iconClass = cn(
+    "w-6 h-6 transition-all",
+    lane.isRecommended ? "text-primary" : "text-muted-foreground/40"
+  );
+
+  const getArrowIcon = () => {
+    switch (lane.direction) {
+      case 'left':
+        return <MoveUpLeft className={iconClass} />;
+      case 'right':
+        return <MoveUpRight className={iconClass} />;
+      case 'slight-left':
+        return <MoveUp className={cn(iconClass, "rotate-[-20deg]")} />;
+      case 'slight-right':
+        return <MoveUp className={cn(iconClass, "rotate-[20deg]")} />;
+      default:
+        return <MoveUp className={iconClass} />;
+    }
+  };
+
+  return (
+    <div className={cn(
+      "flex flex-col items-center justify-center px-2 py-1 rounded-md border-2 transition-all",
+      lane.isRecommended 
+        ? "border-primary bg-primary/20" 
+        : "border-muted-foreground/20 bg-muted/10"
+    )}>
+      {getArrowIcon()}
+    </div>
+  );
+};
+
+// Lane Guidance Display Component
+const LaneGuidance: React.FC<{ turnType: NavigationStep['type'] }> = ({ turnType }) => {
+  const lanes = getLaneGuidance(turnType);
+  
+  if (lanes.length === 0) return null;
+
+  return (
+    <div className="flex items-center justify-center gap-1 py-2 px-3 bg-background/90 backdrop-blur rounded-lg">
+      <span className="text-xs text-muted-foreground mr-2 font-medium">Lane</span>
+      <div className="flex gap-1">
+        {lanes.map((lane, index) => (
+          <LaneArrow key={index} lane={lane} />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 interface DriverNavigationViewProps {
   steps: NavigationStep[];
@@ -94,6 +190,13 @@ const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
               </p>
             </div>
           </div>
+
+          {/* Lane Guidance - Shows when approaching turn (within 500m) */}
+          {currentStep.distance < 500 && currentStep.type !== 'destination' && currentStep.type !== 'start' && (
+            <div className="px-4 pb-3 flex justify-center">
+              <LaneGuidance turnType={currentStep.type} />
+            </div>
+          )}
 
           {/* Next Turn Preview */}
           {nextStep && (
