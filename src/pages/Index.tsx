@@ -20,11 +20,53 @@ const Index = () => {
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [waypoints, setWaypoints] = useState<string[]>([]);
-  const [vehicleConfig, setVehicleConfig] = useState<VehicleConfig>({
-    fuelType: 'petrol',
-    fuelPrice: 105,
-    mileage: 15,
-  });
+  // Get default vehicle from localStorage
+  const getDefaultVehicleConfig = (): VehicleConfig => {
+    try {
+      const vehiclesData = localStorage.getItem('vehicles');
+      const fuelPricesData = localStorage.getItem('fuelPrices');
+      
+      const vehicles = vehiclesData ? JSON.parse(vehiclesData) : [];
+      const fuelPrices = fuelPricesData ? JSON.parse(fuelPricesData) : { petrol: 105, diesel: 92, cng: 85 };
+      
+      const defaultVehicle = vehicles.find((v: any) => v.isDefault) || vehicles[0];
+      
+      if (defaultVehicle) {
+        return {
+          fuelType: defaultVehicle.fuelType,
+          fuelPrice: fuelPrices[defaultVehicle.fuelType] || 105,
+          mileage: defaultVehicle.mileage,
+        };
+      }
+    } catch (e) {
+      console.warn('Error reading vehicle config:', e);
+    }
+    return { fuelType: 'petrol', fuelPrice: 105, mileage: 15 };
+  };
+
+  const [vehicleConfig, setVehicleConfig] = useState<VehicleConfig>(getDefaultVehicleConfig);
+
+  // Sync vehicleConfig when localStorage changes (from other tabs or settings pages)
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'vehicles' || event.key === 'fuelPrices') {
+        setVehicleConfig(getDefaultVehicleConfig());
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Also check for updates when component mounts or regains focus
+  useEffect(() => {
+    const handleFocus = () => {
+      setVehicleConfig(getDefaultVehicleConfig());
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
   const [isCalculating, setIsCalculating] = useState(false);
   const [routes, setRoutes] = useState<RouteInfo[]>([]);
   const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
