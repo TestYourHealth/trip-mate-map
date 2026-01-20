@@ -252,45 +252,42 @@ const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
         </Button>
       </div>
 
-      {/* Bottom Stats Bar */}
+      {/* Bottom Stats Bar - Compact */}
       <div className="absolute bottom-0 left-0 right-0 pointer-events-auto">
-        <div className="bg-background/95 backdrop-blur m-3 rounded-2xl shadow-2xl">
-          <div className="flex items-center justify-around py-4 px-2">
+        <div className="bg-background/95 backdrop-blur mx-2 mb-2 rounded-xl shadow-xl">
+          <div className="flex items-center justify-around py-2 px-1">
             {/* ETA */}
             <div className="text-center flex-1">
-              <p className="text-2xl font-bold text-primary">{getETA()}</p>
-              <p className="text-xs text-muted-foreground font-medium">ETA</p>
+              <p className="text-lg font-bold text-primary">{getETA()}</p>
+              <p className="text-[10px] text-muted-foreground">ETA</p>
             </div>
 
-            <div className="w-px h-10 bg-border" />
+            <div className="w-px h-6 bg-border" />
 
             {/* Remaining Distance */}
             <div className="text-center flex-1">
-              <p className="text-2xl font-bold text-foreground">
+              <p className="text-lg font-bold text-foreground">
                 {remainingDistance >= 1 ? `${remainingDistance.toFixed(1)} km` : `${Math.round(remainingDistance * 1000)} m`}
               </p>
-              <p className="text-xs text-muted-foreground font-medium">Distance</p>
+              <p className="text-[10px] text-muted-foreground">Distance</p>
             </div>
 
-            <div className="w-px h-10 bg-border" />
+            <div className="w-px h-6 bg-border" />
 
             {/* Remaining Time */}
             <div className="text-center flex-1">
-              <p className="text-2xl font-bold text-foreground">{formatTime(estimatedTime)}</p>
-              <p className="text-xs text-muted-foreground font-medium">Time Left</p>
+              <p className="text-lg font-bold text-foreground">{formatTime(estimatedTime)}</p>
+              <p className="text-[10px] text-muted-foreground">Time</p>
             </div>
           </div>
 
-          {/* Progress Bar */}
-          <div className="px-4 pb-4">
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
+          {/* Progress Bar - Compact */}
+          <div className="px-3 pb-2">
+            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
               <div className="h-full bg-primary rounded-full transition-all duration-500" style={{
               width: `${(currentStepIndex + 1) / steps.length * 100}%`
             }} />
             </div>
-            <p className="text-center text-xs text-muted-foreground mt-1">
-              Step {currentStepIndex + 1} of {steps.length}
-            </p>
           </div>
         </div>
       </div>
