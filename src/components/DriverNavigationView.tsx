@@ -14,47 +14,72 @@ interface Lane {
 const getLaneGuidance = (turnType: NavigationStep['type']): Lane[] => {
   switch (turnType) {
     case 'left':
-      return [
-        { direction: 'left', isRecommended: true },
-        { direction: 'straight', isRecommended: false },
-        { direction: 'straight', isRecommended: false },
-      ];
+      return [{
+        direction: 'left',
+        isRecommended: true
+      }, {
+        direction: 'straight',
+        isRecommended: false
+      }, {
+        direction: 'straight',
+        isRecommended: false
+      }];
     case 'right':
-      return [
-        { direction: 'straight', isRecommended: false },
-        { direction: 'straight', isRecommended: false },
-        { direction: 'right', isRecommended: true },
-      ];
+      return [{
+        direction: 'straight',
+        isRecommended: false
+      }, {
+        direction: 'straight',
+        isRecommended: false
+      }, {
+        direction: 'right',
+        isRecommended: true
+      }];
     case 'slight-left':
-      return [
-        { direction: 'slight-left', isRecommended: true },
-        { direction: 'straight', isRecommended: true },
-        { direction: 'straight', isRecommended: false },
-      ];
+      return [{
+        direction: 'slight-left',
+        isRecommended: true
+      }, {
+        direction: 'straight',
+        isRecommended: true
+      }, {
+        direction: 'straight',
+        isRecommended: false
+      }];
     case 'slight-right':
-      return [
-        { direction: 'straight', isRecommended: false },
-        { direction: 'straight', isRecommended: true },
-        { direction: 'slight-right', isRecommended: true },
-      ];
+      return [{
+        direction: 'straight',
+        isRecommended: false
+      }, {
+        direction: 'straight',
+        isRecommended: true
+      }, {
+        direction: 'slight-right',
+        isRecommended: true
+      }];
     case 'straight':
-      return [
-        { direction: 'straight', isRecommended: false },
-        { direction: 'straight', isRecommended: true },
-        { direction: 'straight', isRecommended: false },
-      ];
+      return [{
+        direction: 'straight',
+        isRecommended: false
+      }, {
+        direction: 'straight',
+        isRecommended: true
+      }, {
+        direction: 'straight',
+        isRecommended: false
+      }];
     default:
       return [];
   }
 };
 
 // Lane arrow component
-const LaneArrow: React.FC<{ lane: Lane }> = ({ lane }) => {
-  const iconClass = cn(
-    "w-6 h-6 transition-all",
-    lane.isRecommended ? "text-primary" : "text-muted-foreground/40"
-  );
-
+const LaneArrow: React.FC<{
+  lane: Lane;
+}> = ({
+  lane
+}) => {
+  const iconClass = cn("w-6 h-6 transition-all", lane.isRecommended ? "text-primary" : "text-muted-foreground/40");
   const getArrowIcon = () => {
     switch (lane.direction) {
       case 'left':
@@ -69,37 +94,26 @@ const LaneArrow: React.FC<{ lane: Lane }> = ({ lane }) => {
         return <MoveUp className={iconClass} />;
     }
   };
-
-  return (
-    <div className={cn(
-      "flex flex-col items-center justify-center px-2 py-1 rounded-md border-2 transition-all",
-      lane.isRecommended 
-        ? "border-primary bg-primary/20" 
-        : "border-muted-foreground/20 bg-muted/10"
-    )}>
+  return <div className={cn("flex flex-col items-center justify-center px-2 py-1 rounded-md border-2 transition-all", lane.isRecommended ? "border-primary bg-primary/20" : "border-muted-foreground/20 bg-muted/10")}>
       {getArrowIcon()}
-    </div>
-  );
+    </div>;
 };
 
 // Lane Guidance Display Component
-const LaneGuidance: React.FC<{ turnType: NavigationStep['type'] }> = ({ turnType }) => {
+const LaneGuidance: React.FC<{
+  turnType: NavigationStep['type'];
+}> = ({
+  turnType
+}) => {
   const lanes = getLaneGuidance(turnType);
-  
   if (lanes.length === 0) return null;
-
-  return (
-    <div className="flex items-center justify-center gap-1 py-2 px-3 bg-background/90 backdrop-blur rounded-lg">
+  return <div className="flex items-center justify-center gap-1 py-2 px-3 bg-background/90 backdrop-blur rounded-lg">
       <span className="text-xs text-muted-foreground mr-2 font-medium">Lane</span>
       <div className="flex gap-1">
-        {lanes.map((lane, index) => (
-          <LaneArrow key={index} lane={lane} />
-        ))}
+        {lanes.map((lane, index) => <LaneArrow key={index} lane={lane} />)}
       </div>
-    </div>
-  );
+    </div>;
 };
-
 interface DriverNavigationViewProps {
   steps: NavigationStep[];
   currentStepIndex: number;
@@ -114,7 +128,6 @@ interface DriverNavigationViewProps {
   onToggleMute: () => void;
   onCenterUser: () => void;
 }
-
 const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
   steps,
   currentStepIndex,
@@ -131,7 +144,6 @@ const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
 }) => {
   const currentStep = steps[currentStepIndex];
   const nextStep = steps[currentStepIndex + 1];
-
   const getDirectionIcon = (type: NavigationStep['type']) => {
     const iconClass = "w-16 h-16 text-white";
     switch (type) {
@@ -149,12 +161,10 @@ const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
         return <ArrowUp className={iconClass} />;
     }
   };
-
   const formatDistance = (meters: number) => {
     if (meters < 1000) return `${Math.round(meters)} m`;
     return `${(meters / 1000).toFixed(1)} km`;
   };
-
   const formatTime = (hours: number) => {
     const mins = Math.round(hours * 60);
     if (mins < 60) return `${mins} min`;
@@ -162,17 +172,16 @@ const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
     const m = mins % 60;
     return `${h}h ${m}m`;
   };
-
   const getETA = () => {
     const now = new Date();
     const eta = new Date(now.getTime() + estimatedTime * 60 * 60 * 1000);
-    return eta.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    return eta.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
-
   if (!currentStep) return null;
-
-  return (
-    <div className="fixed inset-0 z-[1000] pointer-events-none">
+  return <div className="fixed inset-0 z-[1000] pointer-events-none">
       {/* Top Navigation Card - Current Direction */}
       <div className="absolute top-0 left-0 right-0 pointer-events-auto">
         <div className="bg-primary m-2 rounded-xl shadow-2xl overflow-hidden">
@@ -194,15 +203,12 @@ const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
           </div>
 
           {/* Lane Guidance - Compact */}
-          {currentStep.distance < 500 && currentStep.type !== 'destination' && currentStep.type !== 'start' && (
-            <div className="px-2.5 pb-2 flex justify-center">
+          {currentStep.distance < 500 && currentStep.type !== 'destination' && currentStep.type !== 'start' && <div className="px-2.5 pb-2 flex justify-center">
               <LaneGuidance turnType={currentStep.type} />
-            </div>
-          )}
+            </div>}
 
           {/* Next Turn Preview - Inline */}
-          {nextStep && (
-            <div className="bg-primary-foreground/10 px-2.5 py-1.5 flex items-center gap-2 border-t border-white/20">
+          {nextStep && <div className="bg-primary-foreground/10 px-2.5 py-1.5 flex items-center gap-2 border-t border-white/20">
               <span className="text-white/70 text-xs">Then</span>
               <div className="w-5 h-5 flex items-center justify-center [&>svg]:w-4 [&>svg]:h-4">
                 {getDirectionIcon(nextStep.type)}
@@ -210,27 +216,16 @@ const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
               <span className="text-white text-xs font-medium truncate flex-1">
                 {nextStep.instruction}
               </span>
-            </div>
-          )}
+            </div>}
         </div>
 
         {/* Control Buttons Row */}
         <div className="flex justify-between px-3 mt-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={onClose}
-            className="bg-background/95 backdrop-blur shadow-lg h-12 w-12"
-          >
+          <Button variant="outline" size="icon" onClick={onClose} className="bg-background/95 backdrop-blur shadow-lg h-12 w-12">
             <X className="w-5 h-5" />
           </Button>
           
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={onToggleMute}
-            className="bg-background/95 backdrop-blur shadow-lg h-12 w-12"
-          >
+          <Button variant="outline" size="icon" onClick={onToggleMute} className="bg-background/95 backdrop-blur shadow-lg h-12 w-12">
             {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
           </Button>
         </div>
@@ -249,23 +244,10 @@ const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
       {/* GPS & Center Button - Right Side */}
       <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-auto flex flex-col gap-3">
         {/* GPS Status */}
-        <div className="bg-background/95 backdrop-blur rounded-xl shadow-lg px-3 py-2 flex items-center gap-2">
-          <div className={cn(
-            "w-3 h-3 rounded-full",
-            isTracking ? "bg-green-500 animate-pulse" : "bg-red-500"
-          )} />
-          <span className="text-xs font-medium text-foreground">
-            {isTracking ? 'GPS' : 'No GPS'}
-          </span>
-        </div>
+        
 
         {/* Center on User Button */}
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={onCenterUser}
-          className="bg-background/95 backdrop-blur shadow-lg h-12 w-12"
-        >
+        <Button variant="outline" size="icon" onClick={onCenterUser} className="bg-background/95 backdrop-blur shadow-lg h-12 w-12">
           <Crosshair className="w-5 h-5" />
         </Button>
       </div>
@@ -285,10 +267,7 @@ const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
             {/* Remaining Distance */}
             <div className="text-center flex-1">
               <p className="text-2xl font-bold text-foreground">
-                {remainingDistance >= 1 
-                  ? `${remainingDistance.toFixed(1)} km`
-                  : `${Math.round(remainingDistance * 1000)} m`
-                }
+                {remainingDistance >= 1 ? `${remainingDistance.toFixed(1)} km` : `${Math.round(remainingDistance * 1000)} m`}
               </p>
               <p className="text-xs text-muted-foreground font-medium">Distance</p>
             </div>
@@ -305,10 +284,9 @@ const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
           {/* Progress Bar */}
           <div className="px-4 pb-4">
             <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary rounded-full transition-all duration-500"
-                style={{ width: `${((currentStepIndex + 1) / steps.length) * 100}%` }}
-              />
+              <div className="h-full bg-primary rounded-full transition-all duration-500" style={{
+              width: `${(currentStepIndex + 1) / steps.length * 100}%`
+            }} />
             </div>
             <p className="text-center text-xs text-muted-foreground mt-1">
               Step {currentStepIndex + 1} of {steps.length}
@@ -316,8 +294,6 @@ const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default DriverNavigationView;
