@@ -99,20 +99,19 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false }, ref) => {
       selectedRouteIndex.current = 0;
 
       try {
-        // Geocode all locations
-        const originCoords = await geocodeLocation(origin);
-        const destCoords = await geocodeLocation(destination);
+        // Geocode all locations in parallel for faster loading
+        const geocodePromises = [
+          geocodeLocation(origin),
+          geocodeLocation(destination),
+          ...waypoints.filter(wp => wp.trim()).map(wp => geocodeLocation(wp))
+        ];
+        
+        const results = await Promise.all(geocodePromises);
+        const originCoords = results[0];
+        const destCoords = results[1];
+        const waypointCoords = results.slice(2).filter((c): c is { lat: number; lng: number } => c !== null);
         
         if (!originCoords || !destCoords) return null;
-
-        // Geocode waypoints
-        const waypointCoords: { lat: number; lng: number }[] = [];
-        for (const wp of waypoints) {
-          if (wp.trim()) {
-            const coords = await geocodeLocation(wp);
-            if (coords) waypointCoords.push(coords);
-          }
-        }
 
         // Build all waypoints array for routing
         const allWaypoints = [
@@ -516,8 +515,18 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false }, ref) => {
 
 Map.displayName = 'Map';
 
-// Geocode using Nominatim (free OpenStreetMap geocoding)
+// Geocoding cache to avoid repeated API calls
+const geocodingCache: Record<string, { lat: number; lng: number }> = {};
+
+// Geocode using Nominatim (free OpenStreetMap geocoding) with caching
 async function geocodeLocation(query: string): Promise<{ lat: number; lng: number } | null> {
+  const cacheKey = query.toLowerCase().trim();
+  
+  // Check cache first
+  if (cacheKey in geocodingCache) {
+    return geocodingCache[cacheKey];
+  }
+
   try {
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&limit=1`,
@@ -529,10 +538,13 @@ async function geocodeLocation(query: string): Promise<{ lat: number; lng: numbe
     );
     const data = await response.json();
     if (data && data.length > 0) {
-      return {
+      const result = {
         lat: parseFloat(data[0].lat),
         lng: parseFloat(data[0].lon)
       };
+      // Cache the result
+      geocodingCache[cacheKey] = result;
+      return result;
     }
     return null;
   } catch (error) {
