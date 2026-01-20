@@ -232,12 +232,12 @@ const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
       </div>
 
       {/* Speed Indicator - Left Side */}
-      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-auto">
-        <div className="bg-background/95 backdrop-blur rounded-2xl shadow-lg p-4 text-center min-w-[80px]">
-          <p className="text-3xl font-bold text-foreground">
+      <div className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-auto">
+        <div className="bg-background/95 backdrop-blur rounded-xl shadow-lg p-2 text-center min-w-[56px]">
+          <p className="text-xl font-bold text-foreground leading-tight">
             {speed && speed > 0 ? Math.round(speed * 3.6) : '0'}
           </p>
-          <p className="text-xs text-muted-foreground font-medium">km/h</p>
+          <p className="text-[9px] text-muted-foreground">km/h</p>
         </div>
       </div>
 
