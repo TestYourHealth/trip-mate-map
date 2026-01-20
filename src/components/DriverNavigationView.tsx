@@ -175,37 +175,39 @@ const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
     <div className="fixed inset-0 z-[1000] pointer-events-none">
       {/* Top Navigation Card - Current Direction */}
       <div className="absolute top-0 left-0 right-0 pointer-events-auto">
-        <div className="bg-primary m-3 rounded-2xl shadow-2xl overflow-hidden">
-          {/* Main Direction */}
-          <div className="p-4 flex items-center gap-4">
-            <div className="shrink-0">
+        <div className="bg-primary m-2 rounded-xl shadow-2xl overflow-hidden">
+          {/* Main Direction - Compact */}
+          <div className="p-2.5 flex items-center gap-3">
+            <div className="shrink-0 scale-90">
               {getDirectionIcon(currentStep.type)}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-3xl font-bold text-white mb-1">
-                {formatDistance(currentStep.distance)}
-              </p>
-              <p className="text-white/90 text-lg font-medium line-clamp-2">
-                {currentStep.instruction}
-              </p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold text-white">
+                  {formatDistance(currentStep.distance)}
+                </p>
+                <p className="text-white/90 text-sm font-medium truncate">
+                  {currentStep.instruction}
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Lane Guidance - Shows when approaching turn (within 500m) */}
+          {/* Lane Guidance - Compact */}
           {currentStep.distance < 500 && currentStep.type !== 'destination' && currentStep.type !== 'start' && (
-            <div className="px-4 pb-3 flex justify-center">
+            <div className="px-2.5 pb-2 flex justify-center">
               <LaneGuidance turnType={currentStep.type} />
             </div>
           )}
 
-          {/* Next Turn Preview */}
+          {/* Next Turn Preview - Inline */}
           {nextStep && (
-            <div className="bg-primary-foreground/10 px-4 py-3 flex items-center gap-3 border-t border-white/20">
-              <span className="text-white/70 text-sm">Then</span>
-              <div className="w-8 h-8 flex items-center justify-center">
+            <div className="bg-primary-foreground/10 px-2.5 py-1.5 flex items-center gap-2 border-t border-white/20">
+              <span className="text-white/70 text-xs">Then</span>
+              <div className="w-5 h-5 flex items-center justify-center [&>svg]:w-4 [&>svg]:h-4">
                 {getDirectionIcon(nextStep.type)}
               </div>
-              <span className="text-white text-sm font-medium truncate flex-1">
+              <span className="text-white text-xs font-medium truncate flex-1">
                 {nextStep.instruction}
               </span>
             </div>
