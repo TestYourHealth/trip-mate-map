@@ -241,14 +241,10 @@ const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
         </div>
       </div>
 
-      {/* GPS & Center Button - Right Side */}
-      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-auto flex flex-col gap-3">
-        {/* GPS Status */}
-        
-
-        {/* Center on User Button */}
-        <Button variant="outline" size="icon" onClick={onCenterUser} className="bg-background/95 backdrop-blur shadow-lg h-12 w-12">
-          <Crosshair className="w-5 h-5" />
+      {/* Center Button - Right Side */}
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-auto">
+        <Button variant="outline" size="icon" onClick={onCenterUser} className="bg-background/95 backdrop-blur shadow-lg h-10 w-10">
+          <Crosshair className="w-4 h-4" />
         </Button>
       </div>
 
