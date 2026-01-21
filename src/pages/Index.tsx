@@ -27,14 +27,14 @@ const Index = () => {
       const fuelPricesData = localStorage.getItem('fuelPrices');
       
       const vehicles = vehiclesData ? JSON.parse(vehiclesData) : [];
-      const fuelPrices = fuelPricesData ? JSON.parse(fuelPricesData) : { petrol: 105, diesel: 92, cng: 85 };
+      const fuelPrices = fuelPricesData ? JSON.parse(fuelPricesData) : { petrol: 105, diesel: 92, cng: 85, electric: 8 };
       
       const defaultVehicle = vehicles.find((v: any) => v.isDefault) || vehicles[0];
       
       if (defaultVehicle) {
         return {
           fuelType: defaultVehicle.fuelType,
-          fuelPrice: fuelPrices[defaultVehicle.fuelType] || 105,
+          fuelPrice: fuelPrices[defaultVehicle.fuelType] || (defaultVehicle.fuelType === 'electric' ? 8 : 105),
           mileage: defaultVehicle.mileage,
         };
       }
@@ -189,7 +189,19 @@ const Index = () => {
   }, [position, isNavigating, navigationSteps, currentStepIndex]);
 
   const updateTripData = useCallback((route: RouteInfo) => {
-    const fuelCost = (route.distance / vehicleConfig.mileage) * vehicleConfig.fuelPrice;
+    // Calculate fuel cost based on fuel type
+    // Electric: distance / km per kWh * price per kWh
+    // Others: distance / km per liter * price per liter
+    let fuelCost: number;
+    if (vehicleConfig.fuelType === 'electric') {
+      // For electric, mileage is km/kWh
+      fuelCost = (route.distance / vehicleConfig.mileage) * vehicleConfig.fuelPrice;
+    } else {
+      // For petrol/diesel/cng, mileage is km/L or km/kg
+      fuelCost = (route.distance / vehicleConfig.mileage) * vehicleConfig.fuelPrice;
+    }
+    
+    // Electric vehicles don't pay tolls based on fuel (some toll exemptions), but we'll still estimate
     const tollCost = route.distance * 1.5;
     
     setTripData({

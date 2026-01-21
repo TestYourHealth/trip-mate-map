@@ -86,6 +86,15 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     }
   }, []);
 
+  // Clear debounce on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
+
   // Debounced search
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
