@@ -19,6 +19,9 @@ interface LocationAutocompleteProps {
   rightElement?: React.ReactNode;
 }
 
+// Suggestions cache - shared across all instances
+const suggestionsCache: Record<string, LocationSuggestion[]> = {};
+
 const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   value,
   onChange,
@@ -50,10 +53,18 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     localStorage.setItem('recentLocationSearches', JSON.stringify(updated));
   }, [recentSearches]);
 
-  // Fetch suggestions from Nominatim
+  // Fetch suggestions from Nominatim with caching
   const fetchSuggestions = useCallback(async (query: string) => {
     if (query.length < 3) {
       setSuggestions([]);
+      return;
+    }
+
+    const cacheKey = query.toLowerCase().trim();
+    
+    // Check cache first - instant results!
+    if (cacheKey in suggestionsCache) {
+      setSuggestions(suggestionsCache[cacheKey]);
       return;
     }
 
@@ -64,6 +75,8 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         { headers: { 'User-Agent': 'TripMate/1.0' } }
       );
       const data = await response.json();
+      // Cache the results
+      suggestionsCache[cacheKey] = data;
       setSuggestions(data);
     } catch (error) {
       console.error('Error fetching suggestions:', error);
