@@ -272,13 +272,13 @@ const TripPanel: React.FC<TripPanelProps> = ({
                 <span className="text-xs">Cost Breakdown</span>
               </div>
               
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Fuel className="w-3.5 h-3.5" /> {vehicleConfig.fuelType.charAt(0).toUpperCase() + vehicleConfig.fuelType.slice(1)} (₹{vehicleConfig.fuelPrice}/{vehicleConfig.fuelType === 'cng' ? 'kg' : 'L'})
-                  </span>
-                  <span className="text-sm font-semibold text-foreground">₹{tripData.fuelCost}</span>
-                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Fuel className="w-3.5 h-3.5" /> {vehicleConfig.fuelType.charAt(0).toUpperCase() + vehicleConfig.fuelType.slice(1)} (₹{vehicleConfig.fuelPrice}/{vehicleConfig.fuelType === 'cng' ? 'kg' : vehicleConfig.fuelType === 'electric' ? 'kWh' : 'L'})
+                    </span>
+                    <span className="text-sm font-semibold text-foreground">₹{tripData.fuelCost}</span>
+                  </div>
                 
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground flex items-center gap-2">
