@@ -11,6 +11,7 @@ import FuelSettings from "./pages/FuelSettings";
 import TripHistory from "./pages/TripHistory";
 import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
+import InstallPWA from "./components/InstallPWA";
 
 const queryClient = new QueryClient();
 
@@ -19,6 +20,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <InstallPWA />
       <BrowserRouter>
         <Routes>
           <Route element={<MainLayout />}>
