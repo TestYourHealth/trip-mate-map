@@ -2,6 +2,16 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
+// Set dynamic viewport height for mobile keyboards
+const setViewportHeight = () => {
+  const vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty('--vh', `${vh}px`);
+};
+
+setViewportHeight();
+window.addEventListener('resize', setViewportHeight);
+window.visualViewport?.addEventListener('resize', setViewportHeight);
+
 // Register PWA Service Worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -27,5 +37,28 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
+
+// Prevent double-tap zoom on iOS
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (event) => {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 300) {
+    event.preventDefault();
+  }
+  lastTouchEnd = now;
+}, { passive: false });
+
+// Prevent pinch zoom
+document.addEventListener('gesturestart', (e) => {
+  e.preventDefault();
+}, { passive: false });
+
+// Handle app visibility changes (for refreshing data when app comes to foreground)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    // Dispatch event to refresh data when app becomes visible
+    window.dispatchEvent(new CustomEvent('app-foreground'));
+  }
+});
 
 createRoot(document.getElementById("root")!).render(<App />);
