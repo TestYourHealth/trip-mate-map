@@ -75,6 +75,7 @@ function AppMenu() {
           variant="outline" 
           size="icon" 
           className="bg-background/95 backdrop-blur-sm shadow-md border-border/50 hover:bg-background"
+          aria-label="Open menu"
         >
           <Menu className="w-5 h-5" />
         </Button>
