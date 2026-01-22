@@ -1,7 +1,7 @@
 import React from 'react';
 import { MapPin, Navigation, Fuel, DollarSign, Clock, Car, RotateCcw, ChevronUp, ChevronDown, Locate, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import VehicleSettingsPanel from './VehicleSettingsPanel';
+import VehicleSelector from './VehicleSelector';
 import WaypointInput from './WaypointInput';
 import RouteSelector from './RouteSelector';
 import DirectionsList from './DirectionsList';
@@ -159,7 +159,7 @@ const TripPanel: React.FC<TripPanelProps> = ({
         </div>
 
         <div className="mb-4">
-          <VehicleSettingsPanel config={vehicleConfig} onConfigChange={onVehicleConfigChange} />
+          <VehicleSelector config={vehicleConfig} onConfigChange={onVehicleConfigChange} />
         </div>
 
         {/* Single Action Button */}
