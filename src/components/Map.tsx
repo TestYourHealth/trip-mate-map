@@ -453,7 +453,13 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false }, ref) => {
     });
 
     // Light theme tile layer from CartoDB
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    // Use @2x retina tiles only on high DPI displays to save bandwidth
+    const isRetina = window.devicePixelRatio > 1;
+    const tileUrl = isRetina 
+      ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png'
+      : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png';
+    
+    L.tileLayer(tileUrl, {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd',
       maxZoom: 20,
