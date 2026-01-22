@@ -62,19 +62,28 @@ const NativeAppWrapper: React.FC<NativeAppWrapperProps> = ({ children }) => {
     return () => document.removeEventListener('contextmenu', preventContextMenu);
   }, []);
 
-  // Handle keyboard visibility for better UX
+  // Handle keyboard visibility for better UX - debounced to prevent forced reflows
   useEffect(() => {
+    let rafId: number | null = null;
+    let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
+
     const handleResize = () => {
-      // Adjust viewport when keyboard opens/closes
-      const vh = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty('--vh', `${vh}px`);
+      if (debounceTimeout) clearTimeout(debounceTimeout);
+      debounceTimeout = setTimeout(() => {
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          const vh = window.innerHeight * 0.01;
+          document.documentElement.style.setProperty('--vh', `${vh}px`);
+        });
+      }, 100);
     };
 
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    window.visualViewport?.addEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize, { passive: true });
+    window.visualViewport?.addEventListener('resize', handleResize, { passive: true });
 
     return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      if (debounceTimeout) clearTimeout(debounceTimeout);
       window.removeEventListener('resize', handleResize);
       window.visualViewport?.removeEventListener('resize', handleResize);
     };
