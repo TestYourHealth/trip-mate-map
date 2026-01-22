@@ -12,6 +12,9 @@
     <link rel="dns-prefetch" href="https://nominatim.openstreetmap.org" />
     <link rel="dns-prefetch" href="https://router.project-osrm.org" />
     
+    <!-- Preload a common initial map tile to improve LCP discovery -->
+    <link rel="preload" href="https://a.basemaps.cartocdn.com/rastertiles/voyager/2/2/1.png" as="image" fetchpriority="high" />
+    
     <!-- App Info -->
     <title>TripMate - Trip Cost Calculator</title>
     <meta name="description" content="Calculate trip costs with fuel, toll estimates and GPS navigation. Works offline!" />
