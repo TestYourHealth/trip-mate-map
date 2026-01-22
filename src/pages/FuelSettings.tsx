@@ -1,5 +1,5 @@
-import React from 'react';
-import { Fuel, TrendingUp, MapPin, RefreshCw, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Fuel, TrendingUp, MapPin, RefreshCw, Loader2, Navigation } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
+import { cityFuelPrices, defaultFuelPrices as defaultCityPrices, findCityFromLocation, CityData } from '@/data/cityFuelPrices';
 
 interface FuelPrices {
   petrol: number;
@@ -25,11 +26,63 @@ const defaultFuelPrices: FuelPrices = {
 const FuelSettings = () => {
   const [fuelPrices, setFuelPrices] = useLocalStorage<FuelPrices>('fuelPrices', defaultFuelPrices);
   const [lastUpdated, setLastUpdated] = useLocalStorage<string>('fuelPricesUpdated', new Date().toISOString());
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [currentCity, setCurrentCity] = useLocalStorage<string>('currentCity', 'India Average');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
 
   const handlePriceChange = (type: keyof FuelPrices, value: number) => {
     setFuelPrices({ ...fuelPrices, [type]: value });
     setLastUpdated(new Date().toISOString());
+  };
+
+  const detectLocation = async () => {
+    setIsDetectingLocation(true);
+    
+    try {
+      // Get current position
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        });
+      });
+
+      const { latitude, longitude } = position.coords;
+      
+      // Reverse geocode to get city name
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+        { headers: { 'User-Agent': 'TripMate/1.0' } }
+      );
+      
+      const data = await response.json();
+      const address = data.address || {};
+      
+      // Try to find city from various address fields
+      const cityName = address.city || address.town || address.village || address.county || address.state_district || '';
+      const stateName = address.state || '';
+      const locationString = `${cityName} ${stateName}`;
+      
+      // Find matching city in our database
+      const cityData = findCityFromLocation(locationString);
+      
+      if (cityData) {
+        setFuelPrices(cityData.prices);
+        setCurrentCity(`${cityData.name}, ${cityData.state}`);
+        setLastUpdated(new Date().toISOString());
+        toast.success(`📍 ${cityData.name} की fuel prices set हो गई!`);
+      } else {
+        // Use default if city not found
+        setCurrentCity(cityName || 'Unknown Location');
+        toast.info(`${cityName || 'आपकी location'} के prices available नहीं हैं। India average use हो रहे हैं।`);
+      }
+    } catch (error) {
+      console.error('Location detection error:', error);
+      toast.error('Location detect नहीं हो पाया। Please manually set करें।');
+    } finally {
+      setIsDetectingLocation(false);
+    }
   };
 
   const handleRefresh = async () => {
@@ -37,12 +90,15 @@ const FuelSettings = () => {
     // Simulate API call - in production, this would fetch real prices
     await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Update with slightly randomized prices to simulate real data
+    // If we have a detected city, refresh with that city's prices (with slight variation)
+    const cityData = findCityFromLocation(currentCity);
+    const basePrices = cityData ? cityData.prices : defaultCityPrices;
+    
     const newPrices: FuelPrices = {
-      petrol: Math.round((103 + Math.random() * 6) * 100) / 100,
-      diesel: Math.round((90 + Math.random() * 5) * 100) / 100,
-      cng: Math.round((73 + Math.random() * 4) * 100) / 100,
-      electric: Math.round((7 + Math.random() * 2) * 100) / 100,
+      petrol: Math.round((basePrices.petrol + (Math.random() - 0.5) * 2) * 100) / 100,
+      diesel: Math.round((basePrices.diesel + (Math.random() - 0.5) * 2) * 100) / 100,
+      cng: Math.round((basePrices.cng + (Math.random() - 0.5) * 1.5) * 100) / 100,
+      electric: Math.round((basePrices.electric + (Math.random() - 0.5) * 0.5) * 100) / 100,
     };
     
     setFuelPrices(newPrices);
@@ -73,6 +129,38 @@ const FuelSettings = () => {
         </div>
       </div>
 
+      {/* Location Detection */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
+              <Navigation className="w-6 h-6 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-foreground">Location से Prices लाएं</h3>
+              <p className="text-sm text-muted-foreground">GPS से city detect करके वहां की fuel prices दिखाएं</p>
+            </div>
+            <Button 
+              onClick={detectLocation} 
+              disabled={isDetectingLocation}
+              className="shrink-0"
+            >
+              {isDetectingLocation ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Detecting...
+                </>
+              ) : (
+                <>
+                  <MapPin className="w-4 h-4 mr-2" />
+                  Detect Location
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Current Prices */}
       <Card>
         <CardHeader>
@@ -81,7 +169,7 @@ const FuelSettings = () => {
               <CardTitle>Current Fuel Prices</CardTitle>
               <CardDescription className="flex items-center gap-2 mt-1">
                 <MapPin className="w-3 h-3" />
-                India Average
+                {currentCity}
               </CardDescription>
             </div>
             <Badge variant="outline" className="text-xs">
