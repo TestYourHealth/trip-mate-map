@@ -121,11 +121,31 @@
 
   html, body, #root {
     @apply h-full;
+    /* Use dynamic viewport height for mobile keyboards */
+    height: 100%;
+    height: calc(var(--vh, 1vh) * 100);
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Plus Jakarta Sans', sans-serif;
+    /* Prevent overscroll bounce */
+    overscroll-behavior: none;
+    /* Enable smooth scrolling */
+    scroll-behavior: smooth;
+    /* Safe area support */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  /* Active state for touch feedback */
+  button:active, a:active, [role="button"]:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+
+  /* Smooth transitions for all interactive elements */
+  button, a, [role="button"], input, select {
+    transition: transform 0.1s ease, opacity 0.1s ease;
   }
 }
 
@@ -182,6 +202,29 @@
 
   .safe-area-bottom {
     padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+
+  .safe-area-left {
+    padding-left: max(env(safe-area-inset-left), 0.5rem);
+  }
+
+  .safe-area-right {
+    padding-right: max(env(safe-area-inset-right), 0.5rem);
+  }
+
+  /* Native-like touch feedback */
+  .touch-feedback {
+    @apply active:scale-[0.97] active:opacity-90 transition-transform duration-100;
+  }
+
+  /* Haptic-like button press */
+  .haptic-press {
+    @apply active:scale-95 transition-transform duration-75;
+  }
+
+  /* Native card press effect */
+  .card-press {
+    @apply active:bg-muted/50 transition-colors duration-100;
   }
 
   @keyframes fadeIn {

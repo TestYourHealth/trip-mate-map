@@ -12,29 +12,32 @@ import TripHistory from "./pages/TripHistory";
 import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
 import InstallPWA from "./components/InstallPWA";
+import NativeAppWrapper from "./components/NativeAppWrapper";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <InstallPWA />
-      <BrowserRouter>
-        <Routes>
-          <Route element={<MainLayout />}>
-            <Route path="/" element={<Index />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/settings/vehicle" element={<VehicleSettings />} />
-            <Route path="/settings/fuel" element={<FuelSettings />} />
-            <Route path="/history" element={<TripHistory />} />
-            <Route path="/help" element={<Help />} />
-          </Route>
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <NativeAppWrapper>
+        <Toaster />
+        <Sonner />
+        <InstallPWA />
+        <BrowserRouter>
+          <Routes>
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/settings/vehicle" element={<VehicleSettings />} />
+              <Route path="/settings/fuel" element={<FuelSettings />} />
+              <Route path="/history" element={<TripHistory />} />
+              <Route path="/help" element={<Help />} />
+            </Route>
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </NativeAppWrapper>
     </TooltipProvider>
   </QueryClientProvider>
 );
