@@ -377,6 +377,7 @@ const Index = () => {
             onClick={handleLocateMe}
             disabled={isLocating}
             className="animate-fade-in bg-background shadow-md"
+            aria-label="Find my location"
           >
             {isLocating ? (
               <Loader2 className="w-5 h-5 animate-spin" />

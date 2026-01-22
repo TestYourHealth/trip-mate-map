@@ -122,7 +122,7 @@ const VehicleSelector: React.FC<VehicleSelectorProps> = ({ config, onConfigChang
         <Car className="w-4 h-4 text-primary" />
       </div>
       <Select value={currentVehicle?.id || ''} onValueChange={handleVehicleChange}>
-        <SelectTrigger className="flex-1 bg-muted/50 border-0 h-10">
+        <SelectTrigger className="flex-1 bg-muted/50 border-0 h-10" aria-label="Select vehicle">
           <SelectValue placeholder="Vehicle चुनें">
             {currentVehicle && (
               <span className="flex items-center gap-2">

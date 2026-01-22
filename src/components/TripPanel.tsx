@@ -88,7 +88,7 @@ const TripPanel: React.FC<TripPanelProps> = ({
           <p className="text-xs text-muted-foreground">Real-time traffic के साथ</p>
         </div>
         {isMobile && (
-          <Button variant="ghost" size="icon-sm" onClick={onToggleExpand}>
+          <Button variant="ghost" size="icon-sm" onClick={onToggleExpand} aria-label={isExpanded ? "Collapse panel" : "Expand panel"}>
             {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
           </Button>
         )}
@@ -198,6 +198,7 @@ const TripPanel: React.FC<TripPanelProps> = ({
                 variant="outline"
                 size="icon"
                 className="h-14 w-14"
+                aria-label="Clear trip"
               >
                 <RotateCcw className="w-5 h-5" />
               </Button>
