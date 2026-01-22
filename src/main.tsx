@@ -2,15 +2,30 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Set dynamic viewport height for mobile keyboards
+// Debounced viewport height setter to prevent forced reflows
+let resizeTimeout: number | null = null;
 const setViewportHeight = () => {
-  const vh = window.innerHeight * 0.01;
-  document.documentElement.style.setProperty('--vh', `${vh}px`);
+  if (resizeTimeout) {
+    cancelAnimationFrame(resizeTimeout);
+  }
+  resizeTimeout = requestAnimationFrame(() => {
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+  });
 };
 
-setViewportHeight();
-window.addEventListener('resize', setViewportHeight);
-window.visualViewport?.addEventListener('resize', setViewportHeight);
+// Initial set with RAF to avoid blocking
+requestAnimationFrame(setViewportHeight);
+
+// Debounced resize listener
+let resizeDebounce: ReturnType<typeof setTimeout> | null = null;
+const handleResize = () => {
+  if (resizeDebounce) clearTimeout(resizeDebounce);
+  resizeDebounce = setTimeout(setViewportHeight, 100);
+};
+
+window.addEventListener('resize', handleResize, { passive: true });
+window.visualViewport?.addEventListener('resize', handleResize, { passive: true });
 
 // Register PWA Service Worker
 if ('serviceWorker' in navigator) {
@@ -25,7 +40,6 @@ if ('serviceWorker' in navigator) {
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // New content available, show update notification
                 console.log('PWA: New content available, please refresh');
               }
             });
@@ -38,7 +52,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Prevent double-tap zoom on iOS
+// Prevent double-tap zoom on iOS (passive for performance)
 let lastTouchEnd = 0;
 document.addEventListener('touchend', (event) => {
   const now = Date.now();
@@ -48,17 +62,11 @@ document.addEventListener('touchend', (event) => {
   lastTouchEnd = now;
 }, { passive: false });
 
-// Prevent pinch zoom
-document.addEventListener('gesturestart', (e) => {
-  e.preventDefault();
-}, { passive: false });
-
-// Handle app visibility changes (for refreshing data when app comes to foreground)
+// Handle app visibility changes
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
-    // Dispatch event to refresh data when app becomes visible
     window.dispatchEvent(new CustomEvent('app-foreground'));
   }
-});
+}, { passive: true });
 
 createRoot(document.getElementById("root")!).render(<App />);
