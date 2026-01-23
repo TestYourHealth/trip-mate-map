@@ -10,9 +10,13 @@ import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useAutoDetectLocation } from '@/hooks/useAutoDetectLocation';
 import { Trip } from '@/pages/TripHistory';
 
 const Index = () => {
+  // Auto-detect location for fuel prices on first visit
+  useAutoDetectLocation();
+  
   const mapRef = useRef<MapRef>(null);
   const isMobile = useIsMobile();
   const [showPanel, setShowPanel] = useState(true);
