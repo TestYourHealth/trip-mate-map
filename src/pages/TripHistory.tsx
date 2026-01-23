@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { History, MapPin, Clock, Fuel, ArrowRight, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

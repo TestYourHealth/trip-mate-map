@@ -51,7 +51,6 @@ const TripPanel: React.FC<TripPanelProps> = ({
   routes,
   selectedRouteIndex,
   navigationSteps,
-  isNavigating,
   onOriginChange,
   onDestinationChange,
   onWaypointsChange,

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Crosshair, Loader2 } from 'lucide-react';
 import Map, { MapRef, RouteInfo } from '@/components/Map';
 import TripPanel from '@/components/TripPanel';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Volume2, VolumeX, Navigation, Crosshair, ChevronUp, ChevronDown, CornerUpLeft, CornerUpRight, ArrowUp, MapPin, MoveUp, MoveUpLeft, MoveUpRight } from 'lucide-react';
+import { X, Volume2, VolumeX, Crosshair, ChevronUp, CornerUpLeft, CornerUpRight, ArrowUp, MapPin, MoveUp, MoveUpLeft, MoveUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NavigationStep } from './NavigationPanel';
 import { cn } from '@/lib/utils';
@@ -131,12 +131,9 @@ interface DriverNavigationViewProps {
 const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
   steps,
   currentStepIndex,
-  totalDistance,
   remainingDistance,
   estimatedTime,
   speed,
-  accuracy,
-  isTracking,
   isMuted,
   onClose,
   onToggleMute,
