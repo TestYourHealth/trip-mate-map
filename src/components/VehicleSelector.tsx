@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Car, ChevronDown } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Car } from 'lucide-react';
 import {
   Select,
   SelectContent,

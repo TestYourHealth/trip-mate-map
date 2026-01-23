@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
+import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine';
@@ -74,15 +74,6 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false }, ref) => {
     return 'moderate';
   };
 
-  const getRouteColor = (trafficLevel: 'low' | 'moderate' | 'heavy', isSelected: boolean) => {
-    if (!isSelected) return '#6b7280'; // gray for unselected
-    switch (trafficLevel) {
-      case 'low': return '#22c55e'; // green
-      case 'moderate': return '#f59e0b'; // amber
-      case 'heavy': return '#ef4444'; // red
-      default: return '#14b8a6'; // teal
-    }
-  };
 
   useImperativeHandle(ref, () => ({
     showRoute: async (origin: string, destination: string, waypoints: string[] = []) => {
