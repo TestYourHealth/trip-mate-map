@@ -19,7 +19,6 @@ interface TripPanelProps {
   routes: RouteInfo[];
   selectedRouteIndex: number;
   navigationSteps: NavigationStep[];
-  isNavigating: boolean;
   onOriginChange: (value: string) => void;
   onDestinationChange: (value: string) => void;
   onWaypointsChange: (waypoints: string[]) => void;

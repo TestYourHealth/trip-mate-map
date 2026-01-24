@@ -359,12 +359,9 @@ const Index = () => {
         <DriverNavigationView
           steps={navigationSteps}
           currentStepIndex={currentStepIndex}
-          totalDistance={tripData?.distance || 0}
           remainingDistance={tripData ? tripData.distance * ((navigationSteps.length - currentStepIndex) / navigationSteps.length) : 0}
           estimatedTime={tripData ? tripData.duration * ((navigationSteps.length - currentStepIndex) / navigationSteps.length) : 0}
           speed={position?.speed ?? null}
-          accuracy={position?.accuracy ?? null}
-          isTracking={isTracking}
           isMuted={isMuted}
           onClose={stopNavigation}
           onToggleMute={() => setIsMuted(!isMuted)}
@@ -403,7 +400,6 @@ const Index = () => {
             routes={routes}
             selectedRouteIndex={selectedRouteIndex}
             navigationSteps={navigationSteps}
-            isNavigating={isNavigating}
             onOriginChange={setOrigin}
             onDestinationChange={setDestination}
             onWaypointsChange={setWaypoints}
@@ -432,7 +428,6 @@ const Index = () => {
             routes={routes}
             selectedRouteIndex={selectedRouteIndex}
             navigationSteps={navigationSteps}
-            isNavigating={isNavigating}
             onOriginChange={setOrigin}
             onDestinationChange={setDestination}
             onWaypointsChange={setWaypoints}

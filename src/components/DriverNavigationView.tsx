@@ -117,12 +117,9 @@ const LaneGuidance: React.FC<{
 interface DriverNavigationViewProps {
   steps: NavigationStep[];
   currentStepIndex: number;
-  totalDistance: number;
   remainingDistance: number;
   estimatedTime: number;
   speed: number | null;
-  accuracy: number | null;
-  isTracking: boolean;
   isMuted: boolean;
   onClose: () => void;
   onToggleMute: () => void;
