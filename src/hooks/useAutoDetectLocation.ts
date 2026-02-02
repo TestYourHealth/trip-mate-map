@@ -1,64 +1,88 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocalStorage } from './useLocalStorage';
-import { cityFuelPrices, findCityFromLocation, defaultFuelPrices, CityFuelPrices } from '@/data/cityFuelPrices';
+import { findCityFromLocation, defaultFuelPrices, CityFuelPrices } from '@/data/cityFuelPrices';
+import { toast } from 'sonner';
 
 export function useAutoDetectLocation() {
   const [, setFuelPrices] = useLocalStorage<CityFuelPrices>('fuelPrices', defaultFuelPrices);
   const [, setCurrentCity] = useLocalStorage('currentCity', '');
   const [, setLastUpdated] = useLocalStorage('fuelPricesLastUpdated', '');
   const [hasAutoDetected, setHasAutoDetected] = useLocalStorage('hasAutoDetectedLocation', false);
+  const attemptedRef = useRef(false);
 
   useEffect(() => {
-    // Only auto-detect once per device
-    if (hasAutoDetected) return;
+    // Only auto-detect once per session and device
+    if (hasAutoDetected || attemptedRef.current) return;
+    attemptedRef.current = true;
 
     const detectLocation = async () => {
-      if (!navigator.geolocation) return;
+      if (!navigator.geolocation) {
+        setHasAutoDetected(true);
+        return;
+      }
 
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          try {
-            const { latitude, longitude } = position.coords;
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
-              { headers: { 'User-Agent': 'TripMate/1.0' } }
-            );
-            const data = await response.json();
-            
-            const address = data.address || {};
-            const locationString = [
-              address.city,
-              address.town,
-              address.village,
-              address.municipality,
-              address.county,
-              address.state_district,
-              address.state
-            ].filter(Boolean).join(' ');
-            
-            const cityData = findCityFromLocation(locationString);
-            
-            if (cityData) {
-              setFuelPrices(cityData.prices);
-              setCurrentCity(cityData.name);
-              setLastUpdated(new Date().toISOString());
-              console.log(`Auto-detected location: ${cityData.name}`);
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: false, // Faster with lower accuracy
+            timeout: 8000,
+            maximumAge: 600000 // Cache for 10 minutes
+          });
+        });
+
+        const { latitude, longitude } = position.coords;
+        
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
+          { 
+            headers: { 
+              'User-Agent': 'TripMate/1.0',
+              'Accept': 'application/json'
             }
-            
-            setHasAutoDetected(true);
-          } catch (error) {
-            console.warn('Auto-detect location failed:', error);
-            setHasAutoDetected(true);
           }
-        },
-        () => {
-          // User denied or error - mark as attempted
-          setHasAutoDetected(true);
-        },
-        { timeout: 10000, maximumAge: 300000 }
-      );
+        );
+        
+        if (!response.ok) {
+          throw new Error('Geocoding failed');
+        }
+        
+        const data = await response.json();
+        const address = data.address || {};
+        
+        // Build location string from all possible fields
+        const locationParts = [
+          address.city,
+          address.town,
+          address.village,
+          address.municipality,
+          address.county,
+          address.state_district,
+          address.state
+        ].filter(Boolean);
+        
+        const locationString = locationParts.join(' ');
+        const cityData = findCityFromLocation(locationString);
+        
+        if (cityData) {
+          setFuelPrices(cityData.prices);
+          setCurrentCity(`${cityData.name}, ${cityData.state}`);
+          setLastUpdated(new Date().toISOString());
+          toast.success(`📍 ${cityData.name} की fuel prices set हो गई!`);
+        } else {
+          // Set city name even if no price data found
+          const cityName = address.city || address.town || address.village || 'Unknown';
+          setCurrentCity(cityName);
+        }
+        
+        setHasAutoDetected(true);
+      } catch (error) {
+        console.warn('Auto-detect location failed:', error);
+        setHasAutoDetected(true);
+      }
     };
 
-    detectLocation();
+    // Small delay to not block initial render
+    const timeoutId = setTimeout(detectLocation, 500);
+    return () => clearTimeout(timeoutId);
   }, [hasAutoDetected, setFuelPrices, setCurrentCity, setLastUpdated, setHasAutoDetected]);
 }
