@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, memo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MapPin, Loader2, Search, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -25,14 +25,14 @@ const suggestionsCache: Record<string, LocationSuggestion[]> = {};
 // AbortController for canceling in-flight requests
 let abortController: AbortController | null = null;
 
-const LocationAutocomplete = memo(({
+const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   value,
   onChange,
   placeholder = "Search location...",
   icon,
   className,
   rightElement
-}: LocationAutocompleteProps) => {
+}) => {
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -266,8 +266,6 @@ const LocationAutocomplete = memo(({
       )}
     </div>
   );
-});
-
-LocationAutocomplete.displayName = 'LocationAutocomplete';
+};
 
 export default LocationAutocomplete;
