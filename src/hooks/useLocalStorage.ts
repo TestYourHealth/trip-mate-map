@@ -10,60 +10,66 @@ interface StorageChangeEvent extends CustomEvent {
   };
 }
 
-export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] {
-  // Get stored value from localStorage with error handling
-  const readValue = useCallback((): T => {
-    if (typeof window === 'undefined') {
+// Helper function to read from localStorage
+function getStorageValue<T>(key: string, initialValue: T): T {
+  if (typeof window === 'undefined') {
+    return initialValue;
+  }
+
+  try {
+    const item = window.localStorage.getItem(key);
+    if (item === null) {
       return initialValue;
     }
-
+    return JSON.parse(item) as T;
+  } catch (error) {
+    console.warn(`Error reading localStorage key "${key}":`, error);
     try {
-      const item = window.localStorage.getItem(key);
-      if (item === null) {
-        return initialValue;
-      }
-      return JSON.parse(item) as T;
-    } catch (error) {
-      console.warn(`Error reading localStorage key "${key}":`, error);
-      // Clear corrupted data
-      try {
-        window.localStorage.removeItem(key);
-      } catch (e) {
-        // Ignore
-      }
-      return initialValue;
+      window.localStorage.removeItem(key);
+    } catch {
+      // Ignore
     }
-  }, [initialValue, key]);
+    return initialValue;
+  }
+}
 
-  const [storedValue, setStoredValue] = useState<T>(readValue);
+export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] {
+  // Initialize state with lazy initializer
+  const [storedValue, setStoredValue] = useState<T>(() => getStorageValue(key, initialValue));
   
-  // Keep track of initial value for comparison
+  // Keep track of key and initial value
+  const keyRef = useRef(key);
   const initialValueRef = useRef(initialValue);
-  initialValueRef.current = initialValue;
+  
+  // Update refs when they change
+  useEffect(() => {
+    keyRef.current = key;
+    initialValueRef.current = initialValue;
+  }, [key, initialValue]);
 
   // Return a wrapped version of useState's setter function that persists to localStorage
   const setValue = useCallback((value: T | ((val: T) => T)) => {
     try {
-      // Allow value to be a function so we have same API as useState
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      
-      // Save state
-      setStoredValue(valueToStore);
-      
-      // Save to localStorage
-      if (typeof window !== 'undefined') {
-        const serializedValue = JSON.stringify(valueToStore);
-        window.localStorage.setItem(key, serializedValue);
+      setStoredValue(prev => {
+        const valueToStore = value instanceof Function ? value(prev) : value;
         
-        // Dispatch custom event for same-tab sync
-        window.dispatchEvent(new CustomEvent(STORAGE_EVENT_NAME, {
-          detail: { key, newValue: serializedValue }
-        }));
-      }
+        // Save to localStorage
+        if (typeof window !== 'undefined') {
+          const serializedValue = JSON.stringify(valueToStore);
+          window.localStorage.setItem(keyRef.current, serializedValue);
+          
+          // Dispatch custom event for same-tab sync
+          window.dispatchEvent(new CustomEvent(STORAGE_EVENT_NAME, {
+            detail: { key: keyRef.current, newValue: serializedValue }
+          }));
+        }
+        
+        return valueToStore;
+      });
     } catch (error) {
-      console.warn(`Error setting localStorage key "${key}":`, error);
+      console.warn(`Error setting localStorage key "${keyRef.current}":`, error);
     }
-  }, [key, storedValue]);
+  }, []);
 
   // Listen for storage changes from other tabs
   useEffect(() => {
@@ -75,18 +81,16 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
           console.warn(`Error parsing storage event for key "${key}":`, error);
         }
       } else if (event.key === key && event.newValue === null) {
-        // Item was removed
         setStoredValue(initialValueRef.current);
       }
     };
 
-    // Listen for same-tab storage changes
+    // Listen for same-tab storage changes (but not from self)
     const handleSameTabChange = (event: Event) => {
       const customEvent = event as StorageChangeEvent;
       if (customEvent.detail.key === key && customEvent.detail.newValue !== null) {
         try {
-          const newVal = JSON.parse(customEvent.detail.newValue);
-          setStoredValue(newVal);
+          setStoredValue(JSON.parse(customEvent.detail.newValue));
         } catch (error) {
           console.warn(`Error parsing same-tab storage event for key "${key}":`, error);
         }
@@ -102,18 +106,18 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
     };
   }, [key]);
 
-  // Sync on visibility change (when user returns to tab)
+  // Sync on visibility change
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        const freshValue = readValue();
+        const freshValue = getStorageValue(keyRef.current, initialValueRef.current);
         setStoredValue(freshValue);
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [readValue]);
+  }, []);
 
   return [storedValue, setValue];
 }
