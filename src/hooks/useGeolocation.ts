@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export interface GeolocationPosition {
   lat: number;
@@ -16,6 +16,19 @@ export interface GeolocationState {
   isSupported: boolean;
 }
 
+// Calculate heading from two positions
+const calculateHeading = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const lat1Rad = lat1 * Math.PI / 180;
+  const lat2Rad = lat2 * Math.PI / 180;
+  
+  const x = Math.sin(dLng) * Math.cos(lat2Rad);
+  const y = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
+  
+  let heading = Math.atan2(x, y) * 180 / Math.PI;
+  return (heading + 360) % 360;
+};
+
 export const useGeolocation = (options?: PositionOptions) => {
   const [state, setState] = useState<GeolocationState>({
     position: null,
@@ -24,7 +37,9 @@ export const useGeolocation = (options?: PositionOptions) => {
     isSupported: 'geolocation' in navigator
   });
 
-  const watchIdRef = React.useRef<number | null>(null);
+  const watchIdRef = useRef<number | null>(null);
+  const lastPositionRef = useRef<{ lat: number; lng: number } | null>(null);
+  const calculatedHeadingRef = useRef<number | null>(null);
 
   const startTracking = useCallback(() => {
     if (!state.isSupported) {
@@ -36,20 +51,48 @@ export const useGeolocation = (options?: PositionOptions) => {
 
     const geoOptions: PositionOptions = {
       enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0,
+      timeout: 15000,
+      maximumAge: 1000, // Allow 1 second cache for smoother updates
       ...options
     };
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
+        const newLat = position.coords.latitude;
+        const newLng = position.coords.longitude;
+        
+        // Calculate heading from movement if device doesn't provide it
+        let heading = position.coords.heading;
+        
+        if (lastPositionRef.current && (heading === null || heading === undefined)) {
+          const distance = Math.sqrt(
+            Math.pow(newLat - lastPositionRef.current.lat, 2) + 
+            Math.pow(newLng - lastPositionRef.current.lng, 2)
+          );
+          
+          // Only calculate heading if moved enough (about 5 meters)
+          if (distance > 0.00005) {
+            heading = calculateHeading(
+              lastPositionRef.current.lat,
+              lastPositionRef.current.lng,
+              newLat,
+              newLng
+            );
+            calculatedHeadingRef.current = heading;
+          } else {
+            heading = calculatedHeadingRef.current;
+          }
+        }
+        
+        lastPositionRef.current = { lat: newLat, lng: newLng };
+        
         setState(prev => ({
           ...prev,
           position: {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
+            lat: newLat,
+            lng: newLng,
             accuracy: position.coords.accuracy,
-            heading: position.coords.heading,
+            heading: heading,
             speed: position.coords.speed,
             timestamp: position.timestamp
           },
@@ -63,13 +106,13 @@ export const useGeolocation = (options?: PositionOptions) => {
             errorMessage = 'Location permission denied. Please enable location access.';
             break;
           case error.POSITION_UNAVAILABLE:
-            errorMessage = 'Location information unavailable.';
+            errorMessage = 'Location unavailable. Check GPS settings.';
             break;
           case error.TIMEOUT:
-            errorMessage = 'Location request timed out.';
+            errorMessage = 'Location request timed out. Retrying...';
             break;
         }
-        setState(prev => ({ ...prev, error: errorMessage, isTracking: false }));
+        setState(prev => ({ ...prev, error: errorMessage }));
       },
       geoOptions
     );
@@ -80,6 +123,8 @@ export const useGeolocation = (options?: PositionOptions) => {
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
     }
+    lastPositionRef.current = null;
+    calculatedHeadingRef.current = null;
     setState(prev => ({ ...prev, isTracking: false }));
   }, []);
 
@@ -108,8 +153,8 @@ export const useGeolocation = (options?: PositionOptions) => {
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
+          timeout: 15000,
+          maximumAge: 5000
         }
       );
     });

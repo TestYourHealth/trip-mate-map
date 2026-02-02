@@ -280,74 +280,31 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false }, ref) => {
       if (!map.current) return;
 
       const rotation = heading !== null && heading !== undefined ? heading : 0;
-      const speedKmh = speed !== null && speed !== undefined ? Math.round(speed * 3.6) : 0;
-      const hasSpeed = speedKmh > 0;
-      const accuracyRadius = accuracy || 50;
+      const accuracyRadius = Math.min(accuracy || 50, 200); // Cap accuracy circle
       
-      // Google Maps style icon with navigation arrow and speed popup
-      const createNavigationIcon = (rot: number, spd: number, showSpeed: boolean) => {
+      // Clean Google Maps style navigation arrow (no speedometer)
+      const createNavigationIcon = (rot: number) => {
         return L.divIcon({
           className: 'user-location-marker',
           html: `
             <div class="gps-marker-container" style="
               position: relative;
-              width: 60px;
-              height: 80px;
-              transform: translate(-30px, -60px);
+              width: 48px;
+              height: 48px;
             ">
-              <!-- Speed Popup (Google Maps style) -->
-              ${showSpeed ? `
-              <div class="speed-popup" style="
-                position: absolute;
-                top: -8px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-                border: 2px solid #4ade80;
-                border-radius: 12px;
-                padding: 4px 10px;
-                box-shadow: 0 4px 20px rgba(74, 222, 128, 0.3), 0 0 0 1px rgba(255,255,255,0.1);
-                white-space: nowrap;
-                z-index: 10;
-                animation: fadeInScale 0.3s ease-out;
-              ">
-                <div style="
-                  font-size: 16px;
-                  font-weight: 700;
-                  color: #4ade80;
-                  text-align: center;
-                  line-height: 1.2;
-                  text-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
-                ">${spd}</div>
-                <div style="
-                  font-size: 8px;
-                  font-weight: 600;
-                  color: rgba(255,255,255,0.7);
-                  text-align: center;
-                  text-transform: uppercase;
-                  letter-spacing: 0.5px;
-                ">km/h</div>
-              </div>
-              ` : ''}
-              
               <!-- Navigation Arrow (Google Maps blue arrow style) -->
               <div class="nav-arrow-wrapper" style="
                 position: absolute;
-                bottom: 0;
-                left: 50%;
-                transform: translateX(-50%) rotate(${rot}deg);
+                top: 0;
+                left: 0;
+                width: 48px;
+                height: 48px;
+                transform: rotate(${rot}deg);
                 transform-origin: center center;
-                width: 44px;
-                height: 44px;
                 transition: transform 0.3s ease-out;
               ">
-                <svg viewBox="0 0 44 44" style="width: 100%; height: 100%; filter: drop-shadow(0 2px 8px rgba(66, 133, 244, 0.5));">
-                  <!-- Outer glow -->
+                <svg viewBox="0 0 48 48" style="width: 100%; height: 100%; filter: drop-shadow(0 2px 6px rgba(66, 133, 244, 0.5));">
                   <defs>
-                    <radialGradient id="arrowGlow" cx="50%" cy="50%" r="50%">
-                      <stop offset="0%" style="stop-color:#4285f4;stop-opacity:0.4" />
-                      <stop offset="100%" style="stop-color:#4285f4;stop-opacity:0" />
-                    </radialGradient>
                     <linearGradient id="arrowGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                       <stop offset="0%" style="stop-color:#5c9aff" />
                       <stop offset="50%" style="stop-color:#4285f4" />
@@ -355,34 +312,30 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false }, ref) => {
                     </linearGradient>
                   </defs>
                   
-                  <!-- Pulsing outer ring -->
-                  <circle cx="22" cy="22" r="20" fill="url(#arrowGlow)" style="animation: pulseRing 2s ease-out infinite;" />
-                  
                   <!-- White border circle -->
-                  <circle cx="22" cy="22" r="18" fill="white" />
+                  <circle cx="24" cy="24" r="20" fill="white" />
                   
                   <!-- Blue inner circle -->
-                  <circle cx="22" cy="22" r="15" fill="url(#arrowGradient)" />
+                  <circle cx="24" cy="24" r="16" fill="url(#arrowGradient)" />
                   
-                  <!-- Navigation arrow pointing UP (will be rotated by wrapper) -->
-                  <path d="M22 10 L28 26 L22 22 L16 26 Z" fill="white" />
+                  <!-- Direction arrow pointing UP -->
+                  <path d="M24 10 L31 28 L24 23 L17 28 Z" fill="white" />
                 </svg>
               </div>
             </div>
           `,
-          iconSize: [60, 80],
-          iconAnchor: [30, 80]
+          iconSize: [48, 48],
+          iconAnchor: [24, 24]
         });
       };
       
       // Create or update user marker
       if (userMarker.current) {
         userMarker.current.setLatLng([lat, lng]);
-        // Update the icon with new rotation and speed
-        userMarker.current.setIcon(createNavigationIcon(rotation, speedKmh, hasSpeed));
+        userMarker.current.setIcon(createNavigationIcon(rotation));
       } else {
         userMarker.current = L.marker([lat, lng], {
-          icon: createNavigationIcon(rotation, speedKmh, hasSpeed),
+          icon: createNavigationIcon(rotation),
           zIndexOffset: 1000
         }).addTo(map.current);
       }
@@ -394,9 +347,9 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false }, ref) => {
       } else {
         userAccuracyCircle.current = L.circle([lat, lng], {
           radius: accuracyRadius,
-          color: 'rgba(66, 133, 244, 0.8)',
-          fillColor: 'rgba(66, 133, 244, 0.15)',
-          fillOpacity: 0.2,
+          color: 'rgba(66, 133, 244, 0.6)',
+          fillColor: 'rgba(66, 133, 244, 0.1)',
+          fillOpacity: 0.15,
           weight: 2
         }).addTo(map.current);
       }
