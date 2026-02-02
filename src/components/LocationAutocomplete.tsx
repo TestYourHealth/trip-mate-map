@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { MapPin, Loader2, Search, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -22,41 +22,51 @@ interface LocationAutocompleteProps {
 // Suggestions cache - shared across all instances
 const suggestionsCache: Record<string, LocationSuggestion[]> = {};
 
-const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
+// AbortController for canceling in-flight requests
+let abortController: AbortController | null = null;
+
+const LocationAutocomplete = memo(({
   value,
   onChange,
   placeholder = "Search location...",
   icon,
   className,
   rightElement
-}) => {
+}: LocationAutocompleteProps) => {
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Load recent searches from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('recentLocationSearches');
     if (saved) {
-      setRecentSearches(JSON.parse(saved).slice(0, 5));
+      try {
+        setRecentSearches(JSON.parse(saved).slice(0, 5));
+      } catch {
+        setRecentSearches([]);
+      }
     }
   }, []);
 
   // Save to recent searches
   const saveToRecent = useCallback((location: string) => {
-    const updated = [location, ...recentSearches.filter(s => s !== location)].slice(0, 5);
-    setRecentSearches(updated);
-    localStorage.setItem('recentLocationSearches', JSON.stringify(updated));
-  }, [recentSearches]);
+    setRecentSearches(prev => {
+      const updated = [location, ...prev.filter(s => s !== location)].slice(0, 5);
+      localStorage.setItem('recentLocationSearches', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
-  // Fetch suggestions from Nominatim with caching
+  // Fetch suggestions from Nominatim with caching and abort
   const fetchSuggestions = useCallback(async (query: string) => {
-    if (query.length < 3) {
+    if (query.length < 2) {
       setSuggestions([]);
+      setIsLoading(false);
       return;
     }
 
@@ -65,22 +75,42 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     // Check cache first - instant results!
     if (cacheKey in suggestionsCache) {
       setSuggestions(suggestionsCache[cacheKey]);
+      setIsLoading(false);
       return;
     }
+
+    // Cancel previous request
+    if (abortController) {
+      abortController.abort();
+    }
+    abortController = new AbortController();
 
     setIsLoading(true);
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&limit=5`,
-        { headers: { 'User-Agent': 'TripMate/1.0' } }
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&limit=5&addressdetails=0`,
+        { 
+          headers: { 
+            'User-Agent': 'TripMate/1.0',
+            'Accept': 'application/json'
+          },
+          signal: abortController.signal
+        }
       );
+      
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      
       const data = await response.json();
       // Cache the results
       suggestionsCache[cacheKey] = data;
       setSuggestions(data);
-    } catch (error) {
-      console.error('Error fetching suggestions:', error);
-      setSuggestions([]);
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error('Error fetching suggestions:', error);
+        setSuggestions([]);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -92,10 +122,13 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }
+      if (abortController) {
+        abortController.abort();
+      }
     };
   }, []);
 
-  // Debounced search
+  // Debounced search - faster 150ms delay
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     onChange(newValue);
@@ -104,9 +137,10 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       clearTimeout(debounceRef.current);
     }
 
+    // Faster debounce for better UX
     debounceRef.current = setTimeout(() => {
       fetchSuggestions(newValue);
-    }, 300);
+    }, 150);
   }, [onChange, fetchSuggestions]);
 
   // Handle suggestion selection
@@ -232,6 +266,8 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       )}
     </div>
   );
-};
+});
+
+LocationAutocomplete.displayName = 'LocationAutocomplete';
 
 export default LocationAutocomplete;
