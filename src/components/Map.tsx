@@ -32,14 +32,17 @@ export interface MapRef {
   centerOnUser: () => void;
   getRouteCoordinates: () => L.LatLng[] | null;
   setNavigationMode: (isNavigating: boolean) => void;
+  setMapRotation: (heading: number | null) => void;
 }
 
 interface MapProps {
   isNavigating?: boolean;
+  heading?: number | null;
 }
 
-const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false }, ref) => {
+const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null }, ref) => {
   const mapContainer = useRef<HTMLDivElement>(null);
+  const mapWrapper = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const routingControl = useRef<L.Routing.Control | null>(null);
   const markers = useRef<L.Marker[]>([]);
@@ -49,6 +52,7 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false }, ref) => {
   const selectedRouteIndex = useRef<number>(0);
   const routesData = useRef<RouteInfo[]>([]);
   const routeCoordinates = useRef<L.LatLng[] | null>(null);
+  const currentRotation = useRef<number>(0);
   const [isLoaded, setIsLoaded] = useState(false);
 
   const clearMarkers = () => {
@@ -383,7 +387,26 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false }, ref) => {
         // Show controls when not navigating
         if (zoomControl) (zoomControl as HTMLElement).style.display = '';
         if (attribution) (attribution as HTMLElement).style.display = '';
+        // Reset rotation when exiting navigation
+        if (mapWrapper.current) {
+          mapWrapper.current.style.transform = 'rotate(0deg)';
+          currentRotation.current = 0;
+        }
       }
+    },
+    setMapRotation: (headingDeg: number | null) => {
+      if (!mapWrapper.current || headingDeg === null) return;
+      
+      // Rotate map opposite to heading so "up" is always direction of travel
+      const rotation = -headingDeg;
+      currentRotation.current = rotation;
+      mapWrapper.current.style.transform = `rotate(${rotation}deg)`;
+      
+      // Counter-rotate markers so they stay upright
+      const markerElements = mapWrapper.current.querySelectorAll('.leaflet-marker-icon, .leaflet-popup');
+      markerElements.forEach((el) => {
+        (el as HTMLElement).style.transform = `${(el as HTMLElement).style.transform?.replace(/rotate\([^)]*\)/, '') || ''} rotate(${headingDeg}deg)`;
+      });
     }
   }));
 
@@ -445,12 +468,36 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false }, ref) => {
     }
   }, [isNavigating]);
 
+  // Rotate map based on heading during navigation
+  useEffect(() => {
+    if (isNavigating && heading !== null && mapWrapper.current) {
+      const rotation = -heading;
+      currentRotation.current = rotation;
+      mapWrapper.current.style.transform = `rotate(${rotation}deg)`;
+    } else if (!isNavigating && mapWrapper.current) {
+      mapWrapper.current.style.transform = 'rotate(0deg)';
+      currentRotation.current = 0;
+    }
+  }, [heading, isNavigating]);
+
   return (
-    <div className="h-full w-full relative">
+    <div className="h-full w-full relative overflow-hidden">
+      {/* Wrapper for rotation - larger to hide corners when rotated */}
       <div 
-        ref={mapContainer} 
-        className="h-full w-full [&_.leaflet-pane]:z-[1] [&_.leaflet-control]:z-[1]" 
-      />
+        ref={mapWrapper}
+        className="absolute transition-transform duration-300 ease-out"
+        style={{
+          width: '150%',
+          height: '150%',
+          top: '-25%',
+          left: '-25%',
+        }}
+      >
+        <div 
+          ref={mapContainer} 
+          className="h-full w-full [&_.leaflet-pane]:z-[1] [&_.leaflet-control]:z-[1]" 
+        />
+      </div>
       {!isLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-background z-[2]">
           <div className="flex flex-col items-center gap-3">
