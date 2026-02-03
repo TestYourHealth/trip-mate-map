@@ -3,6 +3,7 @@ import { Crosshair, Loader2 } from 'lucide-react';
 import Map, { MapRef, RouteInfo } from '@/components/Map';
 import TripPanel from '@/components/TripPanel';
 import DriverNavigationView from '@/components/DriverNavigationView';
+import CompassIndicator from '@/components/CompassIndicator';
 import { NavigationStep } from '@/components/NavigationPanel';
 import { VehicleConfig } from '@/types/vehicle';
 import { Button } from '@/components/ui/button';
@@ -96,7 +97,8 @@ const Index = () => {
     startTracking, 
     stopTracking, 
     getCurrentPosition,
-    error: geoError 
+    error: geoError,
+    compassHeading
   } = useGeolocation();
 
   // Trip history persistence
@@ -367,6 +369,13 @@ const Index = () => {
           onToggleMute={() => setIsMuted(!isMuted)}
           onCenterUser={() => mapRef.current?.centerOnUser()}
         />
+      )}
+
+      {/* Compass Indicator - bottom left corner */}
+      {!isNavigating && (
+        <div className="absolute bottom-24 left-4 z-[100] md:bottom-6">
+          <CompassIndicator heading={compassHeading ?? position?.heading ?? null} />
+        </div>
       )}
 
       {/* Floating action button - visible when not navigating */}
