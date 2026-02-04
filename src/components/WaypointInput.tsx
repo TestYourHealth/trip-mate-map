@@ -40,6 +40,7 @@ const WaypointInput: React.FC<WaypointInputProps> = ({ waypoints, onWaypointsCha
             size="icon"
             className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
             onClick={() => removeWaypoint(index)}
+            aria-label={`Remove stop ${index + 1}`}
           >
             <X className="w-4 h-4" />
           </Button>

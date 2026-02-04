@@ -22,9 +22,6 @@ interface LocationAutocompleteProps {
 // Suggestions cache - shared across all instances
 const suggestionsCache: Record<string, LocationSuggestion[]> = {};
 
-// AbortController for canceling in-flight requests
-let abortController: AbortController | null = null;
-
 const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   value,
   onChange,
@@ -40,6 +37,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Load recent searches from localStorage
   useEffect(() => {
@@ -80,10 +78,10 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     }
 
     // Cancel previous request
-    if (abortController) {
-      abortController.abort();
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
-    abortController = new AbortController();
+    abortControllerRef.current = new AbortController();
 
     setIsLoading(true);
     try {
@@ -94,7 +92,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
             'User-Agent': 'TripMate/1.0',
             'Accept': 'application/json'
           },
-          signal: abortController.signal
+          signal: abortControllerRef.current.signal
         }
       );
       
@@ -122,8 +120,8 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }
-      if (abortController) {
-        abortController.abort();
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
     };
   }, []);

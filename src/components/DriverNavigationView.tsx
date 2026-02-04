@@ -243,7 +243,7 @@ const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
       </div>
 
       {/* Bottom Stats Bar - Compact */}
-      <div className="absolute bottom-0 left-0 right-0 pointer-events-auto">
+      <div className="absolute bottom-0 left-0 right-0 pointer-events-auto safe-area-bottom">
         <div className="bg-background/95 backdrop-blur mx-2 mb-2 rounded-xl shadow-xl">
           <div className="flex items-center justify-around py-2 px-1">
             {/* ETA */}
