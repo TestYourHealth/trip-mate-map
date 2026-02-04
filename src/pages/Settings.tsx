@@ -1,15 +1,15 @@
 import React from 'react';
-import { Settings as SettingsIcon, Moon, Sun, Bell, MapPin, Volume2, Globe } from 'lucide-react';
+import { Settings as SettingsIcon, Moon, Sun, Bell, MapPin, Volume2, Globe, Sunrise } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { useTheme } from '@/hooks/useTheme';
+import { useAutoTheme } from '@/hooks/useAutoTheme';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 const Settings = () => {
-  const { isDark, toggleTheme } = useTheme();
+  const { themeMode, setMode, isDark } = useAutoTheme();
   const [notifications, setNotifications] = useLocalStorage('notifications', true);
   const [voiceNav, setVoiceNav] = useLocalStorage('voiceNav', false);
   const [autoReroute, setAutoReroute] = useLocalStorage('autoReroute', true);
@@ -39,15 +39,34 @@ const Settings = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label htmlFor="dark-mode" className="flex flex-col gap-1">
-              <span>Dark Mode</span>
-              <span className="text-xs text-muted-foreground font-normal">Use dark theme for the app</span>
+            <Label htmlFor="theme-mode" className="flex flex-col gap-1">
+              <span>Theme Mode</span>
+              <span className="text-xs text-muted-foreground font-normal">
+                {themeMode === 'auto' ? 'Switches at sunset/sunrise' : `Currently ${themeMode} mode`}
+              </span>
             </Label>
-            <Switch 
-              id="dark-mode" 
-              checked={isDark} 
-              onCheckedChange={toggleTheme}
-            />
+            <Select value={themeMode} onValueChange={(val) => setMode(val as 'light' | 'dark' | 'auto')}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="light">
+                  <span className="flex items-center gap-2">
+                    <Sun className="w-4 h-4" /> Light
+                  </span>
+                </SelectItem>
+                <SelectItem value="dark">
+                  <span className="flex items-center gap-2">
+                    <Moon className="w-4 h-4" /> Dark
+                  </span>
+                </SelectItem>
+                <SelectItem value="auto">
+                  <span className="flex items-center gap-2">
+                    <Sunrise className="w-4 h-4" /> Auto
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>

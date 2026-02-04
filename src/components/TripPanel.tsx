@@ -6,10 +6,12 @@ import WaypointInput from './WaypointInput';
 import RouteSelector from './RouteSelector';
 import DirectionsList from './DirectionsList';
 import LocationAutocomplete from './LocationAutocomplete';
+import CitySelector from './CitySelector';
 import { RouteInfo } from './Map';
 import { NavigationStep } from './NavigationPanel';
 import { VehicleConfig } from '@/types/vehicle';
 import { cn } from '@/lib/utils';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface TripPanelProps {
   origin: string;
@@ -67,6 +69,7 @@ const TripPanel: React.FC<TripPanelProps> = ({
   onToggleExpand
 }) => {
   const selectedRoute = routes[selectedRouteIndex];
+  const [currentCity] = useLocalStorage('currentCity', '');
 
   const panelContent = (
     <>
@@ -266,10 +269,20 @@ const TripPanel: React.FC<TripPanelProps> = ({
             </div>
 
             <div className="bg-muted/30 rounded-xl p-3">
-              <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                <DollarSign className="w-3.5 h-3.5" />
-                <span className="text-xs">Cost Breakdown</span>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <DollarSign className="w-3.5 h-3.5" />
+                  <span className="text-xs">Cost Breakdown</span>
+                </div>
+                {/* City Selector with detected city */}
+                <CitySelector compact />
               </div>
+              
+              {currentCity && (
+                <p className="text-xs text-muted-foreground mb-2">
+                  Fuel prices for {currentCity}
+                </p>
+              )}
               
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">

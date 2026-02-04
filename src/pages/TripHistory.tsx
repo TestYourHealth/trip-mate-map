@@ -1,4 +1,4 @@
-import { History, MapPin, Clock, Fuel, ArrowRight, Trash2 } from 'lucide-react';
+import { History, MapPin, Clock, Fuel, ArrowRight, Trash2, Download, FileText, FileSpreadsheet } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { exportToCSV, exportToPDF } from '@/utils/exportTrips';
 
 export interface Trip {
   id: string;
@@ -39,16 +46,56 @@ const TripHistory = () => {
     toast.success('All trips cleared');
   };
 
+  const handleExportCSV = () => {
+    if (trips.length === 0) {
+      toast.error('No trips to export');
+      return;
+    }
+    exportToCSV(trips);
+    toast.success('CSV downloaded!');
+  };
+
+  const handleExportPDF = () => {
+    if (trips.length === 0) {
+      toast.error('No trips to export');
+      return;
+    }
+    exportToPDF(trips);
+  };
+
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center gap-3 mb-8">
-        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-          <History className="w-6 h-6 text-primary" />
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+            <History className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Trip History</h1>
+            <p className="text-muted-foreground">View your past trips and costs</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Trip History</h1>
-          <p className="text-muted-foreground">View your past trips and costs</p>
-        </div>
+
+        {trips.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Download className="w-4 h-4" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="z-[200] bg-background">
+              <DropdownMenuItem onClick={handleExportCSV} className="gap-2 cursor-pointer">
+                <FileSpreadsheet className="w-4 h-4" />
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} className="gap-2 cursor-pointer">
+                <FileText className="w-4 h-4" />
+                Export as PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {trips.length === 0 ? (
