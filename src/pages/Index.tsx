@@ -137,6 +137,13 @@ const Index = () => {
     return R * c;
   };
 
+  // Define stopNavigation before it's used in the useEffect below
+  const stopNavigation = useCallback(() => {
+    setIsNavigating(false);
+    setShowPanel(true);
+    stopTracking(); // Stop GPS tracking
+  }, [stopTracking]);
+
   // Auto-advance navigation based on GPS position
   useEffect(() => {
     if (!isNavigating || !position || navigationSteps.length === 0) return;
@@ -192,7 +199,7 @@ const Index = () => {
     if (minDistance > 100) {
       toast.warning('You seem to be off route. Recalculating...', { id: 'off-route' });
     }
-  }, [position, isNavigating, navigationSteps, currentStepIndex]);
+  }, [position, isNavigating, navigationSteps, currentStepIndex, tripData, origin, destination, setTripHistory, stopNavigation]);
 
   const updateTripData = useCallback((route: RouteInfo) => {
     // Calculate fuel cost based on fuel type
@@ -329,12 +336,6 @@ const Index = () => {
     }
   }, [tripData, navigationSteps, startTracking]);
 
-  const stopNavigation = useCallback(() => {
-    setIsNavigating(false);
-    setShowPanel(true);
-    stopTracking(); // Stop GPS tracking
-  }, [stopTracking]);
-
   const clearTrip = useCallback(() => {
     mapRef.current?.clearRoute();
     setTripData(null);
@@ -365,8 +366,8 @@ const Index = () => {
         <DriverNavigationView
           steps={navigationSteps}
           currentStepIndex={currentStepIndex}
-          remainingDistance={tripData ? tripData.distance * ((navigationSteps.length - currentStepIndex) / navigationSteps.length) : 0}
-          estimatedTime={tripData ? tripData.duration * ((navigationSteps.length - currentStepIndex) / navigationSteps.length) : 0}
+          remainingDistance={tripData && navigationSteps.length > 0 ? tripData.distance * ((navigationSteps.length - currentStepIndex) / navigationSteps.length) : 0}
+          estimatedTime={tripData && navigationSteps.length > 0 ? tripData.duration * ((navigationSteps.length - currentStepIndex) / navigationSteps.length) : 0}
           speed={position?.speed ?? null}
           isMuted={isMuted}
           onClose={stopNavigation}
