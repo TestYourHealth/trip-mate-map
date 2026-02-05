@@ -156,10 +156,12 @@ const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
     }
   };
   const formatDistance = (meters: number) => {
+    if (!meters || meters < 0 || !isFinite(meters)) return '0 m';
     if (meters < 1000) return `${Math.round(meters)} m`;
     return `${(meters / 1000).toFixed(1)} km`;
   };
   const formatTime = (hours: number) => {
+    if (!hours || hours < 0 || !isFinite(hours)) return '0 min';
     const mins = Math.round(hours * 60);
     if (mins < 60) return `${mins} min`;
     const h = Math.floor(mins / 60);

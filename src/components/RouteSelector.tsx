@@ -57,6 +57,8 @@ const RouteSelector: React.FC<RouteSelectorProps> = ({ routes, selectedIndex, on
           <button
             key={index}
             onClick={() => onSelect(index)}
+            aria-pressed={selectedIndex === index}
+            aria-label={`${route.name}, ${route.distance} km, ${route.duration} hours, ${getTrafficLabel(route.trafficLevel)}`}
             className={cn(
               "w-full p-3 rounded-xl border-2 transition-all duration-200 text-left",
               selectedIndex === index
