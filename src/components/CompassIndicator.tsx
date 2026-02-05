@@ -28,6 +28,8 @@ const CompassIndicator: React.FC<CompassIndicatorProps> = ({ heading, className 
         "border border-border/50",
         className
       )}
+      role="status"
+      aria-label={displayHeading !== null ? `Compass heading ${displayHeading} degrees ${getCardinalDirection(displayHeading)}` : 'Compass unavailable'}
     >
       <div className="flex flex-col items-center gap-1">
         {/* Compass Rose */}

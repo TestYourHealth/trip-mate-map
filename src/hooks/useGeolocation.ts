@@ -46,7 +46,11 @@ export const useGeolocation = (options?: PositionOptions) => {
 
   // Handle compass/device orientation
   useEffect(() => {
+    let isMounted = true;
+    
     const handleOrientation = (event: DeviceOrientationEvent) => {
+      if (!isMounted) return;
+      
       // webkitCompassHeading for iOS, alpha for Android
       let heading: number | null = null;
       
@@ -61,7 +65,7 @@ export const useGeolocation = (options?: PositionOptions) => {
         heading = (360 - event.alpha) % 360;
       }
       
-      if (heading !== null && !isNaN(heading)) {
+      if (heading !== null && !isNaN(heading) && isFinite(heading)) {
         compassHeadingRef.current = heading;
         setState(prev => ({ ...prev, compassHeading: heading }));
       }
@@ -87,6 +91,7 @@ export const useGeolocation = (options?: PositionOptions) => {
     requestPermission();
 
     return () => {
+      isMounted = false;
       window.removeEventListener('deviceorientation', handleOrientation, true);
     };
   }, []);

@@ -45,7 +45,16 @@ const getVehicles = (): Vehicle[] => {
     const saved = localStorage.getItem('vehicles');
     if (saved) {
       const parsed = JSON.parse(saved);
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultVehicles;
+      // Validate each vehicle has required properties
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const validVehicles = parsed.filter((v: any) => 
+          v && typeof v.id === 'string' && 
+          typeof v.name === 'string' && 
+          typeof v.mileage === 'number' &&
+          ['petrol', 'diesel', 'cng', 'electric'].includes(v.fuelType)
+        );
+        return validVehicles.length > 0 ? validVehicles : defaultVehicles;
+      }
     }
   } catch (e) {
     console.warn('Error reading vehicles:', e);

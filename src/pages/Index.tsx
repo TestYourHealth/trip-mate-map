@@ -366,8 +366,8 @@ const Index = () => {
         <DriverNavigationView
           steps={navigationSteps}
           currentStepIndex={currentStepIndex}
-          remainingDistance={tripData && navigationSteps.length > 0 ? tripData.distance * ((navigationSteps.length - currentStepIndex) / navigationSteps.length) : 0}
-          estimatedTime={tripData && navigationSteps.length > 0 ? tripData.duration * ((navigationSteps.length - currentStepIndex) / navigationSteps.length) : 0}
+          remainingDistance={tripData && navigationSteps.length > 0 ? Math.max(0, tripData.distance * ((navigationSteps.length - currentStepIndex) / navigationSteps.length)) : 0}
+          estimatedTime={tripData && navigationSteps.length > 0 ? Math.max(0, tripData.duration * ((navigationSteps.length - currentStepIndex) / navigationSteps.length)) : 0}
           speed={position?.speed ?? null}
           isMuted={isMuted}
           onClose={stopNavigation}

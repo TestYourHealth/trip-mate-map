@@ -60,7 +60,7 @@ const DirectionsList: React.FC<DirectionsListProps> = ({
         <span className="text-sm font-medium">Turn-by-turn Directions</span>
       </div>
       
-      <ScrollArea className="h-48 pr-2">
+      <ScrollArea className="h-48 pr-2" tabIndex={-1}>
         <div className="space-y-2">
           {steps.map((step, index) => (
             <button

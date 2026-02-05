@@ -283,8 +283,8 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
     updateUserLocation: (lat: number, lng: number, heading?: number | null, speed?: number | null, accuracy?: number) => {
       if (!map.current) return;
 
-      const rotation = heading !== null && heading !== undefined ? heading : 0;
-      const accuracyRadius = Math.min(accuracy || 50, 200); // Cap accuracy circle
+      const rotation = typeof heading === 'number' && !isNaN(heading) ? heading : 0;
+      const accuracyRadius = Math.min(Math.max(accuracy || 50, 10), 200); // Cap accuracy circle between 10-200m
       
       // Clean Google Maps style navigation arrow (no speedometer)
       const createNavigationIcon = (rot: number) => {
