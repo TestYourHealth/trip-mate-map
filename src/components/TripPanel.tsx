@@ -1,11 +1,9 @@
 import React from 'react';
-import { MapPin, Navigation, Fuel, DollarSign, Clock, Car, RotateCcw, ChevronUp, ChevronDown, Locate, Loader2 } from 'lucide-react';
+import { Navigation, Fuel, DollarSign, Clock, Car, RotateCcw, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import VehicleSelector from './VehicleSelector';
-import WaypointInput from './WaypointInput';
 import RouteSelector from './RouteSelector';
 import DirectionsList from './DirectionsList';
-import LocationAutocomplete from './LocationAutocomplete';
 import CitySelector from './CitySelector';
 import { RouteInfo } from './Map';
 import { NavigationStep } from './NavigationPanel';
@@ -85,8 +83,10 @@ const TripPanel: React.FC<TripPanelProps> = ({
           <Navigation className="w-5 h-5 text-primary" />
         </div>
         <div className="flex-1">
-          <h2 className="text-lg font-bold text-foreground">Trip Plan करें</h2>
-          <p className="text-xs text-muted-foreground">Real-time traffic के साथ</p>
+          <h2 className="text-lg font-bold text-foreground">Trip Details</h2>
+          <p className="text-xs text-muted-foreground">
+            {origin.split(',')[0]} → {destination.split(',')[0]}
+          </p>
         </div>
         {isMobile && (
           <Button variant="ghost" size="icon-sm" onClick={onToggleExpand} aria-label={isExpanded ? "Collapse panel" : "Expand panel"}>
@@ -119,92 +119,30 @@ const TripPanel: React.FC<TripPanelProps> = ({
         isMobile && !isExpanded ? "max-h-0 opacity-0" : "max-h-[2000px] opacity-100"
       )}>
 
-        {/* Inputs with Autocomplete */}
-        <div className="space-y-3 mb-4">
-          <LocationAutocomplete
-            value={origin}
-            onChange={onOriginChange}
-            placeholder="Starting point (e.g., Delhi)"
-            icon={<MapPin className="w-4 h-4 text-green-500" />}
-            rightElement={
-              onUseCurrentLocation && (
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={onUseCurrentLocation}
-                  disabled={isLocating}
-                  title="Use current location"
-                >
-                  {isLocating ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Locate className="w-4 h-4 text-primary" />
-                  )}
-                </Button>
-              )
-            }
-          />
-          
-          <div className="relative flex items-center">
-            <div className="absolute left-5 w-0.5 h-full bg-border" />
-          </div>
-
-          <WaypointInput waypoints={waypoints} onWaypointsChange={onWaypointsChange} />
-
-          <LocationAutocomplete
-            value={destination}
-            onChange={onDestinationChange}
-            placeholder="Destination (e.g., Mumbai)"
-            icon={<MapPin className="w-4 h-4 text-red-500" />}
-          />
-        </div>
-
+        {/* Vehicle Selector */}
         <div className="mb-4">
           <VehicleSelector config={vehicleConfig} onConfigChange={onVehicleConfigChange} />
         </div>
 
-        {/* Single Action Button */}
+        {/* Action Buttons */}
         <div className="flex gap-2 mb-5">
-          {!tripData ? (
-            <Button 
-              onClick={onCalculate}
-              disabled={!origin || !destination || isCalculating}
-              variant="glow"
-              className="flex-1 h-14 text-base"
-            >
-              {isCalculating ? (
-                <span className="flex items-center gap-2">
-                  <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                  Route ढूंढ रहा है...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Navigation className="w-5 h-5" />
-                  Route ढूंढें
-                </span>
-              )}
-            </Button>
-          ) : (
-            <>
-              <Button 
-                onClick={onStartNavigation}
-                variant="default"
-                className="flex-1 h-14 text-base bg-green-600 hover:bg-green-700 text-white"
-              >
-                <Navigation className="w-5 h-5 mr-2" />
-                Navigation शुरू करें
-              </Button>
-              <Button 
-                onClick={onClear}
-                variant="outline"
-                size="icon"
-                className="h-14 w-14"
-                aria-label="Clear trip"
-              >
-                <RotateCcw className="w-5 h-5" />
-              </Button>
-            </>
-          )}
+          <Button 
+            onClick={onStartNavigation}
+            variant="default"
+            className="flex-1 h-14 text-base bg-green-600 hover:bg-green-700 text-white"
+          >
+            <Navigation className="w-5 h-5 mr-2" />
+            Navigation शुरू करें
+          </Button>
+          <Button 
+            onClick={onClear}
+            variant="outline"
+            size="icon"
+            className="h-14 w-14"
+            aria-label="Clear trip"
+          >
+            <RotateCcw className="w-5 h-5" />
+          </Button>
         </div>
 
         {/* Route Selector */}
