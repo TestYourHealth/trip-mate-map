@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Crosshair, Loader2 } from 'lucide-react';
 import Map, { MapRef, RouteInfo } from '@/components/Map';
 import TripPanel from '@/components/TripPanel';
+import TopSearchBar from '@/components/TopSearchBar';
 import DriverNavigationView from '@/components/DriverNavigationView';
 import CompassIndicator from '@/components/CompassIndicator';
 import { NavigationStep } from '@/components/NavigationPanel';
@@ -376,6 +377,20 @@ const Index = () => {
         />
       )}
 
+      {/* Top Search Bar - visible when not navigating */}
+      {!isNavigating && (
+        <TopSearchBar
+          origin={origin}
+          destination={destination}
+          onOriginChange={setOrigin}
+          onDestinationChange={setDestination}
+          onCalculate={calculateTrip}
+          isCalculating={isCalculating}
+          hasRoute={!!tripData}
+          getCurrentPosition={getCurrentPosition}
+        />
+      )}
+
       {/* Compass Indicator - bottom left corner */}
       {!isNavigating && (
         <div className="absolute bottom-24 left-4 z-[100] md:bottom-6">
@@ -403,9 +418,9 @@ const Index = () => {
         </div>
       )}
 
-      {/* Trip Planning Panel - Desktop */}
-      {!isMobile && showPanel && !isNavigating && (
-        <div className="absolute top-4 right-16 z-[100]">
+      {/* Trip Details Panel - Desktop (only show after route calculation) */}
+      {!isMobile && tripData && !isNavigating && (
+        <div className="absolute bottom-6 right-4 z-[100]">
           <TripPanel
             origin={origin}
             destination={destination}
@@ -431,8 +446,8 @@ const Index = () => {
         </div>
       )}
 
-      {/* Trip Planning Panel - Mobile (Bottom Sheet) */}
-      {isMobile && !isNavigating && (
+      {/* Trip Details Panel - Mobile (Bottom Sheet) - only show after route calculation */}
+      {isMobile && tripData && !isNavigating && (
         <div className="absolute bottom-0 left-0 right-0 z-[100]">
           <TripPanel
             origin={origin}
