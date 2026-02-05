@@ -470,27 +470,45 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
 
   // Rotate map based on heading during navigation
   useEffect(() => {
-    if (isNavigating && heading !== null && mapWrapper.current) {
-      const rotation = -heading;
+    if (isNavigating && heading !== null && !isNaN(heading) && mapWrapper.current) {
+      // Normalize heading to 0-360 range
+      const normalizedHeading = ((heading % 360) + 360) % 360;
+      const rotation = -normalizedHeading;
       currentRotation.current = rotation;
       mapWrapper.current.style.transform = `rotate(${rotation}deg)`;
+      
+      // Counter-rotate all markers and popups so they stay upright
+      const markerElements = mapWrapper.current.querySelectorAll('.leaflet-marker-icon, .leaflet-popup');
+      markerElements.forEach((el) => {
+        const htmlEl = el as HTMLElement;
+        // Remove any existing rotate transform and add new one
+        const currentTransform = htmlEl.style.transform?.replace(/rotate\([^)]*\)/g, '').trim() || '';
+        htmlEl.style.transform = `${currentTransform} rotate(${normalizedHeading}deg)`;
+      });
     } else if (!isNavigating && mapWrapper.current) {
       mapWrapper.current.style.transform = 'rotate(0deg)';
       currentRotation.current = 0;
+      
+      // Reset marker rotations
+      const markerElements = mapWrapper.current.querySelectorAll('.leaflet-marker-icon, .leaflet-popup');
+      markerElements.forEach((el) => {
+        const htmlEl = el as HTMLElement;
+        htmlEl.style.transform = htmlEl.style.transform?.replace(/rotate\([^)]*\)/g, '').trim() || '';
+      });
     }
   }, [heading, isNavigating]);
 
   return (
     <div className="h-full w-full relative overflow-hidden">
-      {/* Wrapper for rotation - larger to hide corners when rotated */}
+      {/* Wrapper for rotation - 200% size to fully hide corners at any rotation angle */}
       <div 
         ref={mapWrapper}
-        className="absolute transition-transform duration-300 ease-out"
+        className="absolute transition-transform duration-200 ease-out"
         style={{
-          width: '150%',
-          height: '150%',
-          top: '-25%',
-          left: '-25%',
+          width: '200%',
+          height: '200%',
+          top: '-50%',
+          left: '-50%',
         }}
       >
         <div 
