@@ -3,11 +3,12 @@ import { cn } from '@/lib/utils';
 
 interface CompassIndicatorProps {
   heading: number | null;
+  onResetNorth?: () => void;
   className?: string;
 }
 
-const CompassIndicator: React.FC<CompassIndicatorProps> = ({ heading, className }) => {
-  const displayHeading = heading !== null ? Math.round(heading) : null;
+const CompassIndicator: React.FC<CompassIndicatorProps> = ({ heading, onResetNorth, className }) => {
+  const displayHeading = heading !== null ? Math.round(((heading % 360) + 360) % 360) : null;
   
   const getCardinalDirection = (deg: number): string => {
     if (deg >= 337.5 || deg < 22.5) return 'N';
@@ -21,67 +22,43 @@ const CompassIndicator: React.FC<CompassIndicatorProps> = ({ heading, className 
     return 'N';
   };
 
+  // Show red tint when not facing north
+  const isOffNorth = displayHeading !== null && displayHeading > 5 && displayHeading < 355;
+
   return (
-    <div 
+    <button
+      onClick={onResetNorth}
       className={cn(
-        "bg-background/95 backdrop-blur-sm rounded-xl shadow-lg p-2 min-w-[64px]",
-        "border border-border/50",
+        "bg-background/95 backdrop-blur-sm rounded-full shadow-lg p-1.5",
+        "border border-border/50 transition-all duration-200",
+        "hover:scale-105 active:scale-95",
+        isOffNorth && "ring-2 ring-destructive/30",
         className
       )}
-      role="status"
-      aria-label={displayHeading !== null ? `Compass heading ${displayHeading} degrees ${getCardinalDirection(displayHeading)}` : 'Compass unavailable'}
+      role="button"
+      aria-label={displayHeading !== null ? `Reset to north. Current heading ${displayHeading}° ${getCardinalDirection(displayHeading)}` : 'Compass unavailable'}
     >
-      <div className="flex flex-col items-center gap-1">
-        {/* Compass Rose */}
-        <div className="relative w-12 h-12">
-          {/* Outer ring */}
-          <div className="absolute inset-0 rounded-full border-2 border-muted-foreground/30" />
-          
-          {/* Cardinal markers */}
-          <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-0.5 text-[8px] font-bold text-primary">N</span>
-          <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-0.5 text-[8px] font-medium text-muted-foreground">S</span>
-          <span className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-0.5 text-[8px] font-medium text-muted-foreground">W</span>
-          <span className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-0.5 text-[8px] font-medium text-muted-foreground">E</span>
-          
-          {/* Rotating needle */}
-          <div 
-            className="absolute inset-2 transition-transform duration-300 ease-out"
-            style={{ transform: `rotate(${displayHeading ?? 0}deg)` }}
-          >
-            <svg viewBox="0 0 32 32" className="w-full h-full">
-              {/* North needle (red) */}
-              <path 
-                d="M16 4 L19 16 L16 14 L13 16 Z" 
-                className="fill-destructive"
-              />
-              {/* South needle (gray) */}
-              <path 
-                d="M16 28 L13 16 L16 18 L19 16 Z" 
-                className="fill-muted-foreground/50"
-              />
-              {/* Center dot */}
-              <circle cx="16" cy="16" r="2" className="fill-foreground" />
-            </svg>
-          </div>
-        </div>
-        
-        {/* Heading display */}
-        <div className="text-center">
-          {displayHeading !== null ? (
-            <>
-              <p className="text-sm font-bold text-foreground leading-none">
-                {displayHeading}°
-              </p>
-              <p className="text-[9px] text-primary font-medium">
-                {getCardinalDirection(displayHeading)}
-              </p>
-            </>
-          ) : (
-            <p className="text-xs text-muted-foreground">--°</p>
-          )}
-        </div>
+      {/* Compact compass - just the needle */}
+      <div 
+        className="w-8 h-8 relative transition-transform duration-150 ease-out"
+        style={{ transform: `rotate(${-(displayHeading ?? 0)}deg)` }}
+      >
+        <svg viewBox="0 0 32 32" className="w-full h-full">
+          {/* North needle (red) */}
+          <path 
+            d="M16 4 L19 15 L16 13 L13 15 Z" 
+            className="fill-destructive"
+          />
+          {/* South needle (white/gray) */}
+          <path 
+            d="M16 28 L13 17 L16 19 L19 17 Z" 
+            className="fill-muted-foreground/40"
+          />
+          {/* Center dot */}
+          <circle cx="16" cy="16" r="2.5" className="fill-background stroke-foreground/30" strokeWidth="1" />
+        </svg>
       </div>
-    </div>
+    </button>
   );
 };
 

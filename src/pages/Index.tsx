@@ -91,6 +91,7 @@ const Index = () => {
   const [isMuted, setIsMuted] = useState(false);
   const lastOffRouteWarning = useRef<number>(0);
   const [isLocating, setIsLocating] = useState(false);
+  const [mapRotation, setMapRotation] = useState(0);
 
   // GPS tracking
   const { 
@@ -362,6 +363,7 @@ const Index = () => {
           ref={mapRef} 
           isNavigating={isNavigating} 
           heading={isNavigating ? (compassHeading ?? position?.heading ?? null) : null}
+          onRotationChange={setMapRotation}
         />
       </div>
 
@@ -397,7 +399,10 @@ const Index = () => {
       {/* Compass Indicator - bottom left corner */}
       {!isNavigating && (
         <div className="absolute bottom-24 left-4 z-[100] md:bottom-6">
-          <CompassIndicator heading={compassHeading ?? position?.heading ?? null} />
+          <CompassIndicator 
+            heading={mapRotation} 
+            onResetNorth={() => mapRef.current?.resetNorth()}
+          />
         </div>
       )}
 
