@@ -17,6 +17,8 @@ interface LocationAutocompleteProps {
   icon?: React.ReactNode;
   className?: string;
   rightElement?: React.ReactNode;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }
 
 // Suggestions cache - shared across all instances
@@ -28,7 +30,9 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   placeholder = "Search location...",
   icon,
   className,
-  rightElement
+  rightElement,
+  onFocus: externalOnFocus,
+  onBlur: externalOnBlur
 }) => {
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -182,7 +186,11 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           ref={inputRef}
           value={value}
           onChange={handleInputChange}
-          onFocus={() => setShowSuggestions(true)}
+          onFocus={() => {
+            setShowSuggestions(true);
+            externalOnFocus?.();
+          }}
+          onBlur={() => externalOnBlur?.()}
           placeholder={placeholder}
           className={cn(
             "bg-muted/50 border-0 focus-visible:ring-primary h-12",
