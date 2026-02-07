@@ -33,14 +33,17 @@ export interface MapRef {
   getRouteCoordinates: () => L.LatLng[] | null;
   setNavigationMode: (isNavigating: boolean) => void;
   setMapRotation: (heading: number | null) => void;
+  resetNorth: () => void;
+  getRotation: () => number;
 }
 
 interface MapProps {
   isNavigating?: boolean;
   heading?: number | null;
+  onRotationChange?: (rotation: number) => void;
 }
 
-const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null }, ref) => {
+const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null, onRotationChange }, ref) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapWrapper = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
@@ -412,6 +415,23 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
       markerElements.forEach((el) => {
         (el as HTMLElement).style.transform = `${(el as HTMLElement).style.transform?.replace(/rotate\([^)]*\)/, '') || ''} rotate(${headingDeg}deg)`;
       });
+    },
+    resetNorth: () => {
+      setManualRotation(0);
+      onRotationChange?.(0);
+      currentRotation.current = 0;
+      if (mapWrapper.current) {
+        mapWrapper.current.style.transform = 'rotate(0deg)';
+        // Reset marker rotations
+        const markerElements = mapWrapper.current.querySelectorAll('.leaflet-marker-icon, .leaflet-popup');
+        markerElements.forEach((el) => {
+          const htmlEl = el as HTMLElement;
+          htmlEl.style.transform = htmlEl.style.transform?.replace(/rotate\([^)]*\)/g, '').trim() || '';
+        });
+      }
+    },
+    getRotation: () => {
+      return manualRotation;
     }
   }));
 
@@ -526,8 +546,9 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
       if (e.touches.length === 2 && touchStartAngle.current !== null) {
         const currentAngle = getAngle(e.touches[0], e.touches[1]);
         const angleDiff = currentAngle - touchStartAngle.current;
-        const newRotation = (touchStartRotation.current + angleDiff + 360) % 360;
+        const newRotation = ((touchStartRotation.current + angleDiff) % 360 + 360) % 360;
         setManualRotation(newRotation);
+        onRotationChange?.(newRotation);
         
         // Apply rotation to map wrapper
         if (mapWrapper.current && !isNavigating) {
