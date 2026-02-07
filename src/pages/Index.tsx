@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Crosshair, Loader2 } from 'lucide-react';
 import Map, { MapRef, RouteInfo } from '@/components/Map';
 import TripPanel from '@/components/TripPanel';
@@ -89,6 +89,7 @@ const Index = () => {
   const [navigationSteps, setNavigationSteps] = useState<NavigationStep[]>([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+  const lastOffRouteWarning = useRef<number>(0);
   const [isLocating, setIsLocating] = useState(false);
 
   // GPS tracking
@@ -196,9 +197,11 @@ const Index = () => {
       }
     }
 
-    // Check if user is off route (more than 100m away)
-    if (minDistance > 100) {
-      toast.warning('You seem to be off route. Recalculating...', { id: 'off-route' });
+    // Check if user is off route (more than 150m away) with 30s cooldown
+    const now = Date.now();
+    if (minDistance > 150 && now - lastOffRouteWarning.current > 30000) {
+      lastOffRouteWarning.current = now;
+      toast.warning('आप route से दूर हैं। कृपया route पर वापस आएं।', { id: 'off-route' });
     }
   }, [position, isNavigating, navigationSteps, currentStepIndex, tripData, origin, destination, setTripHistory, stopNavigation]);
 
