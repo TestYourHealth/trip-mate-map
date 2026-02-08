@@ -1,5 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { Crosshair, Loader2 } from 'lucide-react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import Map, { MapRef, RouteInfo } from '@/components/Map';
 import TripPanel from '@/components/TripPanel';
 import TopSearchBar from '@/components/TopSearchBar';
@@ -7,7 +6,6 @@ import DriverNavigationView from '@/components/DriverNavigationView';
 import CompassIndicator from '@/components/CompassIndicator';
 import { NavigationStep } from '@/components/NavigationPanel';
 import { VehicleConfig } from '@/types/vehicle';
-import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGeolocation } from '@/hooks/useGeolocation';
@@ -382,7 +380,7 @@ const Index = () => {
         />
       )}
 
-      {/* Top Search Bar - visible when not navigating */}
+      {/* Top Header Bar - visible when not navigating */}
       {!isNavigating && (
         <TopSearchBar
           origin={origin}
@@ -393,6 +391,8 @@ const Index = () => {
           isCalculating={isCalculating}
           hasRoute={!!tripData}
           getCurrentPosition={getCurrentPosition}
+          onLocateMe={handleLocateMe}
+          isLocating={isLocating}
         />
       )}
 
@@ -403,26 +403,6 @@ const Index = () => {
             heading={mapRotation} 
             onResetNorth={() => mapRef.current?.resetNorth()}
           />
-        </div>
-      )}
-
-      {/* Floating action button - visible when not navigating */}
-      {!isNavigating && (
-        <div className="absolute top-4 right-4 z-[100] flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={handleLocateMe}
-            disabled={isLocating}
-            className="animate-fade-in bg-background shadow-md"
-            aria-label="Find my location"
-          >
-            {isLocating ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Crosshair className="w-5 h-5" />
-            )}
-          </Button>
         </div>
       )}
 
