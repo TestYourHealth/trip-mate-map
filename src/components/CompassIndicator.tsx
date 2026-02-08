@@ -29,7 +29,7 @@ const CompassIndicator: React.FC<CompassIndicatorProps> = ({ heading, onResetNor
     <button
       onClick={onResetNorth}
       className={cn(
-        "bg-background/95 backdrop-blur-sm rounded-full shadow-lg p-1.5",
+        "bg-background/95 backdrop-blur-sm rounded-full shadow-lg p-1",
         "border border-border/50 transition-all duration-200",
         "hover:scale-105 active:scale-95",
         isOffNorth && "ring-2 ring-destructive/30",
@@ -39,19 +39,19 @@ const CompassIndicator: React.FC<CompassIndicatorProps> = ({ heading, onResetNor
       aria-label={displayHeading !== null ? `Reset to north. Current heading ${displayHeading}° ${getCardinalDirection(displayHeading)}` : 'Compass unavailable'}
     >
       {/* Compact compass - just the needle */}
-      <div 
-        className="w-8 h-8 relative transition-transform duration-150 ease-out"
+      <div
+        className="w-6 h-6 relative"
         style={{ transform: `rotate(${-(displayHeading ?? 0)}deg)` }}
       >
         <svg viewBox="0 0 32 32" className="w-full h-full">
           {/* North needle (red) */}
-          <path 
-            d="M16 4 L19 15 L16 13 L13 15 Z" 
+          <path
+            d="M16 4 L19 15 L16 13 L13 15 Z"
             className="fill-destructive"
           />
           {/* South needle (white/gray) */}
-          <path 
-            d="M16 28 L13 17 L16 19 L19 17 Z" 
+          <path
+            d="M16 28 L13 17 L16 19 L19 17 Z"
             className="fill-muted-foreground/40"
           />
           {/* Center dot */}

@@ -59,9 +59,12 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
   const [isLoaded, setIsLoaded] = useState(false);
   
   // Two-finger rotation state
-  const [manualRotation, setManualRotation] = useState(0);
-  const touchStartAngle = useRef<number | null>(null);
-  const touchStartRotation = useRef<number>(0);
+  const [manualRotation, _setManualRotation] = useState(0);
+  const manualRotationRef = useRef(0);
+  const setManualRotation = (val: number) => {
+    manualRotationRef.current = val;
+    _setManualRotation(val);
+  };
 
   const clearMarkers = () => {
     markers.current.forEach(m => m.remove());
@@ -431,7 +434,7 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
       }
     },
     getRotation: () => {
-      return manualRotation;
+      return manualRotationRef.current;
     }
   }));
 
@@ -526,62 +529,87 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
   // Two-finger twist rotation gesture (Google/Apple Maps style)
   useEffect(() => {
     if (!mapContainer.current) return;
-    
+
     const container = mapContainer.current;
-    
+
+    const normalizeDelta = (deg: number) => {
+      // convert any delta to the shortest path (-180..180) to avoid jump near 360/0 boundary
+      let d = ((deg % 360) + 360) % 360;
+      if (d > 180) d -= 360;
+      return d;
+    };
+
     const getAngle = (touch1: Touch, touch2: Touch): number => {
       const dx = touch2.clientX - touch1.clientX;
       const dy = touch2.clientY - touch1.clientY;
-      return Math.atan2(dy, dx) * (180 / Math.PI);
+      return (Math.atan2(dy, dx) * 180) / Math.PI;
     };
-    
+
+    const lastAngle = { current: null as number | null };
+
+    const applyRotation = (rotationDeg: number) => {
+      if (!mapWrapper.current || isNavigating) return;
+
+      // Rotate map opposite to the dial so it feels like Google Maps
+      mapWrapper.current.style.transform = `rotate(${-rotationDeg}deg)`;
+      currentRotation.current = -rotationDeg;
+
+      // Counter-rotate markers/popup DOM so they stay upright
+      const markerElements = mapWrapper.current.querySelectorAll('.leaflet-marker-icon, .leaflet-popup');
+      markerElements.forEach((el) => {
+        const htmlEl = el as HTMLElement;
+        const base = htmlEl.style.transform?.replace(/rotate\([^)]*\)/g, '').trim() || '';
+        htmlEl.style.transform = `${base} rotate(${rotationDeg}deg)`;
+      });
+    };
+
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 2) {
-        touchStartAngle.current = getAngle(e.touches[0], e.touches[1]);
-        touchStartRotation.current = manualRotation;
-      }
-    };
-    
-    const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 2 && touchStartAngle.current !== null) {
-        const currentAngle = getAngle(e.touches[0], e.touches[1]);
-        const angleDiff = currentAngle - touchStartAngle.current;
-        const newRotation = ((touchStartRotation.current + angleDiff) % 360 + 360) % 360;
-        setManualRotation(newRotation);
-        onRotationChange?.(newRotation);
-        
-        // Apply rotation to map wrapper
-        if (mapWrapper.current && !isNavigating) {
-          mapWrapper.current.style.transform = `rotate(${-newRotation}deg)`;
-          currentRotation.current = -newRotation;
-          
-          // Counter-rotate markers
-          const markerElements = mapWrapper.current.querySelectorAll('.leaflet-marker-icon, .leaflet-popup');
-          markerElements.forEach((el) => {
-            const htmlEl = el as HTMLElement;
-            const currentTransform = htmlEl.style.transform?.replace(/rotate\([^)]*\)/g, '').trim() || '';
-            htmlEl.style.transform = `${currentTransform} rotate(${newRotation}deg)`;
-          });
+        lastAngle.current = getAngle(e.touches[0], e.touches[1]);
+
+        // Remove smoothing while user is actively rotating (prevents laggy feel)
+        if (mapWrapper.current) {
+          mapWrapper.current.style.transition = 'none';
         }
       }
     };
-    
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 2 || lastAngle.current === null || isNavigating) return;
+
+      const currentAngle = getAngle(e.touches[0], e.touches[1]);
+      const delta = normalizeDelta(currentAngle - lastAngle.current);
+      lastAngle.current = currentAngle;
+
+      const next = ((manualRotationRef.current + delta) % 360 + 360) % 360;
+      setManualRotation(next);
+      onRotationChange?.(next);
+      applyRotation(next);
+    };
+
     const handleTouchEnd = (e: TouchEvent) => {
       if (e.touches.length < 2) {
-        touchStartAngle.current = null;
+        lastAngle.current = null;
+
+        // Restore smoothing after gesture
+        if (mapWrapper.current) {
+          mapWrapper.current.style.transition = '';
+        }
       }
     };
-    
+
     container.addEventListener('touchstart', handleTouchStart, { passive: true });
     container.addEventListener('touchmove', handleTouchMove, { passive: true });
     container.addEventListener('touchend', handleTouchEnd, { passive: true });
-    
+    container.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+
     return () => {
       container.removeEventListener('touchstart', handleTouchStart);
       container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('touchend', handleTouchEnd);
+      container.removeEventListener('touchcancel', handleTouchEnd);
     };
-  }, [manualRotation, isNavigating]);
+  }, [isNavigating, onRotationChange]);
 
   return (
     <div className="h-full w-full relative overflow-hidden">
