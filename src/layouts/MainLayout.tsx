@@ -138,13 +138,10 @@ const MainLayout = () => {
   const isMobile = useIsMobile();
   const isMapPage = location.pathname === '/';
 
-  // For the main map page - floating menu only
+  // For the main map page - no extra menu (TopSearchBar has its own)
   if (isMapPage) {
     return (
       <div className="h-screen w-screen overflow-hidden relative">
-        <div className="absolute top-4 left-4 z-50">
-          <AppMenu />
-        </div>
         <Outlet />
       </div>
     );

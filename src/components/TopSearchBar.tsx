@@ -85,9 +85,9 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
   };
 
   const menuItems = [
-    { label: 'Vehicle Settings', path: '/vehicle-settings' },
-    { label: 'Fuel Prices', path: '/fuel-settings' },
-    { label: 'Trip History', path: '/trip-history' },
+    { label: 'Vehicle Settings', path: '/settings/vehicle' },
+    { label: 'Fuel Prices', path: '/settings/fuel' },
+    { label: 'Trip History', path: '/history' },
     { label: 'Settings', path: '/settings' },
     { label: 'Help', path: '/help' },
   ];
@@ -107,7 +107,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
               <Menu className="w-5 h-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-72">
+          <SheetContent side="left" className="w-72" aria-describedby={undefined}>
             <SheetHeader>
               <SheetTitle className="text-left">TripMate</SheetTitle>
             </SheetHeader>
