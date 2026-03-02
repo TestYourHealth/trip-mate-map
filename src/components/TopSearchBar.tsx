@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Loader2, X, Menu, Crosshair } from 'lucide-react';
+import { Search, Loader2, X, Menu, Crosshair, Car, Fuel, Clock, Settings, HelpCircle, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import LocationAutocomplete from './LocationAutocomplete';
 import { cn } from '@/lib/utils';
@@ -60,7 +60,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
         setHasAutoLocated(true);
       } catch (error) {
         console.warn('Could not auto-detect location:', error);
-        onOriginChange('📍 Current Location');
+        onOriginChange('Current Location');
         setHasAutoLocated(true);
       } finally {
         setIsGettingLocation(false);
@@ -84,39 +84,39 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
   };
 
   const menuItems = [
-    { label: 'Vehicle Settings', path: '/settings/vehicle' },
-    { label: 'Fuel Prices', path: '/settings/fuel' },
-    { label: 'Trip History', path: '/history' },
-    { label: 'Settings', path: '/settings' },
-    { label: 'Help', path: '/help' },
+    { label: 'Vehicle Settings', path: '/settings/vehicle', icon: Car },
+    { label: 'Fuel Prices', path: '/settings/fuel', icon: Fuel },
+    { label: 'Trip History', path: '/history', icon: Clock },
+    { label: 'Settings', path: '/settings', icon: Settings },
+    { label: 'Help', path: '/help', icon: HelpCircle },
   ];
 
   return (
-    <div className="absolute top-4 left-4 right-4 z-[150]">
-      {/* Header row: Hamburger + Search + Location */}
-      <div className="flex items-center gap-2">
+    <div className="absolute top-3 left-3 right-3 z-[150]">
+      {/* Unified search card */}
+      <div className={cn(
+        "flex items-center gap-0 bg-background rounded-full shadow-md border border-border/60 transition-all duration-200 overflow-hidden",
+        isFocused && "shadow-lg ring-1 ring-primary/20"
+      )}>
         {/* Hamburger Menu */}
         <Sheet>
           <SheetTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              className="flex-shrink-0 bg-background/95 backdrop-blur-xl shadow-lg border"
-            >
+            <button className="flex-shrink-0 p-3 pl-3.5 text-muted-foreground hover:text-foreground transition-colors">
               <Menu className="w-5 h-5" />
-            </Button>
+            </button>
           </SheetTrigger>
           <SheetContent side="left" className="w-72" aria-describedby={undefined}>
             <SheetHeader>
-              <SheetTitle className="text-left">TripMate</SheetTitle>
+              <SheetTitle className="text-left text-lg font-bold">TripMate</SheetTitle>
             </SheetHeader>
-            <nav className="mt-6 flex flex-col gap-1">
+            <nav className="mt-6 flex flex-col gap-0.5">
               {menuItems.map((item) => (
                 <button
                   key={item.path}
                   onClick={() => navigate(item.path)}
-                  className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted transition-colors text-foreground"
+                  className="w-full flex items-center gap-3 text-left px-4 py-3 rounded-lg hover:bg-muted transition-colors text-foreground text-sm"
                 >
+                  <item.icon className="w-4.5 h-4.5 text-muted-foreground" />
                   {item.label}
                 </button>
               ))}
@@ -124,56 +124,38 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
           </SheetContent>
         </Sheet>
 
-        {/* Search Bar */}
-        <div 
-          className={cn(
-            "flex-1 bg-background/95 backdrop-blur-xl rounded-2xl shadow-lg border transition-all duration-300",
-            isFocused ? "ring-2 ring-primary/30" : ""
+        {/* Search input area */}
+        <div className="flex-1 min-w-0 flex items-center">
+          {isGettingLocation || isCalculating ? (
+            <Loader2 className="w-4 h-4 text-primary animate-spin flex-shrink-0 mr-2" />
+          ) : (
+            <Search className="w-4 h-4 text-muted-foreground/60 flex-shrink-0 mr-2" />
           )}
-        >
-          <div className="flex items-center gap-2 px-3 py-2">
-            {/* Search icon or loading indicator */}
-            <div className="flex-shrink-0">
-              {isGettingLocation || isCalculating ? (
-                <Loader2 className="w-4 h-4 text-primary animate-spin" />
-              ) : (
-                <Search className="w-4 h-4 text-muted-foreground" />
-              )}
-            </div>
-
-            {/* Destination input */}
-            <div className="flex-1 min-w-0">
-              <LocationAutocomplete
-                value={destination}
-                onChange={onDestinationChange}
-                onSelect={handleDestinationSelect}
-                placeholder="कहां जाना है?"
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                className="border-0 bg-transparent shadow-none focus-visible:ring-0 h-9 text-sm placeholder:text-muted-foreground/70"
-              />
-            </div>
-
-            {/* Clear button */}
-            {destination && (
-              <button
-                onClick={handleClear}
-                className="flex-shrink-0 p-1 rounded-full bg-muted hover:bg-muted/80 transition-colors"
-                aria-label="Clear destination"
-              >
-                <X className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
-            )}
-          </div>
+          <LocationAutocomplete
+            value={destination}
+            onChange={onDestinationChange}
+            onSelect={handleDestinationSelect}
+            placeholder="Search destination"
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            className="border-0 bg-transparent shadow-none focus-visible:ring-0 h-10 text-sm placeholder:text-muted-foreground/50"
+          />
+          {destination && (
+            <button
+              onClick={handleClear}
+              className="flex-shrink-0 p-1.5 mr-1 rounded-full hover:bg-muted transition-colors"
+              aria-label="Clear destination"
+            >
+              <X className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+          )}
         </div>
 
-        {/* Current Location Button */}
-        <Button
-          variant="outline"
-          size="icon"
+        {/* Locate me button - inside the bar */}
+        <button
           onClick={onLocateMe}
           disabled={isLocating}
-          className="flex-shrink-0 bg-background/95 backdrop-blur-xl shadow-lg border"
+          className="flex-shrink-0 p-3 pr-3.5 text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
           aria-label="Find my location"
         >
           {isLocating ? (
@@ -181,15 +163,15 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
           ) : (
             <Crosshair className="w-5 h-5" />
           )}
-        </Button>
+        </button>
       </div>
 
-      {/* Current location indicator - below the header */}
+      {/* Current location pill */}
       {origin && (
-        <div className="mt-2 px-14">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm rounded-full px-3 py-1.5 w-fit">
-            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="truncate max-w-[200px]">
+        <div className="mt-2 ml-4">
+          <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-background/90 backdrop-blur-sm rounded-full px-2.5 py-1 shadow-sm border border-border/40">
+            <MapPin className="w-3 h-3 text-primary" />
+            <span className="truncate max-w-[180px]">
               {isGettingLocation ? 'Locating...' : origin}
             </span>
           </div>
