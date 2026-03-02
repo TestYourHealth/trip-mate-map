@@ -70,15 +70,14 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
     getLocation();
   }, [getCurrentPosition, onOriginChange, hasAutoLocated, origin]);
 
-  // Auto-calculate when destination is selected
-  useEffect(() => {
-    if (origin && destination && !hasRoute && !isCalculating) {
-      const timer = setTimeout(() => {
+  // Auto-calculate when destination is selected (not on every keystroke)
+  const handleDestinationSelect = (value: string) => {
+    if (origin && value && !isCalculating) {
+      setTimeout(() => {
         onCalculate();
       }, 300);
-      return () => clearTimeout(timer);
     }
-  }, [destination, origin, hasRoute, isCalculating, onCalculate]);
+  };
 
   const handleClear = () => {
     onDestinationChange('');
@@ -147,6 +146,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
               <LocationAutocomplete
                 value={destination}
                 onChange={onDestinationChange}
+                onSelect={handleDestinationSelect}
                 placeholder="कहां जाना है?"
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}

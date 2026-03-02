@@ -13,6 +13,7 @@ interface LocationSuggestion {
 interface LocationAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
+  onSelect?: (value: string) => void;
   placeholder?: string;
   icon?: React.ReactNode;
   className?: string;
@@ -27,6 +28,7 @@ const suggestionsCache: Record<string, LocationSuggestion[]> = {};
 const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   value,
   onChange,
+  onSelect,
   placeholder = "Search location...",
   icon,
   className,
@@ -149,16 +151,18 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const handleSelect = useCallback((suggestion: LocationSuggestion) => {
     const displayName = suggestion.display_name.split(',').slice(0, 3).join(',');
     onChange(displayName);
+    onSelect?.(displayName);
     saveToRecent(displayName);
     setSuggestions([]);
     setShowSuggestions(false);
-  }, [onChange, saveToRecent]);
+  }, [onChange, onSelect, saveToRecent]);
 
   // Handle recent search selection
   const handleRecentSelect = useCallback((recent: string) => {
     onChange(recent);
+    onSelect?.(recent);
     setShowSuggestions(false);
-  }, [onChange]);
+  }, [onChange, onSelect]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
