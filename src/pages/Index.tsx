@@ -398,7 +398,7 @@ const Index = () => {
 
       {/* Compass Indicator - bottom left corner */}
       {!isNavigating && (
-        <div className="absolute bottom-24 left-4 z-[100] md:bottom-6">
+        <div className="absolute bottom-24 left-3 z-[100] md:bottom-6">
           <CompassIndicator 
             heading={mapRotation} 
             onResetNorth={() => mapRef.current?.resetNorth()}
@@ -467,15 +467,15 @@ const Index = () => {
       {/* Quick Stats Footer - Desktop only, when not navigating */}
       {!isMobile && tripData && !isNavigating && (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[100]">
-          <div className="bg-background rounded-full px-6 py-3 flex items-center gap-6 animate-slide-up shadow-lg border">
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground text-sm">Distance:</span>
-              <span className="font-bold text-foreground">{tripData.distance} km</span>
+          <div className="bg-background rounded-full px-5 py-2.5 flex items-center gap-5 animate-slide-up shadow-md border border-border/60">
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground text-xs">Distance</span>
+              <span className="font-semibold text-sm text-foreground">{tripData.distance} km</span>
             </div>
-            <div className="w-px h-6 bg-border" />
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground text-sm">Total Cost:</span>
-              <span className="font-bold text-primary">₹{tripData.totalCost}</span>
+            <div className="w-px h-4 bg-border" />
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground text-xs">Cost</span>
+              <span className="font-semibold text-sm text-primary">₹{tripData.totalCost}</span>
             </div>
           </div>
         </div>
