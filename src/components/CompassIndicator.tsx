@@ -26,7 +26,7 @@ const CompassIndicator: React.FC<CompassIndicatorProps> = ({ heading, onResetNor
     >
       <Navigation 
         className={cn("w-4 h-4 text-destructive/80", !isOffNorth && "text-muted-foreground")}
-        style={{ transform: `rotate(${-(displayHeading ?? 0)}deg)` }}
+        style={{ transform: `rotate(${displayHeading ?? 0}deg)` }}
         fill={isOffNorth ? "currentColor" : "none"}
         strokeWidth={2}
       />
