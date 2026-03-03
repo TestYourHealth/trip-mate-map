@@ -22,12 +22,11 @@ interface LocationAutocompleteProps {
   rightElement?: React.ReactNode;
   onFocus?: () => void;
   onBlur?: () => void;
+  autoFocus?: boolean;
 }
 
-// Suggestions cache - shared across all instances
 const suggestionsCache: Record<string, LocationSuggestion[]> = {};
 
-// Popular landmarks in India
 const POPULAR_PLACES: LocationSuggestion[] = [
   { display_name: 'India Gate, New Delhi', lat: '28.6129', lon: '77.2295', place_id: -1, type: 'landmark' },
   { display_name: 'Gateway of India, Mumbai', lat: '18.9220', lon: '72.8347', place_id: -2, type: 'landmark' },
@@ -39,7 +38,6 @@ const POPULAR_PLACES: LocationSuggestion[] = [
   { display_name: 'MG Road, Bangalore', lat: '12.9758', lon: '77.6045', place_id: -8, type: 'landmark' },
 ];
 
-// Get user's current position (cached)
 let cachedUserPosition: { lat: number; lng: number } | null = null;
 const getUserPosition = (): Promise<{ lat: number; lng: number } | null> => {
   if (cachedUserPosition) return Promise.resolve(cachedUserPosition);
@@ -56,13 +54,28 @@ const getUserPosition = (): Promise<{ lat: number; lng: number } | null> => {
   });
 };
 
-// Calculate distance between two points in km
 const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+// Highlight matching text
+const HighlightText: React.FC<{ text: string; query: string }> = ({ text, query }) => {
+  if (!query || query.length < 2) return <>{text}</>;
+  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escapedQuery})`, 'gi'));
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === query.toLowerCase()
+          ? <span key={i} className="text-primary font-semibold">{part}</span>
+          : part
+      )}
+    </>
+  );
 };
 
 const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
@@ -74,7 +87,8 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   className,
   rightElement,
   onFocus: externalOnFocus,
-  onBlur: externalOnBlur
+  onBlur: externalOnBlur,
+  autoFocus = false,
 }) => {
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [nearbySuggestions, setNearbySuggestions] = useState<LocationSuggestion[]>([]);
@@ -82,26 +96,28 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Load recent searches from localStorage
+  // Auto-focus
+  useEffect(() => {
+    if (autoFocus && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [autoFocus]);
+
   useEffect(() => {
     const saved = localStorage.getItem('recentLocationSearches');
     if (saved) {
-      try {
-        setRecentSearches(JSON.parse(saved).slice(0, 5));
-      } catch {
-        setRecentSearches([]);
-      }
+      try { setRecentSearches(JSON.parse(saved).slice(0, 5)); } catch { setRecentSearches([]); }
     }
-    // Get user position for nearby sorting
     getUserPosition().then(pos => setUserPos(pos));
   }, []);
 
-  // Save to recent searches
   const saveToRecent = useCallback((location: string) => {
     setRecentSearches(prev => {
       const updated = [location, ...prev.filter(s => s !== location)].slice(0, 5);
@@ -110,7 +126,6 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     });
   }, []);
 
-  // Sort suggestions by distance from user
   const sortByProximity = useCallback((results: LocationSuggestion[]): LocationSuggestion[] => {
     if (!userPos) return results;
     return [...results].sort((a, b) => {
@@ -120,17 +135,10 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     });
   }, [userPos]);
 
-  // Fetch nearby places
   const fetchNearby = useCallback(async (query: string) => {
-    if (!userPos || query.length < 2) {
-      setNearbySuggestions([]);
-      return;
-    }
+    if (!userPos || query.length < 2) { setNearbySuggestions([]); return; }
     const cacheKey = `nearby_${query.toLowerCase().trim()}_${userPos.lat.toFixed(2)}_${userPos.lng.toFixed(2)}`;
-    if (cacheKey in suggestionsCache) {
-      setNearbySuggestions(suggestionsCache[cacheKey]);
-      return;
-    }
+    if (cacheKey in suggestionsCache) { setNearbySuggestions(suggestionsCache[cacheKey]); return; }
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&lat=${userPos.lat}&lon=${userPos.lng}&limit=3&bounded=0&addressdetails=0`,
@@ -140,54 +148,34 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       const sorted = sortByProximity(data).slice(0, 3);
       suggestionsCache[cacheKey] = sorted;
       setNearbySuggestions(sorted);
-    } catch {
-      setNearbySuggestions([]);
-    }
+    } catch { setNearbySuggestions([]); }
   }, [userPos, sortByProximity]);
 
-  // Fetch global suggestions from Nominatim with caching and abort
   const fetchSuggestions = useCallback(async (query: string) => {
-    if (query.length < 2) {
-      setSuggestions([]);
-      setIsLoading(false);
-      return;
-    }
-
+    if (query.length < 2) { setSuggestions([]); setIsLoading(false); return; }
     const cacheKey = query.toLowerCase().trim();
     if (cacheKey in suggestionsCache) {
       setSuggestions(sortByProximity(suggestionsCache[cacheKey]));
       setIsLoading(false);
       return;
     }
-
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+    if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
-
     setIsLoading(true);
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&limit=6&addressdetails=0`,
-        { 
-          headers: { 'User-Agent': 'TripMate/1.0', 'Accept': 'application/json' },
-          signal: abortControllerRef.current.signal
-        }
+        { headers: { 'User-Agent': 'TripMate/1.0', 'Accept': 'application/json' }, signal: abortControllerRef.current.signal }
       );
       if (!response.ok) throw new Error('Network error');
       const data = await response.json();
       suggestionsCache[cacheKey] = data;
       setSuggestions(sortByProximity(data));
     } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        setSuggestions([]);
-      }
-    } finally {
-      setIsLoading(false);
-    }
+      if (error.name !== 'AbortError') setSuggestions([]);
+    } finally { setIsLoading(false); }
   }, [sortByProximity]);
 
-  // Clear on unmount
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -195,18 +183,50 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     };
   }, []);
 
-  // Debounced search
+  // Build flat list of all selectable items for keyboard nav
+  const getAllItems = useCallback((): Array<{ type: 'suggestion' | 'nearby' | 'recent' | 'popular'; data: LocationSuggestion | string }> => {
+    const items: Array<{ type: 'suggestion' | 'nearby' | 'recent' | 'popular'; data: LocationSuggestion | string }> = [];
+    const hasQuery = value.length >= 2;
+
+    if (nearbySuggestions.length > 0) {
+      nearbySuggestions.forEach(s => items.push({ type: 'nearby', data: s }));
+    }
+    if (recentSearches.length > 0 && !hasQuery) {
+      recentSearches.forEach(s => items.push({ type: 'recent', data: s }));
+    }
+    const matchedPopular = hasQuery
+      ? POPULAR_PLACES.filter(p => p.display_name.toLowerCase().includes(value.toLowerCase())).slice(0, 3)
+      : [];
+    if (matchedPopular.length > 0) {
+      matchedPopular.forEach(p => items.push({ type: 'popular', data: p }));
+    }
+    if (!hasQuery && recentSearches.length === 0) {
+      POPULAR_PLACES.slice(0, 4).forEach(p => items.push({ type: 'popular', data: p }));
+    }
+    if (suggestions.length > 0) {
+      suggestions.forEach(s => items.push({ type: 'suggestion', data: s }));
+    }
+    return items;
+  }, [value, suggestions, nearbySuggestions, recentSearches]);
+
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     onChange(newValue);
+    setActiveIndex(-1);
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    // Instant for cached, 100ms debounce for network
+    const cacheKey = newValue.toLowerCase().trim();
+    if (cacheKey in suggestionsCache) {
+      setSuggestions(sortByProximity(suggestionsCache[cacheKey]));
+      setIsLoading(false);
+    }
 
     debounceRef.current = setTimeout(() => {
       fetchSuggestions(newValue);
       fetchNearby(newValue);
-    }, 150);
-  }, [onChange, fetchSuggestions, fetchNearby]);
+    }, 100);
+  }, [onChange, fetchSuggestions, fetchNearby, sortByProximity]);
 
   const handleSelect = useCallback((suggestion: LocationSuggestion) => {
     const displayName = suggestion.display_name.split(',').slice(0, 3).join(',');
@@ -216,56 +236,107 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     setSuggestions([]);
     setNearbySuggestions([]);
     setShowSuggestions(false);
+    setActiveIndex(-1);
   }, [onChange, onSelect, saveToRecent]);
 
   const handleRecentSelect = useCallback((recent: string) => {
     onChange(recent);
     onSelect?.(recent);
     setShowSuggestions(false);
+    setActiveIndex(-1);
   }, [onChange, onSelect]);
 
-  // Close on outside click
+  // Keyboard navigation
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const items = getAllItems();
+    if (!items.length) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex(prev => (prev + 1) % items.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex(prev => (prev <= 0 ? items.length - 1 : prev - 1));
+    } else if (e.key === 'Enter' && activeIndex >= 0) {
+      e.preventDefault();
+      const item = items[activeIndex];
+      if (item.type === 'recent') {
+        handleRecentSelect(item.data as string);
+      } else {
+        handleSelect(item.data as LocationSuggestion);
+      }
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      setActiveIndex(-1);
+    }
+  }, [getAllItems, activeIndex, handleSelect, handleRecentSelect]);
+
+  // Scroll active item into view
+  useEffect(() => {
+    if (activeIndex >= 0 && listRef.current) {
+      const items = listRef.current.querySelectorAll('[data-suggestion-item]');
+      items[activeIndex]?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [activeIndex]);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setShowSuggestions(false);
+        setActiveIndex(-1);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filter popular places by query
-  const matchedPopular = value.length >= 2
+  const hasQuery = value.length >= 2;
+  const matchedPopular = hasQuery
     ? POPULAR_PLACES.filter(p => p.display_name.toLowerCase().includes(value.toLowerCase())).slice(0, 3)
     : [];
 
-  // Determine what to show in the idle state (no query typed yet)
-  const hasQuery = value.length >= 2;
   const showDropdown = showSuggestions && (
-    isLoading || 
-    suggestions.length > 0 || 
-    nearbySuggestions.length > 0 || 
-    matchedPopular.length > 0 || 
-    recentSearches.length > 0
+    isLoading || suggestions.length > 0 || nearbySuggestions.length > 0 ||
+    matchedPopular.length > 0 || recentSearches.length > 0
   );
+
+  // Track global item index for keyboard navigation highlighting
+  let itemIndex = 0;
+
+  const renderItem = (
+    content: React.ReactNode,
+    onClick: () => void,
+    key: string
+  ) => {
+    const currentIndex = itemIndex++;
+    return (
+      <button
+        key={key}
+        data-suggestion-item
+        onClick={onClick}
+        onMouseEnter={() => setActiveIndex(currentIndex)}
+        className={cn(
+          "w-full px-4 py-2.5 text-left transition-colors flex items-start gap-3",
+          currentIndex === activeIndex ? "bg-accent" : "hover:bg-muted/50"
+        )}
+      >
+        {content}
+      </button>
+    );
+  };
 
   return (
     <div ref={containerRef} className="relative">
       <div className="relative">
         {icon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2">
-            {icon}
-          </div>
+          <div className="absolute left-3 top-1/2 -translate-y-1/2">{icon}</div>
         )}
         <Input
           ref={inputRef}
           value={value}
           onChange={handleInputChange}
-          onFocus={() => {
-            setShowSuggestions(true);
-            externalOnFocus?.();
-          }}
+          onKeyDown={handleKeyDown}
+          onFocus={() => { setShowSuggestions(true); externalOnFocus?.(); }}
           onBlur={() => externalOnBlur?.()}
           placeholder={placeholder}
           className={cn(
@@ -276,19 +347,15 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           )}
         />
         {rightElement && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2">
-            {rightElement}
-          </div>
+          <div className="absolute right-2 top-1/2 -translate-y-1/2">{rightElement}</div>
         )}
         {isLoading && (
           <Loader2 className="absolute right-10 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
         )}
       </div>
 
-      {/* Suggestions Dropdown */}
       {showDropdown && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-xl shadow-lg z-[300] max-h-72 overflow-y-auto animate-fade-in">
-          {/* Loading */}
+        <div ref={listRef} className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-xl shadow-lg z-[300] max-h-72 overflow-y-auto animate-fade-in">
           {isLoading && (
             <div className="px-4 py-3 text-sm text-muted-foreground flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -296,117 +363,116 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
             </div>
           )}
 
-          {/* Nearby places (highest priority when query matches) */}
+          {/* Nearby */}
           {!isLoading && nearbySuggestions.length > 0 && (
             <div className="py-1">
               <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground flex items-center gap-1">
-                <Navigation className="w-3 h-3" />
-                Nearby
+                <Navigation className="w-3 h-3" /> Nearby
               </div>
-              {nearbySuggestions.map((s) => (
-                <button
-                  key={`nearby-${s.place_id}`}
-                  onClick={() => handleSelect(s)}
-                  className="w-full px-4 py-2.5 text-left hover:bg-muted/50 transition-colors flex items-start gap-3"
-                >
-                  <Navigation className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                  <div className="min-w-0">
-                    <span className="text-sm text-foreground line-clamp-1">{s.display_name.split(',').slice(0, 2).join(',')}</span>
-                    <span className="text-xs text-muted-foreground line-clamp-1">{s.display_name.split(',').slice(2, 4).join(',')}</span>
-                  </div>
-                </button>
-              ))}
+              {nearbySuggestions.map((s) =>
+                renderItem(
+                  <>
+                    <Navigation className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-sm text-foreground line-clamp-1">
+                        <HighlightText text={s.display_name.split(',').slice(0, 2).join(',')} query={value} />
+                      </span>
+                      <span className="text-xs text-muted-foreground line-clamp-1">{s.display_name.split(',').slice(2, 4).join(',')}</span>
+                    </div>
+                  </>,
+                  () => handleSelect(s),
+                  `nearby-${s.place_id}`
+                )
+              )}
             </div>
           )}
 
-          {/* Recent Searches */}
+          {/* Recent */}
           {!isLoading && recentSearches.length > 0 && !hasQuery && (
             <div className="py-1">
               <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                Recent
+                <Clock className="w-3 h-3" /> Recent
               </div>
-              {recentSearches.map((recent, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleRecentSelect(recent)}
-                  className="w-full px-4 py-2.5 text-left hover:bg-muted/50 transition-colors flex items-center gap-3"
-                >
-                  <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <span className="text-sm text-foreground truncate">{recent}</span>
-                </button>
-              ))}
+              {recentSearches.map((recent, index) =>
+                renderItem(
+                  <>
+                    <Clock className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <span className="text-sm text-foreground truncate">{recent}</span>
+                  </>,
+                  () => handleRecentSelect(recent),
+                  `recent-${index}`
+                )
+              )}
             </div>
           )}
 
-          {/* Popular landmarks */}
+          {/* Popular (matched) */}
           {!isLoading && matchedPopular.length > 0 && (
             <div className="py-1">
               <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground flex items-center gap-1">
-                <Star className="w-3 h-3" />
-                Popular
+                <Star className="w-3 h-3" /> Popular
               </div>
-              {matchedPopular.map((place) => (
-                <button
-                  key={place.place_id}
-                  onClick={() => handleSelect(place)}
-                  className="w-full px-4 py-2.5 text-left hover:bg-muted/50 transition-colors flex items-start gap-3"
-                >
-                  <Star className="w-4 h-4 text-warning mt-0.5 shrink-0" />
-                  <span className="text-sm text-foreground line-clamp-1">{place.display_name}</span>
-                </button>
-              ))}
+              {matchedPopular.map((place) =>
+                renderItem(
+                  <>
+                    <Star className="w-4 h-4 text-warning mt-0.5 shrink-0" />
+                    <span className="text-sm text-foreground line-clamp-1">
+                      <HighlightText text={place.display_name} query={value} />
+                    </span>
+                  </>,
+                  () => handleSelect(place),
+                  `popular-${place.place_id}`
+                )
+              )}
             </div>
           )}
 
-          {/* Popular places when idle (no query) */}
+          {/* Popular (idle) */}
           {!isLoading && !hasQuery && recentSearches.length === 0 && (
             <div className="py-1">
               <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground flex items-center gap-1">
-                <Star className="w-3 h-3" />
-                Popular Destinations
+                <Star className="w-3 h-3" /> Popular Destinations
               </div>
-              {POPULAR_PLACES.slice(0, 4).map((place) => (
-                <button
-                  key={place.place_id}
-                  onClick={() => handleSelect(place)}
-                  className="w-full px-4 py-2.5 text-left hover:bg-muted/50 transition-colors flex items-start gap-3"
-                >
-                  <Star className="w-4 h-4 text-warning mt-0.5 shrink-0" />
-                  <span className="text-sm text-foreground line-clamp-1">{place.display_name}</span>
-                </button>
-              ))}
+              {POPULAR_PLACES.slice(0, 4).map((place) =>
+                renderItem(
+                  <>
+                    <Star className="w-4 h-4 text-warning mt-0.5 shrink-0" />
+                    <span className="text-sm text-foreground line-clamp-1">{place.display_name}</span>
+                  </>,
+                  () => handleSelect(place),
+                  `idle-popular-${place.place_id}`
+                )
+              )}
             </div>
           )}
 
-          {/* Global search results */}
+          {/* Search results */}
           {!isLoading && suggestions.length > 0 && (
             <div className="py-1">
               <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground flex items-center gap-1">
-                <Search className="w-3 h-3" />
-                Search Results
+                <Search className="w-3 h-3" /> Search Results
               </div>
-              {suggestions.map((suggestion) => (
-                <button
-                  key={suggestion.place_id}
-                  onClick={() => handleSelect(suggestion)}
-                  className="w-full px-4 py-2.5 text-left hover:bg-muted/50 transition-colors flex items-start gap-3"
-                >
-                  <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                  <div className="min-w-0">
-                    <span className="text-sm text-foreground line-clamp-1">{suggestion.display_name.split(',').slice(0, 2).join(',')}</span>
-                    <span className="text-xs text-muted-foreground line-clamp-1">{suggestion.display_name.split(',').slice(2, 4).join(',')}</span>
-                  </div>
-                </button>
-              ))}
+              {suggestions.map((suggestion) =>
+                renderItem(
+                  <>
+                    <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-sm text-foreground line-clamp-1">
+                        <HighlightText text={suggestion.display_name.split(',').slice(0, 2).join(',')} query={value} />
+                      </span>
+                      <span className="text-xs text-muted-foreground line-clamp-1">{suggestion.display_name.split(',').slice(2, 4).join(',')}</span>
+                    </div>
+                  </>,
+                  () => handleSelect(suggestion),
+                  `result-${suggestion.place_id}`
+                )
+              )}
             </div>
           )}
 
           {/* No results */}
           {!isLoading && suggestions.length === 0 && nearbySuggestions.length === 0 && matchedPopular.length === 0 && value.length >= 3 && (
-            <div className="px-4 py-3 text-sm text-muted-foreground">
-              No locations found
-            </div>
+            <div className="px-4 py-3 text-sm text-muted-foreground">No locations found</div>
           )}
         </div>
       )}
