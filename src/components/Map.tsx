@@ -295,46 +295,64 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
       if (!map.current) return;
 
       const rotation = typeof heading === 'number' && !isNaN(heading) ? heading : 0;
-      const accuracyRadius = Math.min(Math.max(accuracy || 50, 10), 200); // Cap accuracy circle between 10-200m
+      const accuracyRadius = Math.min(Math.max(accuracy || 50, 10), 200);
       
-      // Clean Google Maps style navigation arrow (no speedometer)
+      // Blue dot icon for when NOT navigating
+      const createBlueDotIcon = () => {
+        return L.divIcon({
+          className: 'user-location-marker',
+          html: `
+            <div style="position:relative;width:22px;height:22px;">
+              <div style="
+                position:absolute;inset:0;
+                background:rgba(66,133,244,0.15);
+                border-radius:50%;
+                animation:blueDotPulse 2s ease-out infinite;
+              "></div>
+              <div style="
+                position:absolute;top:3px;left:3px;
+                width:16px;height:16px;
+                background:#4285f4;
+                border:3px solid white;
+                border-radius:50%;
+                box-shadow:0 1px 4px rgba(0,0,0,0.3);
+              "></div>
+            </div>
+            <style>
+              @keyframes blueDotPulse {
+                0% { transform:scale(1); opacity:1; }
+                100% { transform:scale(2.5); opacity:0; }
+              }
+            </style>
+          `,
+          iconSize: [22, 22],
+          iconAnchor: [11, 11]
+        });
+      };
+
+      // Navigation arrow icon for when navigating
       const createNavigationIcon = (rot: number) => {
         return L.divIcon({
           className: 'user-location-marker',
           html: `
-            <div class="gps-marker-container" style="
-              position: relative;
-              width: 48px;
-              height: 48px;
-            ">
-              <!-- Navigation Arrow (Google Maps blue arrow style) -->
-              <div class="nav-arrow-wrapper" style="
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 48px;
-                height: 48px;
-                transform: rotate(${rot}deg);
-                transform-origin: center center;
-                transition: transform 0.3s ease-out;
+            <div style="position:relative;width:48px;height:48px;">
+              <div style="
+                position:absolute;inset:0;
+                transform:rotate(${rot}deg);
+                transform-origin:center;
+                transition:transform 0.3s ease-out;
               ">
-                <svg viewBox="0 0 48 48" style="width: 100%; height: 100%; filter: drop-shadow(0 2px 6px rgba(66, 133, 244, 0.5));">
+                <svg viewBox="0 0 48 48" style="width:100%;height:100%;filter:drop-shadow(0 2px 6px rgba(66,133,244,0.5));">
                   <defs>
-                    <linearGradient id="arrowGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" style="stop-color:#5c9aff" />
-                      <stop offset="50%" style="stop-color:#4285f4" />
-                      <stop offset="100%" style="stop-color:#2b6dd6" />
+                    <linearGradient id="navArrowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" style="stop-color:#5c9aff"/>
+                      <stop offset="50%" style="stop-color:#4285f4"/>
+                      <stop offset="100%" style="stop-color:#2b6dd6"/>
                     </linearGradient>
                   </defs>
-                  
-                  <!-- White border circle -->
-                  <circle cx="24" cy="24" r="20" fill="white" />
-                  
-                  <!-- Blue inner circle -->
-                  <circle cx="24" cy="24" r="16" fill="url(#arrowGradient)" />
-                  
-                  <!-- Direction arrow pointing UP -->
-                  <path d="M24 10 L31 28 L24 23 L17 28 Z" fill="white" />
+                  <circle cx="24" cy="24" r="20" fill="white"/>
+                  <circle cx="24" cy="24" r="16" fill="url(#navArrowGrad)"/>
+                  <path d="M24 10 L31 28 L24 23 L17 28 Z" fill="white"/>
                 </svg>
               </div>
             </div>
@@ -343,14 +361,15 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
           iconAnchor: [24, 24]
         });
       };
+
+      const icon = isNavigating ? createNavigationIcon(rotation) : createBlueDotIcon();
       
-      // Create or update user marker
       if (userMarker.current) {
         userMarker.current.setLatLng([lat, lng]);
-        userMarker.current.setIcon(createNavigationIcon(rotation));
+        userMarker.current.setIcon(icon);
       } else {
         userMarker.current = L.marker([lat, lng], {
-          icon: createNavigationIcon(rotation),
+          icon,
           zIndexOffset: 1000
         }).addTo(map.current);
       }
