@@ -235,13 +235,14 @@ const Index = () => {
       const pos = await getCurrentPosition();
       mapRef.current?.updateUserLocation(pos.lat, pos.lng, pos.heading);
       mapRef.current?.centerOnUser();
-      toast.success('Location found!');
+      startTracking();
+      toast.success('Live GPS started!');
     } catch (error) {
       toast.error('Could not get your location');
     } finally {
       setIsLocating(false);
     }
-  }, [getCurrentPosition]);
+  }, [getCurrentPosition, startTracking]);
 
   const useCurrentLocation = useCallback(async () => {
     setIsLocating(true);
@@ -256,13 +257,14 @@ const Index = () => {
       const address = data.display_name?.split(',').slice(0, 3).join(',') || 'Current Location';
       setOrigin(address);
       mapRef.current?.updateUserLocation(pos.lat, pos.lng, pos.heading);
+      startTracking();
       toast.success('Starting from your current location');
     } catch (error) {
       toast.error('Could not get your location');
     } finally {
       setIsLocating(false);
     }
-  }, [getCurrentPosition]);
+  }, [getCurrentPosition, startTracking]);
 
   const calculateTrip = useCallback(async () => {
     if (!origin || !destination) return;

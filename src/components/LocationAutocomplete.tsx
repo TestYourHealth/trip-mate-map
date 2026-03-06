@@ -72,20 +72,23 @@ const formatDistance = (km: number): string => {
 };
 
 // Highlight matching text in results
-const HighlightText: React.FC<{ text: string; query: string }> = ({ text, query }) => {
-  if (!query || query.length < 2) return <>{text}</>;
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
-  return (
-    <>
-      {parts.map((part, i) =>
-        part.toLowerCase() === query.toLowerCase()
-          ? <span key={i} className="text-primary font-semibold">{part}</span>
-          : part
-      )}
-    </>
-  );
-};
+const HighlightText = React.forwardRef<HTMLSpanElement, { text: string; query: string }>(
+  ({ text, query }, ref) => {
+    if (!query || query.length < 2) return <span ref={ref}>{text}</span>;
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+    return (
+      <span ref={ref}>
+        {parts.map((part, i) =>
+          part.toLowerCase() === query.toLowerCase()
+            ? <span key={i} className="text-primary font-semibold">{part}</span>
+            : <React.Fragment key={i}>{part}</React.Fragment>
+        )}
+      </span>
+    );
+  }
+);
+HighlightText.displayName = 'HighlightText';
 
 const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   value,
@@ -192,7 +195,19 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       }
     } catch (err: any) {
       if (err.name !== 'AbortError' && lastQueryRef.current === trimmed) {
-        setResults([]);
+        try {
+          // Fallback request if proximity-biased query fails
+          const fallbackResponse = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&limit=6&addressdetails=1&dedupe=1`,
+            { signal: abortRef.current?.signal }
+          );
+          if (!fallbackResponse.ok) throw new Error(`HTTP ${fallbackResponse.status}`);
+          const fallbackData: LocationSuggestion[] = await fallbackResponse.json();
+          cache[cacheKey] = fallbackData;
+          setResults(fallbackData);
+        } catch {
+          setResults([]);
+        }
       }
     } finally {
       if (lastQueryRef.current === trimmed) {
@@ -413,7 +428,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
               {POPULAR_PLACES.slice(0, 5).map((place) =>
                 renderRow(
                   <>
-                    <Star className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                    <Star className="w-4 h-4 text-warning shrink-0 mt-0.5" />
                     <div className="min-w-0 flex-1">
                       <div className="text-sm text-foreground line-clamp-1">{place.display_name.split(',').slice(0, 2).join(',')}</div>
                       <div className="text-xs text-muted-foreground">{place.display_name.split(',').slice(2).join(',').trim()}</div>
@@ -438,7 +453,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
               {matchedPopular.map((place) =>
                 renderRow(
                   <>
-                    <Star className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                    <Star className="w-4 h-4 text-warning shrink-0 mt-0.5" />
                     <span className="text-sm text-foreground line-clamp-1 flex-1">
                       <HighlightText text={place.display_name.split(',').slice(0, 2).join(',')} query={value} />
                     </span>
