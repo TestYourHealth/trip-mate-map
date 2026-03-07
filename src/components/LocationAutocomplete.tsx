@@ -108,6 +108,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'nearby' | 'recent' | 'popular' | 'global'>('all');
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -392,6 +393,46 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       {shouldShowDropdown && (
         <div ref={listRef} className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-xl shadow-xl z-[300] max-h-80 overflow-y-auto">
           
+          {/* Filter Chips */}
+          <div className="px-2 pt-2 pb-1 flex gap-1.5 flex-wrap sticky top-0 bg-background z-10 border-b border-border/50">
+            {(['all', 'nearby', 'recent', 'popular', 'global'] as const).map((filter) => {
+              const icons: Record<typeof filter, React.ReactNode> = {
+                all: null,
+                nearby: <Navigation className="w-3 h-3" />,
+                recent: <Clock className="w-3 h-3" />,
+                popular: <Star className="w-3 h-3" />,
+                global: <Globe className="w-3 h-3" />,
+              };
+              const labels: Record<typeof filter, string> = {
+                all: 'All',
+                nearby: 'Nearby',
+                recent: 'Recent',
+                popular: 'Popular',
+                global: 'Global',
+              };
+              const isActive = activeFilter === filter;
+              // Hide nearby if no GPS
+              if (filter === 'nearby' && !userPos) return null;
+              // Hide recent if none
+              if (filter === 'recent' && recentSearches.length === 0) return null;
+              return (
+                <button
+                  key={filter}
+                  onClick={(e) => { e.stopPropagation(); setActiveFilter(filter); setActiveIndex(-1); }}
+                  className={cn(
+                    "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all border",
+                    isActive
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  {icons[filter]}
+                  {labels[filter]}
+                </button>
+              );
+            })}
+          </div>
+
           {/* Loading state */}
           {isLoading && results.length === 0 && (
             <div className="px-4 py-3 text-sm text-muted-foreground flex items-center gap-2">
@@ -401,7 +442,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           )}
 
           {/* Idle: Recent searches */}
-          {!hasQuery && recentSearches.length > 0 && (
+          {!hasQuery && recentSearches.length > 0 && (activeFilter === 'all' || activeFilter === 'recent') && (
             <div className="py-1">
               <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                 <Clock className="w-3 h-3" /> Recent
@@ -419,8 +460,8 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
             </div>
           )}
 
-          {/* Idle: Popular (no recents) */}
-          {!hasQuery && recentSearches.length === 0 && (
+          {/* Idle: Popular */}
+          {!hasQuery && (activeFilter === 'popular' || (activeFilter === 'all' && recentSearches.length === 0)) && (
             <div className="py-1">
               <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                 <Star className="w-3 h-3" /> Popular Destinations
@@ -445,7 +486,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           )}
 
           {/* Query: Matched popular */}
-          {hasQuery && matchedPopular.length > 0 && (
+          {hasQuery && matchedPopular.length > 0 && (activeFilter === 'all' || activeFilter === 'popular') && (
             <div className="py-1">
               <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                 <Star className="w-3 h-3" /> Popular
@@ -466,14 +507,22 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           )}
 
           {/* Query: Search results */}
-          {hasQuery && results.length > 0 && (
+          {hasQuery && results.length > 0 && (activeFilter === 'all' || activeFilter === 'nearby' || activeFilter === 'global') && (
             <div className="py-1">
-              {matchedPopular.length > 0 && (
+              {(activeFilter === 'all' && matchedPopular.length > 0) && (
                 <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                   <Globe className="w-3 h-3" /> Places
                 </div>
               )}
-              {results.map((s) => {
+              {results
+                .filter((s) => {
+                  if (activeFilter === 'all') return true;
+                  const isNearby = userPos && haversine(userPos.lat, userPos.lng, parseFloat(s.lat), parseFloat(s.lon)) < 50;
+                  if (activeFilter === 'nearby') return isNearby;
+                  if (activeFilter === 'global') return !isNearby;
+                  return true;
+                })
+                .map((s) => {
                 const parts = s.display_name.split(',');
                 const title = parts.slice(0, 2).join(',').trim();
                 const subtitle = parts.slice(2, 5).join(',').trim();
