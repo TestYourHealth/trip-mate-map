@@ -95,7 +95,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
     <div className="absolute top-3 left-3 right-3 z-[150]">
       {/* Unified search card */}
       <div className={cn(
-        "flex items-center gap-0 bg-background rounded-full shadow-md border border-border/60 transition-all duration-200 overflow-hidden",
+        "flex items-center gap-0 bg-background rounded-full shadow-md border border-border/60 transition-all duration-200",
         isFocused && "shadow-lg ring-1 ring-primary/20"
       )}>
         {/* Hamburger Menu */}
