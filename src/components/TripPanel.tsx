@@ -253,6 +253,8 @@ const TripPanel: React.FC<TripPanelProps> = ({
               tripFuelCost={tripData.fuelCost}
               tripTollCost={tripData.tollCost}
               tripTotalCost={tripData.totalCost}
+              origin={origin}
+              destination={destination}
             />
 
             {/* Turn-by-turn Directions */}
