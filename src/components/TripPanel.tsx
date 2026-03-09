@@ -247,6 +247,14 @@ const TripPanel: React.FC<TripPanelProps> = ({
               </div>
             </div>
 
+            {/* Bill Splitter */}
+            <div className="h-px bg-border" />
+            <BillSplitter
+              tripFuelCost={tripData.fuelCost}
+              tripTollCost={tripData.tollCost}
+              tripTotalCost={tripData.totalCost}
+            />
+
             {/* Turn-by-turn Directions */}
             {navigationSteps.length > 0 && (
               <DirectionsList 
