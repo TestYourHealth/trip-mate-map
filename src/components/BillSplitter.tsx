@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
-import { Users, Plus, Trash2, Receipt, UserPlus, ShoppingBag } from 'lucide-react';
+import React, { useState, useMemo, useCallback } from 'react';
+import { Users, Plus, Trash2, Receipt, UserPlus, ShoppingBag, Share2, Copy, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface Expense {
   id: string;
@@ -14,12 +15,16 @@ interface BillSplitterProps {
   tripFuelCost?: number;
   tripTollCost?: number;
   tripTotalCost?: number;
+  origin?: string;
+  destination?: string;
 }
 
 const BillSplitter: React.FC<BillSplitterProps> = ({
   tripFuelCost = 0,
   tripTollCost = 0,
   tripTotalCost = 0,
+  origin = '',
+  destination = '',
 }) => {
   const [persons, setPersons] = useState<string[]>(['You']);
   const [newPerson, setNewPerson] = useState('');
@@ -64,6 +69,43 @@ const BillSplitter: React.FC<BillSplitterProps> = ({
   const perPersonShare = useMemo(() => {
     return persons.length > 0 ? Math.ceil(totalBill / persons.length) : 0;
   }, [totalBill, persons.length]);
+
+  const buildShareText = useCallback(() => {
+    const route = origin && destination ? `🗺️ ${origin.split(',')[0]} → ${destination.split(',')[0]}\n` : '';
+    let text = `${route}💰 Bill Split Summary\n━━━━━━━━━━━━━━━\n`;
+
+    if (includeTripCosts && tripTotalCost > 0) {
+      text += `⛽ Fuel: ₹${tripFuelCost}\n🛣️ Toll: ₹${tripTollCost}\n`;
+    }
+
+    if (customExpenses.length > 0) {
+      customExpenses.forEach(e => {
+        text += `📝 ${e.label}: ₹${e.amount}\n`;
+      });
+    }
+
+    text += `━━━━━━━━━━━━━━━\n`;
+    text += `💵 Total: ₹${totalBill}\n`;
+    text += `👥 ${persons.length} people: ${persons.join(', ')}\n`;
+    text += `✅ Per person: ₹${perPersonShare}\n`;
+    text += `\n— Shared via MapBuddy`;
+
+    return text;
+  }, [origin, destination, includeTripCosts, tripFuelCost, tripTollCost, tripTotalCost, customExpenses, totalBill, persons, perPersonShare]);
+
+  const handleCopyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(buildShareText());
+      toast.success('Bill summary copied!');
+    } catch {
+      toast.error('Copy failed');
+    }
+  };
+
+  const handleShareWhatsApp = () => {
+    const url = `https://wa.me/?text=${encodeURIComponent(buildShareText())}`;
+    window.open(url, '_blank');
+  };
 
   return (
     <div className="space-y-4">
@@ -182,6 +224,27 @@ const BillSplitter: React.FC<BillSplitterProps> = ({
           <p className="text-[11px] text-muted-foreground text-center">
             Split equally among {persons.length} {persons.length === 1 ? 'person' : 'people'}
           </p>
+
+          {/* Share buttons */}
+          <div className="flex gap-2 pt-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 h-9 gap-1.5 text-xs"
+              onClick={handleCopyToClipboard}
+            >
+              <Copy className="w-3.5 h-3.5" />
+              Copy
+            </Button>
+            <Button
+              size="sm"
+              className="flex-1 h-9 gap-1.5 text-xs bg-green-600 hover:bg-green-700 text-white"
+              onClick={handleShareWhatsApp}
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              WhatsApp
+            </Button>
+          </div>
         </div>
       )}
     </div>
