@@ -5,6 +5,7 @@ import VehicleSelector from './VehicleSelector';
 import RouteSelector from './RouteSelector';
 import DirectionsList from './DirectionsList';
 import CitySelector from './CitySelector';
+import BillSplitter from './BillSplitter';
 import { RouteInfo } from './Map';
 import { NavigationStep } from './NavigationPanel';
 import { VehicleConfig } from '@/types/vehicle';
