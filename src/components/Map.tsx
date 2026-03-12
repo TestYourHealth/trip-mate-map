@@ -44,7 +44,7 @@ interface MapProps {
   tileTheme?: 'light' | 'dark';
 }
 
-const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null, onRotationChange }, ref) => {
+const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null, onRotationChange, tileTheme = 'light' }, ref) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapWrapper = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
