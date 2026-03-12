@@ -468,14 +468,14 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
       zoomControl: false,
     });
 
-    // Light theme tile layer from CartoDB
-    // Use @2x retina tiles only on high DPI displays to save bandwidth
+    // Theme-aware tile layer from CartoDB
     const isRetina = window.devicePixelRatio > 1;
-    const tileUrl = isRetina 
-      ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png'
-      : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png';
+    const suffix = isRetina ? '@2x' : '';
+    const initialTileUrl = tileTheme === 'dark'
+      ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}${suffix}.png`
+      : `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}${suffix}.png`;
     
-    L.tileLayer(tileUrl, {
+    tileLayerRef.current = L.tileLayer(initialTileUrl, {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd',
       maxZoom: 20,
