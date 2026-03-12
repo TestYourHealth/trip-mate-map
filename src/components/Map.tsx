@@ -58,6 +58,7 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
   const routeCoordinates = useRef<L.LatLng[] | null>(null);
   const currentRotation = useRef<number>(0);
   const [isLoaded, setIsLoaded] = useState(false);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
   
   // Two-finger rotation state
   const [manualRotation, _setManualRotation] = useState(0);
