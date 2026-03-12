@@ -41,6 +41,7 @@ interface MapProps {
   isNavigating?: boolean;
   heading?: number | null;
   onRotationChange?: (rotation: number) => void;
+  tileTheme?: 'light' | 'dark';
 }
 
 const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null, onRotationChange }, ref) => {
