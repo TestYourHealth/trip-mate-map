@@ -227,6 +227,19 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
           </div>
         </div>
       )}
+
+      {/* Favorite Locations */}
+      <div className="mt-2 ml-1">
+        <FavoriteLocations
+          onSelect={(address) => {
+            onDestinationChange(address);
+            if (origin && address) {
+              setTimeout(() => onCalculate(), 300);
+            }
+          }}
+          compact
+        />
+      </div>
     </div>
   );
 };
