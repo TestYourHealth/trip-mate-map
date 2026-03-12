@@ -361,6 +361,9 @@ const Index = () => {
 
   return (
     <div className="h-full w-full relative">
+      {/* Onboarding Tour */}
+      <OnboardingTour />
+
       {/* Map Background - Full Screen */}
       <div className="absolute inset-0 z-0">
         <Map 
@@ -368,6 +371,7 @@ const Index = () => {
           isNavigating={isNavigating} 
           heading={isNavigating ? (compassHeading ?? position?.heading ?? null) : null}
           onRotationChange={setMapRotation}
+          tileTheme={mapTileTheme}
         />
       </div>
 
