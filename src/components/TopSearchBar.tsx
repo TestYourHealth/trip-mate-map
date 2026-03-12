@@ -43,6 +43,40 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [hasAutoLocated, setHasAutoLocated] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+
+  // Voice search using Web Speech API
+  const startVoiceSearch = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error('Voice search is not supported in this browser.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-IN';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => {
+      setIsListening(false);
+      toast.error('Could not hear you. Please try again.');
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      onDestinationChange(transcript);
+      toast.success(`🎤 "${transcript}"`);
+      // Auto-calculate after voice input
+      if (origin && transcript) {
+        setTimeout(() => onCalculate(), 500);
+      }
+    };
+
+    recognition.start();
+  }, [origin, onDestinationChange, onCalculate]);
 
   // Auto-detect current location on mount
   useEffect(() => {
