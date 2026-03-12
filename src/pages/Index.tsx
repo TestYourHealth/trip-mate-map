@@ -4,6 +4,8 @@ import TripPanel from '@/components/TripPanel';
 import TopSearchBar from '@/components/TopSearchBar';
 import DriverNavigationView from '@/components/DriverNavigationView';
 import CompassIndicator from '@/components/CompassIndicator';
+import QuickActions from '@/components/QuickActions';
+import OnboardingTour from '@/components/OnboardingTour';
 import { NavigationStep } from '@/components/NavigationPanel';
 import { VehicleConfig } from '@/types/vehicle';
 import { toast } from 'sonner';
@@ -11,6 +13,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useAutoDetectLocation } from '@/hooks/useAutoDetectLocation';
+import { useMapTheme } from '@/hooks/useMapTheme';
 import { Trip } from '@/pages/TripHistory';
 
 const Index = () => {
