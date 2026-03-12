@@ -500,6 +500,17 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
     };
   }, []);
 
+  // Switch tile layer when theme changes
+  useEffect(() => {
+    if (!map.current || !tileLayerRef.current) return;
+    const isRetina = window.devicePixelRatio > 1;
+    const suffix = isRetina ? '@2x' : '';
+    const newUrl = tileTheme === 'dark'
+      ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}${suffix}.png`
+      : `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}${suffix}.png`;
+    tileLayerRef.current.setUrl(newUrl);
+  }, [tileTheme]);
+
   // Handle navigation mode changes
   useEffect(() => {
     if (!map.current) return;
