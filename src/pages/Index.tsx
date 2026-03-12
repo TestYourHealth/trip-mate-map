@@ -22,6 +22,7 @@ const Index = () => {
   
   const mapRef = useRef<MapRef>(null);
   const isMobile = useIsMobile();
+  const mapTileTheme = useMapTheme();
   const [showPanel, setShowPanel] = useState(true);
   const [isPanelExpanded, setIsPanelExpanded] = useState(true);
   const [origin, setOrigin] = useState('');
