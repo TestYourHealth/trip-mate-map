@@ -185,6 +185,20 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
               <X className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
           )}
+
+          {/* Voice search button */}
+          <button
+            onClick={startVoiceSearch}
+            className={cn(
+              "flex-shrink-0 p-2 rounded-full transition-all",
+              isListening
+                ? "bg-destructive/10 text-destructive animate-pulse"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            )}
+            aria-label="Voice search"
+          >
+            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          </button>
         </div>
 
         {/* Locate me button - inside the bar */}
