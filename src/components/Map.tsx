@@ -41,9 +41,10 @@ interface MapProps {
   isNavigating?: boolean;
   heading?: number | null;
   onRotationChange?: (rotation: number) => void;
+  tileTheme?: 'light' | 'dark';
 }
 
-const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null, onRotationChange }, ref) => {
+const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null, onRotationChange, tileTheme = 'light' }, ref) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapWrapper = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
@@ -57,6 +58,7 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
   const routeCoordinates = useRef<L.LatLng[] | null>(null);
   const currentRotation = useRef<number>(0);
   const [isLoaded, setIsLoaded] = useState(false);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
   
   // Two-finger rotation state
   const [manualRotation, _setManualRotation] = useState(0);
@@ -466,14 +468,14 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
       zoomControl: false,
     });
 
-    // Light theme tile layer from CartoDB
-    // Use @2x retina tiles only on high DPI displays to save bandwidth
+    // Theme-aware tile layer from CartoDB
     const isRetina = window.devicePixelRatio > 1;
-    const tileUrl = isRetina 
-      ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png'
-      : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png';
+    const suffix = isRetina ? '@2x' : '';
+    const initialTileUrl = tileTheme === 'dark'
+      ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}${suffix}.png`
+      : `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}${suffix}.png`;
     
-    L.tileLayer(tileUrl, {
+    tileLayerRef.current = L.tileLayer(initialTileUrl, {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd',
       maxZoom: 20,
@@ -497,6 +499,17 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
       map.current = null;
     };
   }, []);
+
+  // Switch tile layer when theme changes
+  useEffect(() => {
+    if (!map.current || !tileLayerRef.current) return;
+    const isRetina = window.devicePixelRatio > 1;
+    const suffix = isRetina ? '@2x' : '';
+    const newUrl = tileTheme === 'dark'
+      ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}${suffix}.png`
+      : `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}${suffix}.png`;
+    tileLayerRef.current.setUrl(newUrl);
+  }, [tileTheme]);
 
   // Handle navigation mode changes
   useEffect(() => {

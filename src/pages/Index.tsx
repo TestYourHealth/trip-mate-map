@@ -4,6 +4,8 @@ import TripPanel from '@/components/TripPanel';
 import TopSearchBar from '@/components/TopSearchBar';
 import DriverNavigationView from '@/components/DriverNavigationView';
 import CompassIndicator from '@/components/CompassIndicator';
+import QuickActions from '@/components/QuickActions';
+import OnboardingTour from '@/components/OnboardingTour';
 import { NavigationStep } from '@/components/NavigationPanel';
 import { VehicleConfig } from '@/types/vehicle';
 import { toast } from 'sonner';
@@ -11,6 +13,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useAutoDetectLocation } from '@/hooks/useAutoDetectLocation';
+import { useMapTheme } from '@/hooks/useMapTheme';
 import { Trip } from '@/pages/TripHistory';
 
 const Index = () => {
@@ -19,6 +22,7 @@ const Index = () => {
   
   const mapRef = useRef<MapRef>(null);
   const isMobile = useIsMobile();
+  const mapTileTheme = useMapTheme();
   const [showPanel, setShowPanel] = useState(true);
   const [isPanelExpanded, setIsPanelExpanded] = useState(true);
   const [origin, setOrigin] = useState('');
@@ -357,6 +361,9 @@ const Index = () => {
 
   return (
     <div className="h-full w-full relative">
+      {/* Onboarding Tour */}
+      <OnboardingTour />
+
       {/* Map Background - Full Screen */}
       <div className="absolute inset-0 z-0">
         <Map 
@@ -364,6 +371,7 @@ const Index = () => {
           isNavigating={isNavigating} 
           heading={isNavigating ? (compassHeading ?? position?.heading ?? null) : null}
           onRotationChange={setMapRotation}
+          tileTheme={mapTileTheme}
         />
       </div>
 
@@ -398,12 +406,21 @@ const Index = () => {
         />
       )}
 
-      {/* Compass Indicator - bottom left corner */}
+      {/* Compass + Quick Actions - visible when not navigating */}
       {!isNavigating && (
-        <div className="absolute bottom-24 left-3 z-[100] md:bottom-6">
+        <div className="absolute bottom-24 left-3 z-[100] md:bottom-6 flex flex-col gap-3">
           <CompassIndicator 
             heading={mapRotation} 
             onResetNorth={() => mapRef.current?.resetNorth()}
+          />
+        </div>
+      )}
+
+      {/* Quick Action Buttons - right side */}
+      {!isNavigating && (
+        <div className="absolute bottom-24 right-3 z-[100] md:bottom-6">
+          <QuickActions
+            userPosition={position ? { lat: position.lat, lng: position.lng } : null}
           />
         </div>
       )}

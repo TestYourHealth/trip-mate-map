@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { Search, Loader2, X, Menu, Crosshair, Car, Fuel, Clock, Settings, HelpCircle, MapPin } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Search, Loader2, X, Menu, Crosshair, Car, Fuel, Clock, Settings, HelpCircle, MapPin, Mic, MicOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import LocationAutocomplete from './LocationAutocomplete';
+import FavoriteLocations from './FavoriteLocations';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import {
   Sheet,
   SheetContent,
@@ -41,6 +43,40 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [hasAutoLocated, setHasAutoLocated] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+
+  // Voice search using Web Speech API
+  const startVoiceSearch = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error('Voice search is not supported in this browser.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-IN';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => {
+      setIsListening(false);
+      toast.error('Could not hear you. Please try again.');
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      onDestinationChange(transcript);
+      toast.success(`🎤 "${transcript}"`);
+      // Auto-calculate after voice input
+      if (origin && transcript) {
+        setTimeout(() => onCalculate(), 500);
+      }
+    };
+
+    recognition.start();
+  }, [origin, onDestinationChange, onCalculate]);
 
   // Auto-detect current location on mount
   useEffect(() => {
@@ -149,6 +185,20 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
               <X className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
           )}
+
+          {/* Voice search button */}
+          <button
+            onClick={startVoiceSearch}
+            className={cn(
+              "flex-shrink-0 p-2 rounded-full transition-all",
+              isListening
+                ? "bg-destructive/10 text-destructive animate-pulse"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            )}
+            aria-label="Voice search"
+          >
+            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          </button>
         </div>
 
         {/* Locate me button - inside the bar */}
@@ -177,6 +227,19 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
           </div>
         </div>
       )}
+
+      {/* Favorite Locations */}
+      <div className="mt-2 ml-1">
+        <FavoriteLocations
+          onSelect={(address) => {
+            onDestinationChange(address);
+            if (origin && address) {
+              setTimeout(() => onCalculate(), 300);
+            }
+          }}
+          compact
+        />
+      </div>
     </div>
   );
 };
