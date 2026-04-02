@@ -62,6 +62,7 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
   const userMarker = useRef<L.Marker | null>(null);
   const userAccuracyCircle = useRef<L.Circle | null>(null);
   const alternateRouteLines = useRef<L.Polyline[]>([]);
+  const nearbyMarkers = useRef<L.Marker[]>([]);
   const selectedRouteIndex = useRef<number>(0);
   const routesData = useRef<RouteInfo[]>([]);
   const routeCoordinates = useRef<L.LatLng[] | null>(null);
