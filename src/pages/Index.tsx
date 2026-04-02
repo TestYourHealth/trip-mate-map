@@ -421,6 +421,21 @@ const Index = () => {
         <div className="absolute bottom-24 right-3 z-[100] md:bottom-6">
           <QuickActions
             userPosition={position ? { lat: position.lat, lng: position.lng } : null}
+            onShowNearbyMarkers={(places, color) => mapRef.current?.showNearbyMarkers(places, color)}
+            onClearNearbyMarkers={() => mapRef.current?.clearNearbyMarkers()}
+            onNavigateToPlace={(name, lat, lng) => {
+              const dest = `${name}, ${lat}, ${lng}`;
+              setDestination(name);
+              // Use current location as origin if not set
+              if (!origin) {
+                useCurrentLocation().then(() => {
+                  setTimeout(() => calculateTrip(), 500);
+                });
+              } else {
+                mapRef.current?.clearNearbyMarkers();
+                calculateTrip();
+              }
+            }}
           />
         </div>
       )}
