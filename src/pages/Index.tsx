@@ -423,18 +423,31 @@ const Index = () => {
             userPosition={position ? { lat: position.lat, lng: position.lng } : null}
             onShowNearbyMarkers={(places, color) => mapRef.current?.showNearbyMarkers(places, color)}
             onClearNearbyMarkers={() => mapRef.current?.clearNearbyMarkers()}
-            onNavigateToPlace={(name, lat, lng) => {
-              const dest = `${name}, ${lat}, ${lng}`;
+            onNavigateToPlace={async (name, lat, lng) => {
+              mapRef.current?.clearNearbyMarkers();
               setDestination(name);
-              // Use current location as origin if not set
               if (!origin) {
-                useCurrentLocation().then(() => {
-                  setTimeout(() => calculateTrip(), 500);
-                });
-              } else {
-                mapRef.current?.clearNearbyMarkers();
-                calculateTrip();
+                // Get current location first, then route will be triggered
+                setIsLocating(true);
+                try {
+                  const pos = await getCurrentPosition();
+                  const response = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.lat}&lon=${pos.lng}`,
+                    { headers: { 'User-Agent': 'TripMate/1.0' } }
+                  );
+                  const data = await response.json();
+                  const address = data.display_name?.split(',').slice(0, 3).join(',') || 'Current Location';
+                  setOrigin(address);
+                  mapRef.current?.updateUserLocation(pos.lat, pos.lng, pos.heading);
+                  startTracking();
+                } catch {
+                  toast.error('Could not get your location');
+                } finally {
+                  setIsLocating(false);
+                }
               }
+              // Trigger route calculation after state updates
+              setTimeout(() => calculateTrip(), 300);
             }}
           />
         </div>
