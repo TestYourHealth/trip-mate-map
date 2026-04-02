@@ -26,8 +26,11 @@ const PageLoader = () => (
   </div>
 );
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+const App = () => {
+  // Apply theme globally on app mount
+  useAutoTheme();
+
+  return (
     <TooltipProvider>
       <NativeAppWrapper>
         <Toaster />
