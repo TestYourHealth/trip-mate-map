@@ -31,32 +31,32 @@ const App = () => {
   useAutoTheme();
 
   return (
-    <TooltipProvider>
-      <NativeAppWrapper>
-        <Toaster />
-        <Sonner />
-        <Suspense fallback={null}>
-          <InstallPWA />
-        </Suspense>
-        <BrowserRouter>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route element={<MainLayout />}>
-                <Route path="/" element={<Index />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/settings/vehicle" element={<VehicleSettings />} />
-                <Route path="/settings/fuel" element={<FuelSettings />} />
-                <Route path="/history" element={<TripHistory />} />
-                <Route path="/help" element={<Help />} />
-              </Route>
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <NativeAppWrapper>
+          <Toaster />
+          <Sonner />
+          <Suspense fallback={null}>
+            <InstallPWA />
           </Suspense>
-        </BrowserRouter>
-      </NativeAppWrapper>
-    </TooltipProvider>
-  </QueryClientProvider>
+          <BrowserRouter>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route element={<MainLayout />}>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/settings/vehicle" element={<VehicleSettings />} />
+                  <Route path="/settings/fuel" element={<FuelSettings />} />
+                  <Route path="/history" element={<TripHistory />} />
+                  <Route path="/help" element={<Help />} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </NativeAppWrapper>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 };
 
