@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import NativeAppWrapper from "./components/NativeAppWrapper";
-
+import { useAutoTheme } from "./hooks/useAutoTheme";
 // Lazy load pages to reduce initial bundle size
 const Index = lazy(() => import("./pages/Index"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -26,34 +26,38 @@ const PageLoader = () => (
   </div>
 );
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <NativeAppWrapper>
-        <Toaster />
-        <Sonner />
-        <Suspense fallback={null}>
-          <InstallPWA />
-        </Suspense>
-        <BrowserRouter>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route element={<MainLayout />}>
-                <Route path="/" element={<Index />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/settings/vehicle" element={<VehicleSettings />} />
-                <Route path="/settings/fuel" element={<FuelSettings />} />
-                <Route path="/history" element={<TripHistory />} />
-                <Route path="/help" element={<Help />} />
-              </Route>
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+const App = () => {
+  // Apply theme globally on app mount
+  useAutoTheme();
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <NativeAppWrapper>
+          <Toaster />
+          <Sonner />
+          <Suspense fallback={null}>
+            <InstallPWA />
           </Suspense>
-        </BrowserRouter>
-      </NativeAppWrapper>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+          <BrowserRouter>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route element={<MainLayout />}>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/settings/vehicle" element={<VehicleSettings />} />
+                  <Route path="/settings/fuel" element={<FuelSettings />} />
+                  <Route path="/history" element={<TripHistory />} />
+                  <Route path="/help" element={<Help />} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </NativeAppWrapper>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
