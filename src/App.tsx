@@ -57,6 +57,7 @@ const App = () => {
       </NativeAppWrapper>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
