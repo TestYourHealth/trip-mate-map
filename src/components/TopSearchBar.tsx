@@ -54,8 +54,9 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = 'en-IN';
-    recognition.interimResults = false;
+    recognition.lang = 'hi-IN';
+    recognition.interimResults = true;
+    recognition.continuous = false;
     recognition.maxAlternatives = 1;
 
     recognition.onstart = () => setIsListening(true);
