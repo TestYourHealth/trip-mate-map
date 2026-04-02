@@ -24,6 +24,13 @@ export interface RouteResult {
   instructions: RouteInstruction[];
 }
 
+export interface NearbyPlace {
+  lat: number;
+  lng: number;
+  name: string;
+  address: string;
+}
+
 export interface MapRef {
   showRoute: (origin: string, destination: string, waypoints?: string[]) => Promise<RouteResult | null>;
   selectRoute: (index: number) => void;
@@ -35,6 +42,8 @@ export interface MapRef {
   setMapRotation: (heading: number | null) => void;
   resetNorth: () => void;
   getRotation: () => number;
+  showNearbyMarkers: (places: NearbyPlace[], color?: string) => void;
+  clearNearbyMarkers: () => void;
 }
 
 interface MapProps {
