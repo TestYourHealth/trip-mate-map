@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import NativeAppWrapper from "./components/NativeAppWrapper";
-
+import { useAutoTheme } from "./hooks/useAutoTheme";
 // Lazy load pages to reduce initial bundle size
 const Index = lazy(() => import("./pages/Index"));
 const Settings = lazy(() => import("./pages/Settings"));
