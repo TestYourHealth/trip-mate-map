@@ -466,6 +466,50 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
     },
     getRotation: () => {
       return manualRotationRef.current;
+    },
+    showNearbyMarkers: (places: NearbyPlace[], color = '#ef4444') => {
+      if (!map.current) return;
+      // Clear existing nearby markers
+      nearbyMarkers.current.forEach(m => m.remove());
+      nearbyMarkers.current = [];
+      
+      const bounds = L.latLngBounds([]);
+      places.forEach((place, i) => {
+        const marker = L.marker([place.lat, place.lng], {
+          icon: L.divIcon({
+            className: 'nearby-marker',
+            html: `<div style="
+              width: 32px; height: 32px;
+              background: ${color}; border: 3px solid white;
+              border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+              display: flex; align-items: center; justify-content: center;
+              font-size: 14px; font-weight: bold; color: white;
+            ">${i + 1}</div>`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+          })
+        }).addTo(map.current!);
+        
+        marker.bindPopup(`<b>${place.name}</b><br/><small>${place.address}</small>`, {
+          className: 'nearby-popup'
+        });
+        
+        nearbyMarkers.current.push(marker);
+        bounds.extend([place.lat, place.lng]);
+      });
+      
+      // Also include user position in bounds if available
+      if (userMarker.current) {
+        bounds.extend(userMarker.current.getLatLng());
+      }
+      
+      if (bounds.isValid()) {
+        map.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+      }
+    },
+    clearNearbyMarkers: () => {
+      nearbyMarkers.current.forEach(m => m.remove());
+      nearbyMarkers.current = [];
     }
   }));
 
