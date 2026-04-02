@@ -57,7 +57,19 @@ const FavoriteLocations: React.FC<FavoriteLocationsProps> = ({ onSelect, compact
     setFavorites(prev => prev.filter(f => f.id !== id));
   };
 
-  if (compact && favorites.length === 0) return null;
+  if (compact && favorites.length === 0 && !isAdding) {
+    return (
+      <div className="flex gap-2">
+        <button
+          onClick={() => setIsAdding(true)}
+          className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border border-dashed border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all text-sm"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Save Place
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("space-y-2", compact && "space-y-1")}>
