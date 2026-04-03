@@ -80,7 +80,7 @@ const TripPanel: React.FC<TripPanelProps> = ({
         )}
         onClick={isMobile ? onToggleExpand : undefined}
       >
-        <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shadow-sm">
           <Navigation className="w-5 h-5 text-primary" />
         </div>
         <div className="flex-1">
