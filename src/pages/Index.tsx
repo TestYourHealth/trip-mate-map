@@ -6,6 +6,7 @@ import DriverNavigationView from '@/components/DriverNavigationView';
 import CompassIndicator from '@/components/CompassIndicator';
 import QuickActions from '@/components/QuickActions';
 import OnboardingTour from '@/components/OnboardingTour';
+import WeatherWidget from '@/components/WeatherWidget';
 import { NavigationStep } from '@/components/NavigationPanel';
 import { VehicleConfig } from '@/types/vehicle';
 import { toast } from 'sonner';
