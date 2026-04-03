@@ -407,9 +407,14 @@ const Index = () => {
         />
       )}
 
-      {/* Compass + Quick Actions - visible when not navigating */}
+      {/* Compass + Weather - visible when not navigating */}
       {!isNavigating && (
         <div className="absolute bottom-24 left-3 z-[100] md:bottom-6 flex flex-col gap-3">
+          <WeatherWidget
+            lat={position?.lat}
+            lng={position?.lng}
+            compact
+          />
           <CompassIndicator 
             heading={mapRotation} 
             onResetNorth={() => mapRef.current?.resetNorth()}
