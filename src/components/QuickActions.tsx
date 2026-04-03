@@ -115,10 +115,10 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userPosition, onShowNearbyM
     <>
       {/* Nearby Results Panel */}
       {activeAction && results.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-[200] md:absolute md:bottom-14 md:right-0 md:left-auto md:w-80 animate-slide-up">
-          <div className="bg-background rounded-t-2xl md:rounded-2xl shadow-xl border border-border/60 max-h-[50vh] flex flex-col">
+        <div className="fixed bottom-0 left-0 right-0 z-[200] md:absolute md:bottom-14 md:right-0 md:left-auto md:w-80 animate-slide-up-panel">
+          <div className="bg-background/95 backdrop-blur-xl rounded-t-2xl md:rounded-2xl shadow-xl border border-border/40 max-h-[50vh] flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
               <div className="flex items-center gap-2">
                 {activeAction && (() => {
                   const Icon = activeAction.icon;
@@ -128,24 +128,21 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userPosition, onShowNearbyM
                   Nearby {activeAction.label} ({results.length})
                 </span>
               </div>
-              <button onClick={closeResults} className="p-1 rounded-full hover:bg-muted transition-colors">
+              <button onClick={closeResults} className="p-1.5 rounded-full hover:bg-muted transition-colors">
                 <X className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
 
             {/* Results List */}
-            <div className="overflow-y-auto flex-1 divide-y divide-border/30">
+            <div className="overflow-y-auto flex-1 divide-y divide-border/20 scrollbar-thin">
               {results.map((place, index) => (
-                <div key={index} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors">
-                  {/* Number badge */}
+                <div key={index} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors group">
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-sm"
                     style={{ backgroundColor: activeAction.markerColor }}
                   >
                     {index + 1}
                   </div>
-
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{place.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{place.address}</p>
@@ -156,14 +153,12 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userPosition, onShowNearbyM
                       </p>
                     )}
                   </div>
-
-                  {/* Navigate button */}
                   <button
                     onClick={() => handleNavigate(place)}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-full text-xs font-medium hover:opacity-90 transition-opacity flex-shrink-0"
+                    className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-full text-xs font-semibold hover:opacity-90 transition-all opacity-80 group-hover:opacity-100 flex-shrink-0 shadow-sm"
                   >
                     <Navigation className="w-3 h-3" />
-                    Navigate
+                    Go
                   </button>
                 </div>
               ))}
@@ -180,20 +175,23 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userPosition, onShowNearbyM
             setIsExpanded(!isExpanded);
           }}
           className={cn(
-            "w-11 h-11 rounded-full bg-background shadow-md border border-border/60 flex items-center justify-center transition-all touch-feedback",
-            isExpanded && "bg-primary text-primary-foreground border-primary"
+            "w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all touch-feedback",
+            "border border-border/40",
+            isExpanded 
+              ? "bg-primary text-primary-foreground border-primary shadow-glow" 
+              : "glass-card hover:shadow-xl"
           )}
           aria-label="Quick actions"
         >
           <ChevronRight className={cn(
-            "w-5 h-5 transition-transform duration-200",
+            "w-5 h-5 transition-transform duration-300",
             isExpanded ? "rotate-90" : "rotate-0"
           )} />
         </button>
 
         {isExpanded && (
-          <div className="flex flex-col gap-2 animate-fade-in">
-            {ACTIONS.map(action => {
+          <div className="flex flex-col gap-2">
+            {ACTIONS.map((action, i) => {
               const Icon = action.icon;
               const isSearching = searching === action.id;
               const isActive = activeAction?.id === action.id;
@@ -203,10 +201,12 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userPosition, onShowNearbyM
                   onClick={() => handleAction(action)}
                   disabled={isSearching}
                   className={cn(
-                    "w-11 h-11 rounded-full bg-background shadow-md border border-border/60 flex items-center justify-center transition-all touch-feedback",
+                    "w-12 h-12 rounded-full shadow-md flex items-center justify-center transition-all touch-feedback",
+                    "border border-border/40 animate-bounce-in",
                     isSearching && "animate-pulse opacity-70",
-                    isActive && "ring-2 ring-primary ring-offset-1"
+                    isActive ? "ring-2 ring-primary ring-offset-2 ring-offset-background glass-card" : "glass-card hover:shadow-lg"
                   )}
+                  style={{ animationDelay: `${i * 50}ms` }}
                   title={action.label}
                 >
                   {isSearching ? (
