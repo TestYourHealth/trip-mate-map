@@ -273,12 +273,12 @@ const TripPanel: React.FC<TripPanelProps> = ({
   if (isMobile) {
     return (
       <div className={cn(
-        "bg-background border-t shadow-lg rounded-t-3xl p-5 w-full animate-slide-up-panel safe-area-bottom",
-        "max-h-[80vh] overflow-y-auto scrollbar-hide"
+        "bg-background/95 backdrop-blur-xl border-t border-border/30 shadow-xl rounded-t-3xl p-5 w-full animate-slide-up-panel safe-area-bottom",
+        "max-h-[80vh] overflow-y-auto scrollbar-thin"
       )}>
         {/* Drag Handle */}
         <div className="flex justify-center mb-2">
-          <div className="w-12 h-1.5 rounded-full bg-muted-foreground/30" />
+          <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
         </div>
         {panelContent}
       </div>
@@ -286,7 +286,7 @@ const TripPanel: React.FC<TripPanelProps> = ({
   }
 
   return (
-    <div className="bg-background border shadow-lg rounded-2xl p-5 w-full max-w-sm animate-slide-in-right max-h-[calc(100vh-32px)] overflow-y-auto scrollbar-hide">
+    <div className="glass-card rounded-2xl p-5 w-full max-w-sm animate-slide-in-right max-h-[calc(100vh-32px)] overflow-y-auto scrollbar-thin">
       {panelContent}
     </div>
   );
