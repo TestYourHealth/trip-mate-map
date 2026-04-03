@@ -132,8 +132,9 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
     <div className="absolute top-3 left-3 right-3 z-[150]">
       {/* Unified search card */}
       <div className={cn(
-        "flex items-center gap-0 bg-background rounded-full shadow-md border border-border/60 transition-all duration-200",
-        isFocused && "shadow-lg ring-1 ring-primary/20"
+        "flex items-center gap-0 rounded-full transition-all duration-300",
+        "glass-card",
+        isFocused && "shadow-lg ring-1 ring-primary/30"
       )}>
         {/* Hamburger Menu */}
         <Sheet>
@@ -144,16 +145,18 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
           </SheetTrigger>
           <SheetContent side="left" className="w-72" aria-describedby={undefined}>
             <SheetHeader>
-              <SheetTitle className="text-left text-lg font-bold">TripMate</SheetTitle>
+              <SheetTitle className="text-left text-lg font-bold">
+                <span className="gradient-text">TripMate</span>
+              </SheetTitle>
             </SheetHeader>
             <nav className="mt-6 flex flex-col gap-0.5">
               {menuItems.map((item) => (
                 <button
                   key={item.path}
                   onClick={() => navigate(item.path)}
-                  className="w-full flex items-center gap-3 text-left px-4 py-3 rounded-lg hover:bg-muted transition-colors text-foreground text-sm"
+                  className="w-full flex items-center gap-3 text-left px-4 py-3 rounded-xl hover:bg-muted transition-colors text-foreground text-sm group"
                 >
-                  <item.icon className="w-4.5 h-4.5 text-muted-foreground" />
+                  <item.icon className="w-4.5 h-4.5 text-muted-foreground group-hover:text-primary transition-colors" />
                   {item.label}
                 </button>
               ))}
@@ -166,7 +169,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
           {isGettingLocation || isCalculating ? (
             <Loader2 className="w-4 h-4 text-primary animate-spin flex-shrink-0 mr-2" />
           ) : (
-            <Search className="w-4 h-4 text-muted-foreground/60 flex-shrink-0 mr-2" />
+            <Search className="w-4 h-4 text-muted-foreground/50 flex-shrink-0 mr-2" />
           )}
           <LocationAutocomplete
             value={destination}
@@ -175,7 +178,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
             placeholder="Search destination"
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            className="border-0 bg-transparent shadow-none focus-visible:ring-0 h-10 text-sm placeholder:text-muted-foreground/50"
+            className="border-0 bg-transparent shadow-none focus-visible:ring-0 h-10 text-sm placeholder:text-muted-foreground/40"
           />
           {destination && (
             <button
@@ -194,7 +197,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
               "flex-shrink-0 p-2 rounded-full transition-all",
               isListening
                 ? "bg-destructive/10 text-destructive animate-pulse"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
             )}
             aria-label="Voice search"
           >
@@ -202,7 +205,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
           </button>
         </div>
 
-        {/* Locate me button - inside the bar */}
+        {/* Locate me button */}
         <button
           onClick={onLocateMe}
           disabled={isLocating}
@@ -217,17 +220,17 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
         </button>
       </div>
 
-      {/* Current location pill */}
-      {origin && (
-        <div className="mt-2 ml-4">
-          <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-background/90 backdrop-blur-sm rounded-full px-2.5 py-1 shadow-sm border border-border/40">
+      {/* Current location pill + Weather */}
+      <div className="mt-2 ml-4 flex items-center gap-2 flex-wrap">
+        {origin && (
+          <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm rounded-full px-2.5 py-1 shadow-sm border border-border/30">
             <MapPin className="w-3 h-3 text-primary" />
-            <span className="truncate max-w-[180px]">
+            <span className="truncate max-w-[160px]">
               {isGettingLocation ? 'Locating...' : origin}
             </span>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Favorite Locations */}
       <div className="mt-2 ml-1">

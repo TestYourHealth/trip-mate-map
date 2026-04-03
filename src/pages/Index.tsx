@@ -6,6 +6,7 @@ import DriverNavigationView from '@/components/DriverNavigationView';
 import CompassIndicator from '@/components/CompassIndicator';
 import QuickActions from '@/components/QuickActions';
 import OnboardingTour from '@/components/OnboardingTour';
+import WeatherWidget from '@/components/WeatherWidget';
 import { NavigationStep } from '@/components/NavigationPanel';
 import { VehicleConfig } from '@/types/vehicle';
 import { toast } from 'sonner';
@@ -406,9 +407,14 @@ const Index = () => {
         />
       )}
 
-      {/* Compass + Quick Actions - visible when not navigating */}
+      {/* Compass + Weather - visible when not navigating */}
       {!isNavigating && (
         <div className="absolute bottom-24 left-3 z-[100] md:bottom-6 flex flex-col gap-3">
+          <WeatherWidget
+            lat={position?.lat}
+            lng={position?.lng}
+            compact
+          />
           <CompassIndicator 
             heading={mapRotation} 
             onResetNorth={() => mapRef.current?.resetNorth()}
@@ -511,18 +517,23 @@ const Index = () => {
         </div>
       )}
 
-      {/* Quick Stats Footer - Desktop only, when not navigating */}
+      {/* Quick Stats Footer - Desktop only */}
       {!isMobile && tripData && !isNavigating && (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[100]">
-          <div className="bg-background rounded-full px-5 py-2.5 flex items-center gap-5 animate-slide-up shadow-md border border-border/60">
+          <div className="glass-card rounded-full px-6 py-3 flex items-center gap-5 animate-slide-up">
             <div className="flex items-center gap-1.5">
               <span className="text-muted-foreground text-xs">Distance</span>
-              <span className="font-semibold text-sm text-foreground">{tripData.distance} km</span>
+              <span className="font-bold text-sm text-foreground">{tripData.distance} km</span>
             </div>
-            <div className="w-px h-4 bg-border" />
+            <div className="w-px h-5 bg-border/50" />
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground text-xs">Time</span>
+              <span className="font-bold text-sm text-foreground">{tripData.duration} hrs</span>
+            </div>
+            <div className="w-px h-5 bg-border/50" />
             <div className="flex items-center gap-1.5">
               <span className="text-muted-foreground text-xs">Cost</span>
-              <span className="font-semibold text-sm text-primary">₹{tripData.totalCost}</span>
+              <span className="font-bold text-sm text-primary">₹{tripData.totalCost}</span>
             </div>
           </div>
         </div>
