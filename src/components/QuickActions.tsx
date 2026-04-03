@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Fuel, Coffee, BedDouble, ShoppingBag, ChevronRight, Navigation, X, MapPin, Loader2 } from 'lucide-react';
+import { Fuel, Coffee, BedDouble, ShoppingBag, ChevronRight, Navigation, X, MapPin, Loader2, Zap, Hospital } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
