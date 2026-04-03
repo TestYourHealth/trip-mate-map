@@ -14,8 +14,10 @@ interface QuickAction {
 
 const ACTIONS: QuickAction[] = [
   { id: 'fuel', label: 'Petrol Pump', icon: Fuel, query: 'petrol pump', color: 'text-amber-500', markerColor: '#f59e0b' },
+  { id: 'ev', label: 'EV Charging', icon: Zap, query: 'ev charging station', color: 'text-emerald-500', markerColor: '#10b981' },
   { id: 'food', label: 'Restaurant', icon: Coffee, query: 'restaurant', color: 'text-orange-500', markerColor: '#f97316' },
   { id: 'rest', label: 'Rest Stop', icon: BedDouble, query: 'hotel', color: 'text-blue-500', markerColor: '#3b82f6' },
+  { id: 'hospital', label: 'Hospital', icon: Hospital, query: 'hospital', color: 'text-red-500', markerColor: '#ef4444' },
   { id: 'shop', label: 'Shopping', icon: ShoppingBag, query: 'shopping mall', color: 'text-pink-500', markerColor: '#ec4899' },
 ];
 
