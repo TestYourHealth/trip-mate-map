@@ -107,12 +107,11 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
     getLocation();
   }, [getCurrentPosition, onOriginChange, hasAutoLocated, origin]);
 
-  // Auto-calculate when destination is selected (not on every keystroke)
+  // Auto-calculate when destination is selected
   const handleDestinationSelect = (value: string) => {
     if (origin && value && !isCalculating) {
-      setTimeout(() => {
-        onCalculate();
-      }, 300);
+      // Pass values directly to avoid stale closure
+      setTimeout(() => onCalculate(origin, value), 100);
     }
   };
 
