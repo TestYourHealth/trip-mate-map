@@ -237,7 +237,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
           onSelect={(address) => {
             onDestinationChange(address);
             if (origin && address) {
-              setTimeout(() => onCalculate(), 300);
+              setTimeout(() => onCalculate(origin, address), 100);
             }
           }}
           compact
