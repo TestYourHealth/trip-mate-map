@@ -244,8 +244,8 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       setIsLoading(true);
     }
 
-    // 300ms debounce to respect Nominatim rate limits
-    debounceRef.current = setTimeout(() => search(newValue), 300);
+    // 150ms debounce - fast but still respects rate limits
+    debounceRef.current = setTimeout(() => search(newValue), 150);
   }, [onChange, search]);
 
   const handleSelect = useCallback((suggestion: LocationSuggestion) => {

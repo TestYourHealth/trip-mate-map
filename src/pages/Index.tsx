@@ -271,14 +271,16 @@ const Index = () => {
     }
   }, [getCurrentPosition, startTracking]);
 
-  const calculateTrip = useCallback(async () => {
-    if (!origin || !destination) return;
+  const calculateTrip = useCallback(async (overrideOrigin?: string, overrideDestination?: string) => {
+    const tripOrigin = overrideOrigin || origin;
+    const tripDestination = overrideDestination || destination;
+    if (!tripOrigin || !tripDestination) return;
     
     setIsCalculating(true);
     
     try {
       const validWaypoints = waypoints.filter(w => w.trim() !== '');
-      const result = await mapRef.current?.showRoute(origin, destination, validWaypoints);
+      const result = await mapRef.current?.showRoute(tripOrigin, tripDestination, validWaypoints);
       
       if (result && result.routes.length > 0) {
         setRoutes(result.routes);
@@ -432,8 +434,9 @@ const Index = () => {
             onNavigateToPlace={async (name, lat, lng) => {
               mapRef.current?.clearNearbyMarkers();
               setDestination(name);
-              if (!origin) {
-                // Get current location first, then route will be triggered
+              
+              let currentOrigin = origin;
+              if (!currentOrigin) {
                 setIsLocating(true);
                 try {
                   const pos = await getCurrentPosition();
@@ -442,18 +445,20 @@ const Index = () => {
                     { headers: { 'User-Agent': 'TripMate/1.0' } }
                   );
                   const data = await response.json();
-                  const address = data.display_name?.split(',').slice(0, 3).join(',') || 'Current Location';
-                  setOrigin(address);
+                  currentOrigin = data.display_name?.split(',').slice(0, 3).join(',') || 'Current Location';
+                  setOrigin(currentOrigin);
                   mapRef.current?.updateUserLocation(pos.lat, pos.lng, pos.heading);
                   startTracking();
                 } catch {
                   toast.error('Could not get your location');
+                  setIsLocating(false);
+                  return;
                 } finally {
                   setIsLocating(false);
                 }
               }
-              // Trigger route calculation after state updates
-              setTimeout(() => calculateTrip(), 300);
+              // Use override params to avoid stale closure
+              await calculateTrip(currentOrigin, name);
             }}
           />
         </div>
