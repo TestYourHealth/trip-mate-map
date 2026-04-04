@@ -280,7 +280,7 @@ const Index = () => {
     
     try {
       const validWaypoints = waypoints.filter(w => w.trim() !== '');
-      const result = await mapRef.current?.showRoute(origin, destination, validWaypoints);
+      const result = await mapRef.current?.showRoute(tripOrigin, tripDestination, validWaypoints);
       
       if (result && result.routes.length > 0) {
         setRoutes(result.routes);
