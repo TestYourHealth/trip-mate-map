@@ -19,11 +19,11 @@ interface DirectionsListProps {
   onStepClick?: (index: number) => void;
 }
 
-const DirectionsList: React.FC<DirectionsListProps> = ({
+const DirectionsList = React.forwardRef<HTMLDivElement, DirectionsListProps>(({
   steps,
   currentStepIndex,
   onStepClick
-}) => {
+}, ref) => {
   if (steps.length === 0) return null;
 
   const getDirectionIcon = (type: NavigationStep['type']) => {
@@ -106,6 +106,8 @@ const DirectionsList: React.FC<DirectionsListProps> = ({
       </ScrollArea>
     </div>
   );
-};
+});
+
+DirectionsList.displayName = 'DirectionsList';
 
 export default DirectionsList;

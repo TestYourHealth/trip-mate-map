@@ -125,7 +125,7 @@ interface DriverNavigationViewProps {
   onToggleMute: () => void;
   onCenterUser: () => void;
 }
-const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
+const DriverNavigationView = React.forwardRef<HTMLDivElement, DriverNavigationViewProps>(({
   steps,
   currentStepIndex,
   remainingDistance,
@@ -135,7 +135,7 @@ const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
   onClose,
   onToggleMute,
   onCenterUser
-}) => {
+}, ref) => {
   const currentStep = steps[currentStepIndex];
   const nextStep = steps[currentStepIndex + 1];
   const getDirectionIcon = (type: NavigationStep['type']) => {
@@ -284,5 +284,7 @@ const DriverNavigationView: React.FC<DriverNavigationViewProps> = ({
         </div>
       </div>
     </div>;
-};
+});
+
+DriverNavigationView.displayName = 'DriverNavigationView';
 export default DriverNavigationView;
