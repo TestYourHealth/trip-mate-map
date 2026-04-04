@@ -284,5 +284,7 @@ const DriverNavigationView = React.forwardRef<HTMLDivElement, DriverNavigationVi
         </div>
       </div>
     </div>;
-};
+});
+
+DriverNavigationView.displayName = 'DriverNavigationView';
 export default DriverNavigationView;
