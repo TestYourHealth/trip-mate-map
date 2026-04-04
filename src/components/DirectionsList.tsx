@@ -106,6 +106,8 @@ const DirectionsList = React.forwardRef<HTMLDivElement, DirectionsListProps>(({
       </ScrollArea>
     </div>
   );
-};
+});
+
+DirectionsList.displayName = 'DirectionsList';
 
 export default DirectionsList;
