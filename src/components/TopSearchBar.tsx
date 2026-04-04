@@ -19,7 +19,7 @@ interface TopSearchBarProps {
   destination: string;
   onOriginChange: (value: string) => void;
   onDestinationChange: (value: string) => void;
-  onCalculate: () => void;
+  onCalculate: (overrideOrigin?: string, overrideDestination?: string) => void;
   isCalculating: boolean;
   hasRoute: boolean;
   getCurrentPosition: () => Promise<{ lat: number; lng: number; heading: number | null }>;
