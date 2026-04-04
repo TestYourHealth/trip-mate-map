@@ -160,7 +160,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
 
     try {
       // Build URL with viewbox bias (not bounded) for proximity-aware global search
-      let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&limit=8&addressdetails=1&dedupe=1`;
+      let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&limit=8&addressdetails=1&dedupe=1&countrycodes=in`;
       
       if (userPos) {
         // ~200km viewbox around user for bias (not restriction)

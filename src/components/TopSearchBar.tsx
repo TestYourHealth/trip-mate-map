@@ -19,7 +19,7 @@ interface TopSearchBarProps {
   destination: string;
   onOriginChange: (value: string) => void;
   onDestinationChange: (value: string) => void;
-  onCalculate: () => void;
+  onCalculate: (overrideOrigin?: string, overrideDestination?: string) => void;
   isCalculating: boolean;
   hasRoute: boolean;
   getCurrentPosition: () => Promise<{ lat: number; lng: number; heading: number | null }>;
@@ -72,7 +72,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
       toast.success(`🎤 "${transcript}"`);
       // Auto-calculate after voice input
       if (origin && transcript) {
-        setTimeout(() => onCalculate(), 500);
+        setTimeout(() => onCalculate(origin, transcript), 100);
       }
     };
 
@@ -107,12 +107,11 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
     getLocation();
   }, [getCurrentPosition, onOriginChange, hasAutoLocated, origin]);
 
-  // Auto-calculate when destination is selected (not on every keystroke)
+  // Auto-calculate when destination is selected
   const handleDestinationSelect = (value: string) => {
     if (origin && value && !isCalculating) {
-      setTimeout(() => {
-        onCalculate();
-      }, 300);
+      // Pass values directly to avoid stale closure
+      setTimeout(() => onCalculate(origin, value), 100);
     }
   };
 
@@ -238,7 +237,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
           onSelect={(address) => {
             onDestinationChange(address);
             if (origin && address) {
-              setTimeout(() => onCalculate(), 300);
+              setTimeout(() => onCalculate(origin, address), 100);
             }
           }}
           compact
