@@ -72,7 +72,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
       toast.success(`🎤 "${transcript}"`);
       // Auto-calculate after voice input
       if (origin && transcript) {
-        setTimeout(() => onCalculate(), 500);
+        setTimeout(() => onCalculate(origin, transcript), 100);
       }
     };
 
