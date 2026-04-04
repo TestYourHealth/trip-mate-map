@@ -434,8 +434,9 @@ const Index = () => {
             onNavigateToPlace={async (name, lat, lng) => {
               mapRef.current?.clearNearbyMarkers();
               setDestination(name);
-              if (!origin) {
-                // Get current location first, then route will be triggered
+              
+              let currentOrigin = origin;
+              if (!currentOrigin) {
                 setIsLocating(true);
                 try {
                   const pos = await getCurrentPosition();
@@ -444,18 +445,20 @@ const Index = () => {
                     { headers: { 'User-Agent': 'TripMate/1.0' } }
                   );
                   const data = await response.json();
-                  const address = data.display_name?.split(',').slice(0, 3).join(',') || 'Current Location';
-                  setOrigin(address);
+                  currentOrigin = data.display_name?.split(',').slice(0, 3).join(',') || 'Current Location';
+                  setOrigin(currentOrigin);
                   mapRef.current?.updateUserLocation(pos.lat, pos.lng, pos.heading);
                   startTracking();
                 } catch {
                   toast.error('Could not get your location');
+                  setIsLocating(false);
+                  return;
                 } finally {
                   setIsLocating(false);
                 }
               }
-              // Trigger route calculation after state updates
-              setTimeout(() => calculateTrip(), 300);
+              // Use override params to avoid stale closure
+              await calculateTrip(currentOrigin, name);
             }}
           />
         </div>
