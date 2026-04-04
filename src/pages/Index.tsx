@@ -271,8 +271,10 @@ const Index = () => {
     }
   }, [getCurrentPosition, startTracking]);
 
-  const calculateTrip = useCallback(async () => {
-    if (!origin || !destination) return;
+  const calculateTrip = useCallback(async (overrideOrigin?: string, overrideDestination?: string) => {
+    const tripOrigin = overrideOrigin || origin;
+    const tripDestination = overrideDestination || destination;
+    if (!tripOrigin || !tripDestination) return;
     
     setIsCalculating(true);
     
