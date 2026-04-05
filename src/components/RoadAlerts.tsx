@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, Gauge, School, MergeType, Construction, ChevronRight } from 'lucide-react';
+import { AlertTriangle, Gauge, School, GitMerge, Construction, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NavigationStep } from './NavigationPanel';
 
@@ -27,7 +27,7 @@ const getAlertIcon = (type: AlertType) => {
     case 'speed-warning': return <Gauge className="w-5 h-5" />;
     case 'sharp-turn': return <AlertTriangle className="w-5 h-5" />;
     case 'school-zone': return <School className="w-5 h-5" />;
-    case 'highway-merge': return <MergeType className="w-5 h-5" />;
+    case 'highway-merge': return <GitMerge className="w-5 h-5" />;
     case 'speed-limit': return <Construction className="w-5 h-5" />;
   }
 };
