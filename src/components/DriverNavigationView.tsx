@@ -3,6 +3,7 @@ import { X, Volume2, VolumeX, Crosshair, ChevronUp, CornerUpLeft, CornerUpRight,
 import { Button } from '@/components/ui/button';
 import { NavigationStep } from './NavigationPanel';
 import { cn } from '@/lib/utils';
+import RoadAlerts from './RoadAlerts';
 
 // Lane guidance types
 interface Lane {
@@ -178,6 +179,8 @@ const DriverNavigationView = React.forwardRef<HTMLDivElement, DriverNavigationVi
   };
   if (!currentStep) return null;
   return <div className="fixed inset-0 z-[1000] pointer-events-none">
+      {/* Road Alerts */}
+      <RoadAlerts steps={steps} currentStepIndex={currentStepIndex} speed={speed} isActive={true} />
       {/* Top Navigation Card - Current Direction */}
       <div className="absolute top-0 left-0 right-0 pointer-events-auto">
         <div className="bg-primary m-2 rounded-xl shadow-2xl overflow-hidden">
