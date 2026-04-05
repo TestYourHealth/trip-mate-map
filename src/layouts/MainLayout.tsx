@@ -4,7 +4,8 @@ import {
   Menu, 
   MapPin, 
   Navigation, 
-  History, 
+  History,
+  BarChart3,
   Car, 
   Fuel, 
   Settings, 
@@ -26,6 +27,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 const navigationItems = [
   { title: 'Navigate', url: '/', icon: Navigation, description: 'Plan your trip' },
   { title: 'Trip History', url: '/history', icon: History, description: 'View past trips' },
+  { title: 'Trip Analytics', url: '/analytics', icon: BarChart3, description: 'Spending insights' },
 ];
 
 const settingsItems = [

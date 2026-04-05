@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Search, Loader2, X, Menu, Crosshair, Car, Fuel, Clock, Settings, HelpCircle, MapPin, Mic, MicOff } from 'lucide-react';
+import { Search, Loader2, X, Menu, Crosshair, Car, Fuel, Clock, Settings, HelpCircle, MapPin, Mic, MicOff, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import LocationAutocomplete from './LocationAutocomplete';
 import FavoriteLocations from './FavoriteLocations';
@@ -123,6 +123,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
     { label: 'Vehicle Settings', path: '/settings/vehicle', icon: Car },
     { label: 'Fuel Prices', path: '/settings/fuel', icon: Fuel },
     { label: 'Trip History', path: '/history', icon: Clock },
+    { label: 'Trip Analytics', path: '/analytics', icon: BarChart3 },
     { label: 'Settings', path: '/settings', icon: Settings },
     { label: 'Help', path: '/help', icon: HelpCircle },
   ];
