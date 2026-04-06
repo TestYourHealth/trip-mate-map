@@ -176,6 +176,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const abortRef = useRef<AbortController | null>(null);
   const lastQueryRef = useRef('');
+  const correctedQueryRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (autoFocus && inputRef.current) inputRef.current.focus();
@@ -583,6 +584,21 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
                 )
               )}
             </div>
+          )}
+
+          {/* "Did you mean?" suggestion */}
+          {hasQuery && correctedQueryRef.current && results.length > 0 && (
+            <button
+              onClick={() => {
+                onChange(correctedQueryRef.current!);
+                correctedQueryRef.current = null;
+              }}
+              className="w-full px-4 py-2 text-left text-sm bg-accent/50 border-b border-border/50 hover:bg-accent transition-colors"
+            >
+              <span className="text-muted-foreground">Did you mean: </span>
+              <span className="text-primary font-medium">{correctedQueryRef.current}</span>
+              <span className="text-muted-foreground"> ?</span>
+            </button>
           )}
 
           {/* Query: Search results */}
