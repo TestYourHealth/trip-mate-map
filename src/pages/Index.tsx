@@ -272,13 +272,31 @@ const Index = () => {
   }, [getCurrentPosition, startTracking]);
 
   const calculateTrip = useCallback(async (overrideOrigin?: string, overrideDestination?: string) => {
-    const tripOrigin = overrideOrigin || origin;
+    let tripOrigin = overrideOrigin || origin;
     const tripDestination = overrideDestination || destination;
     if (!tripOrigin || !tripDestination) return;
     
     setIsCalculating(true);
     
     try {
+      // If origin is generic "Current Location", resolve to actual GPS address
+      if (tripOrigin === 'Current Location') {
+        try {
+          const pos = await getCurrentPosition();
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.lat}&lon=${pos.lng}`,
+            { headers: { 'User-Agent': 'TripMate/1.0' } }
+          );
+          const data = await response.json();
+          tripOrigin = data.display_name?.split(',').slice(0, 3).join(',') || `${pos.lat},${pos.lng}`;
+          setOrigin(tripOrigin);
+        } catch {
+          toast.error('Location detect nahi ho paya. Please manually enter origin.');
+          setIsCalculating(false);
+          return;
+        }
+      }
+
       const validWaypoints = waypoints.filter(w => w.trim() !== '');
       const result = await mapRef.current?.showRoute(tripOrigin, tripDestination, validWaypoints);
       
