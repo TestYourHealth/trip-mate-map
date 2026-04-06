@@ -224,7 +224,6 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&limit=8&addressdetails=1&dedupe=1&countrycodes=in`;
       
       if (userPos) {
-        // ~200km viewbox around user for bias (not restriction)
         const delta = 2;
         url += `&viewbox=${userPos.lng - delta},${userPos.lat - delta},${userPos.lng + delta},${userPos.lat + delta}`;
       }
@@ -235,7 +234,28 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data: LocationSuggestion[] = await response.json();
+      let data: LocationSuggestion[] = await response.json();
+
+      // If no results, try fuzzy correction
+      if (data.length === 0) {
+        const corrected = fuzzyMatch(trimmed);
+        if (corrected && corrected.toLowerCase() !== trimmed.toLowerCase()) {
+          const fuzzyUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(corrected)}&limit=8&addressdetails=1&dedupe=1&countrycodes=in`;
+          const fuzzyRes = await fetch(fuzzyUrl, {
+            headers: { 'User-Agent': 'TripMate/1.0', 'Accept': 'application/json' },
+            signal: abortRef.current.signal
+          });
+          if (fuzzyRes.ok) {
+            data = await fuzzyRes.json();
+            // Tag results so UI can show "Did you mean: corrected?"
+            if (data.length > 0) {
+              correctedQueryRef.current = corrected;
+            }
+          }
+        }
+      } else {
+        correctedQueryRef.current = null;
+      }
 
       // Sort: nearby first, then by importance
       let sorted = data;
@@ -243,7 +263,6 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         sorted = [...data].sort((a, b) => {
           const distA = haversine(userPos.lat, userPos.lng, parseFloat(a.lat), parseFloat(a.lon));
           const distB = haversine(userPos.lat, userPos.lng, parseFloat(b.lat), parseFloat(b.lon));
-          // Boost nearby results but don't completely override relevance
           const scoreA = distA < 50 ? -1000 : distA < 200 ? -500 : 0;
           const scoreB = distB < 50 ? -1000 : distB < 200 ? -500 : 0;
           return (scoreA - scoreB) || (distA - distB);
@@ -251,7 +270,6 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       }
 
       cache[cacheKey] = sorted;
-      // Only update if this is still the latest query
       if (lastQueryRef.current === trimmed) {
         setResults(sorted);
       }
