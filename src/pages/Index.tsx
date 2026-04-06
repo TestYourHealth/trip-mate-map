@@ -333,7 +333,7 @@ const Index = () => {
     } finally {
       setIsCalculating(false);
     }
-  }, [origin, destination, waypoints, updateTripData, isMobile]);
+  }, [origin, destination, waypoints, updateTripData, isMobile, getCurrentPosition]);
 
   const getStepType = (type: string, modifier?: string): NavigationStep['type'] => {
     if (type === 'DestinationReached' || type === 'WaypointReached') return 'destination';
