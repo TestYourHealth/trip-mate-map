@@ -29,6 +29,67 @@ interface LocationAutocompleteProps {
 // Simple in-memory cache
 const cache: Record<string, LocationSuggestion[]> = {};
 
+// Common Indian cities for fuzzy matching (covers typos like "delih" → "Delhi")
+const FUZZY_CITIES: string[] = [
+  'Delhi', 'New Delhi', 'Mumbai', 'Bangalore', 'Bengaluru', 'Chennai', 'Kolkata',
+  'Hyderabad', 'Pune', 'Ahmedabad', 'Jaipur', 'Lucknow', 'Kanpur', 'Nagpur',
+  'Indore', 'Thane', 'Bhopal', 'Visakhapatnam', 'Patna', 'Vadodara', 'Ghaziabad',
+  'Ludhiana', 'Agra', 'Nashik', 'Faridabad', 'Meerut', 'Rajkot', 'Varanasi',
+  'Srinagar', 'Aurangabad', 'Dhanbad', 'Amritsar', 'Allahabad', 'Prayagraj',
+  'Ranchi', 'Howrah', 'Coimbatore', 'Jodhpur', 'Madurai', 'Gwalior', 'Vijayawada',
+  'Chandigarh', 'Dehradun', 'Mysore', 'Mysuru', 'Noida', 'Gurugram', 'Gurgaon',
+  'Kochi', 'Trivandrum', 'Thiruvananthapuram', 'Udaipur', 'Shimla', 'Manali',
+  'Rishikesh', 'Haridwar', 'Mathura', 'Vrindavan', 'Ajmer', 'Pushkar', 'Jaisalmer',
+  'Raipur', 'Guwahati', 'Bhubaneswar', 'Cuttack', 'Jammu', 'Surat', 'Mangalore',
+  'Tirupati', 'Ooty', 'Kodaikanal', 'Pondicherry', 'Puducherry', 'Goa', 'Panaji',
+  'Nainital', 'Mussoorie', 'Darjeeling', 'Gangtok', 'Shillong', 'Leh', 'Ladakh',
+  'Amravati', 'Kolhapur', 'Solapur', 'Bikaner', 'Kota', 'Bareilly', 'Aligarh',
+  'Moradabad', 'Gorakhpur', 'Jabalpur', 'Tiruchirappalli', 'Salem', 'Hubli',
+  'Belgaum', 'Belagavi', 'Siliguri', 'Durgapur', 'Asansol', 'Nanded', 'Warangal',
+  'Guntur', 'Bhilai', 'Jalandhar', 'Firozabad', 'Loni', 'Jhansi',
+];
+
+// Levenshtein distance for fuzzy matching
+const levenshtein = (a: string, b: string): number => {
+  const m = a.length, n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+  );
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+  return dp[m][n];
+};
+
+// Find best fuzzy match for a query
+const fuzzyMatch = (query: string): string | null => {
+  const q = query.toLowerCase().trim();
+  if (q.length < 3) return null;
+
+  let bestMatch: string | null = null;
+  let bestScore = Infinity;
+  const maxDist = Math.max(2, Math.floor(q.length * 0.4)); // Allow ~40% typo tolerance
+
+  for (const city of FUZZY_CITIES) {
+    const c = city.toLowerCase();
+    // Check if starts similarly
+    if (c.startsWith(q) || q.startsWith(c)) return city;
+    // Check substring match
+    if (c.includes(q) || q.includes(c)) return city;
+    // Levenshtein
+    const dist = levenshtein(q, c);
+    if (dist < bestScore && dist <= maxDist) {
+      bestScore = dist;
+      bestMatch = city;
+    }
+  }
+  return bestMatch;
+};
+
 const POPULAR_PLACES: LocationSuggestion[] = [
   { display_name: 'India Gate, New Delhi, Delhi, India', lat: '28.6129', lon: '77.2295', place_id: -1 },
   { display_name: 'Gateway of India, Mumbai, Maharashtra, India', lat: '18.9220', lon: '72.8347', place_id: -2 },
@@ -115,6 +176,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const abortRef = useRef<AbortController | null>(null);
   const lastQueryRef = useRef('');
+  const correctedQueryRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (autoFocus && inputRef.current) inputRef.current.focus();
@@ -163,7 +225,6 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&limit=8&addressdetails=1&dedupe=1&countrycodes=in`;
       
       if (userPos) {
-        // ~200km viewbox around user for bias (not restriction)
         const delta = 2;
         url += `&viewbox=${userPos.lng - delta},${userPos.lat - delta},${userPos.lng + delta},${userPos.lat + delta}`;
       }
@@ -174,7 +235,28 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data: LocationSuggestion[] = await response.json();
+      let data: LocationSuggestion[] = await response.json();
+
+      // If no results, try fuzzy correction
+      if (data.length === 0) {
+        const corrected = fuzzyMatch(trimmed);
+        if (corrected && corrected.toLowerCase() !== trimmed.toLowerCase()) {
+          const fuzzyUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(corrected)}&limit=8&addressdetails=1&dedupe=1&countrycodes=in`;
+          const fuzzyRes = await fetch(fuzzyUrl, {
+            headers: { 'User-Agent': 'TripMate/1.0', 'Accept': 'application/json' },
+            signal: abortRef.current.signal
+          });
+          if (fuzzyRes.ok) {
+            data = await fuzzyRes.json();
+            // Tag results so UI can show "Did you mean: corrected?"
+            if (data.length > 0) {
+              correctedQueryRef.current = corrected;
+            }
+          }
+        }
+      } else {
+        correctedQueryRef.current = null;
+      }
 
       // Sort: nearby first, then by importance
       let sorted = data;
@@ -182,7 +264,6 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         sorted = [...data].sort((a, b) => {
           const distA = haversine(userPos.lat, userPos.lng, parseFloat(a.lat), parseFloat(a.lon));
           const distB = haversine(userPos.lat, userPos.lng, parseFloat(b.lat), parseFloat(b.lon));
-          // Boost nearby results but don't completely override relevance
           const scoreA = distA < 50 ? -1000 : distA < 200 ? -500 : 0;
           const scoreB = distB < 50 ? -1000 : distB < 200 ? -500 : 0;
           return (scoreA - scoreB) || (distA - distB);
@@ -190,7 +271,6 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       }
 
       cache[cacheKey] = sorted;
-      // Only update if this is still the latest query
       if (lastQueryRef.current === trimmed) {
         setResults(sorted);
       }
@@ -504,6 +584,21 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
                 )
               )}
             </div>
+          )}
+
+          {/* "Did you mean?" suggestion */}
+          {hasQuery && correctedQueryRef.current && results.length > 0 && (
+            <button
+              onClick={() => {
+                onChange(correctedQueryRef.current!);
+                correctedQueryRef.current = null;
+              }}
+              className="w-full px-4 py-2 text-left text-sm bg-accent/50 border-b border-border/50 hover:bg-accent transition-colors"
+            >
+              <span className="text-muted-foreground">Did you mean: </span>
+              <span className="text-primary font-medium">{correctedQueryRef.current}</span>
+              <span className="text-muted-foreground"> ?</span>
+            </button>
           )}
 
           {/* Query: Search results */}
