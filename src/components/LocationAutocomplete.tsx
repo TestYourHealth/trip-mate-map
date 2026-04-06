@@ -471,7 +471,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       </div>
 
       {shouldShowDropdown && (
-        <div ref={listRef} className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-xl shadow-xl z-[300] max-h-80 overflow-y-auto">
+        <div ref={listRef} className="absolute top-full left-0 mt-1 bg-background border border-border rounded-xl shadow-xl z-[300] max-h-80 overflow-y-auto min-w-[calc(100vw-1.5rem)] sm:min-w-[400px] -translate-x-12">
           
           {/* Filter Chips */}
           <div className="px-2 pt-2 pb-1 flex gap-1.5 flex-wrap sticky top-0 bg-background z-10 border-b border-border/50">
