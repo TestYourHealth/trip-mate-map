@@ -1,12 +1,9 @@
 import { useEffect, useCallback } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import { useTheme } from './useTheme';
+import { getSunTimes } from './useSunCalc';
 
 type ThemeMode = 'light' | 'dark' | 'auto';
-
-// Approximate sunrise/sunset times for India (6 AM - 6:30 PM average)
-const SUNRISE_HOUR = 6;
-const SUNSET_HOUR = 18.5; // 6:30 PM
 
 export function useAutoTheme() {
   const { setTheme, isDark } = useTheme();
@@ -18,8 +15,20 @@ export function useAutoTheme() {
     const now = new Date();
     const hour = now.getHours() + now.getMinutes() / 60;
     
-    // Dark mode between sunset and sunrise
-    const shouldBeDark = hour >= SUNSET_HOUR || hour < SUNRISE_HOUR;
+    // Use real sun calculation for user's approximate location
+    // Try to get cached position, fallback to India center
+    let lat = 20.5937, lng = 78.9629;
+    try {
+      const lastPos = sessionStorage.getItem('lastKnownPos');
+      if (lastPos) {
+        const parsed = JSON.parse(lastPos);
+        lat = parsed.lat;
+        lng = parsed.lng;
+      }
+    } catch { /* use defaults */ }
+
+    const { sunrise, sunset } = getSunTimes(lat, lng);
+    const shouldBeDark = hour >= sunset || hour < sunrise;
     
     if (shouldBeDark && !isDark) {
       setTheme('dark');
@@ -31,7 +40,6 @@ export function useAutoTheme() {
   useEffect(() => {
     if (themeMode !== 'auto') return;
 
-    // Check immediately
     checkTimeAndSetTheme();
 
     // Check every 5 minutes
@@ -48,7 +56,6 @@ export function useAutoTheme() {
     } else if (mode === 'dark') {
       setTheme('dark');
     }
-    // Auto mode will trigger useEffect above
   }, [setTheme, setThemeMode]);
 
   return { themeMode, setMode, isDark };
