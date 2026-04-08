@@ -78,6 +78,17 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
     _setManualRotation(val);
   };
 
+  // Safe counter-rotation of markers to prevent transform corruption
+  const counterRotateMarkers = (wrapper: HTMLElement, degrees: number) => {
+    const markerElements = wrapper.querySelectorAll('.leaflet-marker-icon, .leaflet-popup');
+    markerElements.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      // Store Leaflet's original transform separately, only modify rotation
+      const baseTransform = htmlEl.style.transform?.replace(/\s*rotate\([^)]*\)/g, '').trim() || '';
+      htmlEl.style.transform = degrees === 0 ? baseTransform : `${baseTransform} rotate(${degrees}deg)`;
+    });
+  };
+
   const clearMarkers = () => {
     markers.current.forEach(m => m.remove());
     markers.current = [];
@@ -285,11 +296,25 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
     selectRoute: (index: number) => {
       if (routingControl.current && routesData.current[index]) {
         selectedRouteIndex.current = index;
-        // The routing control will handle the visual update
-        const control = routingControl.current as any;
-        if (control._routes && control._routes[index]) {
-          control._selectedRoute = index;
-          control._updateLines({ route: control._routes[index], alternatives: control._routes });
+        try {
+          const control = routingControl.current as any;
+          // Try multiple internal API patterns (varies by LRM version)
+          if (control._routes && control._routes[index] && typeof control._updateLines === 'function') {
+            control._selectedRoute = index;
+            control._updateLines({ route: control._routes[index], alternatives: control._routes });
+          } else if (typeof control.route === 'function') {
+            // Fallback: re-route to force visual update
+            control.spliceWaypoints(0, 0); // no-op splice triggers redraw
+          }
+          
+          // Update route coordinates for the selected route
+          if (control._routes && control._routes[index]?.coordinates) {
+            routeCoordinates.current = control._routes[index].coordinates.map(
+              (coord: any) => L.latLng(coord.lat, coord.lng)
+            );
+          }
+        } catch (e) {
+          console.warn('Route selection visual update failed:', e);
         }
       }
     },
@@ -439,16 +464,12 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
     setMapRotation: (headingDeg: number | null) => {
       if (!mapWrapper.current || headingDeg === null) return;
       
-      // Rotate map opposite to heading so "up" is always direction of travel
       const rotation = -headingDeg;
       currentRotation.current = rotation;
       mapWrapper.current.style.transform = `rotate(${rotation}deg)`;
       
-      // Counter-rotate markers so they stay upright
-      const markerElements = mapWrapper.current.querySelectorAll('.leaflet-marker-icon, .leaflet-popup');
-      markerElements.forEach((el) => {
-        (el as HTMLElement).style.transform = `${(el as HTMLElement).style.transform?.replace(/rotate\([^)]*\)/, '') || ''} rotate(${headingDeg}deg)`;
-      });
+      // Counter-rotate markers using data attribute to avoid transform corruption
+      counterRotateMarkers(mapWrapper.current, headingDeg);
     },
     resetNorth: () => {
       setManualRotation(0);
@@ -456,12 +477,7 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
       currentRotation.current = 0;
       if (mapWrapper.current) {
         mapWrapper.current.style.transform = 'rotate(0deg)';
-        // Reset marker rotations
-        const markerElements = mapWrapper.current.querySelectorAll('.leaflet-marker-icon, .leaflet-popup');
-        markerElements.forEach((el) => {
-          const htmlEl = el as HTMLElement;
-          htmlEl.style.transform = htmlEl.style.transform?.replace(/rotate\([^)]*\)/g, '').trim() || '';
-        });
+        counterRotateMarkers(mapWrapper.current, 0);
       }
     },
     getRotation: () => {
@@ -551,6 +567,11 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
     return () => {
       map.current?.remove();
       map.current = null;
+      userMarker.current = null;
+      userAccuracyCircle.current = null;
+      tileLayerRef.current = null;
+      routeCoordinates.current = null;
+      routesData.current = [];
     };
   }, []);
 
@@ -585,30 +606,15 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
   // Rotate map based on heading during navigation
   useEffect(() => {
     if (isNavigating && heading !== null && !isNaN(heading) && mapWrapper.current) {
-      // Normalize heading to 0-360 range
       const normalizedHeading = ((heading % 360) + 360) % 360;
       const rotation = -normalizedHeading;
       currentRotation.current = rotation;
       mapWrapper.current.style.transform = `rotate(${rotation}deg)`;
-      
-      // Counter-rotate all markers and popups so they stay upright
-      const markerElements = mapWrapper.current.querySelectorAll('.leaflet-marker-icon, .leaflet-popup');
-      markerElements.forEach((el) => {
-        const htmlEl = el as HTMLElement;
-        // Remove any existing rotate transform and add new one
-        const currentTransform = htmlEl.style.transform?.replace(/rotate\([^)]*\)/g, '').trim() || '';
-        htmlEl.style.transform = `${currentTransform} rotate(${normalizedHeading}deg)`;
-      });
+      counterRotateMarkers(mapWrapper.current, normalizedHeading);
     } else if (!isNavigating && mapWrapper.current) {
       mapWrapper.current.style.transform = 'rotate(0deg)';
       currentRotation.current = 0;
-      
-      // Reset marker rotations
-      const markerElements = mapWrapper.current.querySelectorAll('.leaflet-marker-icon, .leaflet-popup');
-      markerElements.forEach((el) => {
-        const htmlEl = el as HTMLElement;
-        htmlEl.style.transform = htmlEl.style.transform?.replace(/rotate\([^)]*\)/g, '').trim() || '';
-      });
+      counterRotateMarkers(mapWrapper.current, 0);
     }
   }, [heading, isNavigating]);
 
@@ -635,18 +641,9 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
 
     const applyRotation = (rotationDeg: number) => {
       if (!mapWrapper.current || isNavigating) return;
-
-      // Rotate map opposite to the dial so it feels like Google Maps
       mapWrapper.current.style.transform = `rotate(${-rotationDeg}deg)`;
       currentRotation.current = -rotationDeg;
-
-      // Counter-rotate markers/popup DOM so they stay upright
-      const markerElements = mapWrapper.current.querySelectorAll('.leaflet-marker-icon, .leaflet-popup');
-      markerElements.forEach((el) => {
-        const htmlEl = el as HTMLElement;
-        const base = htmlEl.style.transform?.replace(/rotate\([^)]*\)/g, '').trim() || '';
-        htmlEl.style.transform = `${base} rotate(${rotationDeg}deg)`;
-      });
+      counterRotateMarkers(mapWrapper.current, rotationDeg);
     };
 
     const handleTouchStart = (e: TouchEvent) => {
