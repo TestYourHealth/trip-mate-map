@@ -285,11 +285,25 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
     selectRoute: (index: number) => {
       if (routingControl.current && routesData.current[index]) {
         selectedRouteIndex.current = index;
-        // The routing control will handle the visual update
-        const control = routingControl.current as any;
-        if (control._routes && control._routes[index]) {
-          control._selectedRoute = index;
-          control._updateLines({ route: control._routes[index], alternatives: control._routes });
+        try {
+          const control = routingControl.current as any;
+          // Try multiple internal API patterns (varies by LRM version)
+          if (control._routes && control._routes[index] && typeof control._updateLines === 'function') {
+            control._selectedRoute = index;
+            control._updateLines({ route: control._routes[index], alternatives: control._routes });
+          } else if (typeof control.route === 'function') {
+            // Fallback: re-route to force visual update
+            control.spliceWaypoints(0, 0); // no-op splice triggers redraw
+          }
+          
+          // Update route coordinates for the selected route
+          if (control._routes && control._routes[index]?.coordinates) {
+            routeCoordinates.current = control._routes[index].coordinates.map(
+              (coord: any) => L.latLng(coord.lat, coord.lng)
+            );
+          }
+        } catch (e) {
+          console.warn('Route selection visual update failed:', e);
         }
       }
     },
@@ -439,16 +453,12 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
     setMapRotation: (headingDeg: number | null) => {
       if (!mapWrapper.current || headingDeg === null) return;
       
-      // Rotate map opposite to heading so "up" is always direction of travel
       const rotation = -headingDeg;
       currentRotation.current = rotation;
       mapWrapper.current.style.transform = `rotate(${rotation}deg)`;
       
-      // Counter-rotate markers so they stay upright
-      const markerElements = mapWrapper.current.querySelectorAll('.leaflet-marker-icon, .leaflet-popup');
-      markerElements.forEach((el) => {
-        (el as HTMLElement).style.transform = `${(el as HTMLElement).style.transform?.replace(/rotate\([^)]*\)/, '') || ''} rotate(${headingDeg}deg)`;
-      });
+      // Counter-rotate markers using data attribute to avoid transform corruption
+      counterRotateMarkers(mapWrapper.current, headingDeg);
     },
     resetNorth: () => {
       setManualRotation(0);
@@ -456,12 +466,7 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
       currentRotation.current = 0;
       if (mapWrapper.current) {
         mapWrapper.current.style.transform = 'rotate(0deg)';
-        // Reset marker rotations
-        const markerElements = mapWrapper.current.querySelectorAll('.leaflet-marker-icon, .leaflet-popup');
-        markerElements.forEach((el) => {
-          const htmlEl = el as HTMLElement;
-          htmlEl.style.transform = htmlEl.style.transform?.replace(/rotate\([^)]*\)/g, '').trim() || '';
-        });
+        counterRotateMarkers(mapWrapper.current, 0);
       }
     },
     getRotation: () => {
