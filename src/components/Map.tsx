@@ -601,30 +601,15 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
   // Rotate map based on heading during navigation
   useEffect(() => {
     if (isNavigating && heading !== null && !isNaN(heading) && mapWrapper.current) {
-      // Normalize heading to 0-360 range
       const normalizedHeading = ((heading % 360) + 360) % 360;
       const rotation = -normalizedHeading;
       currentRotation.current = rotation;
       mapWrapper.current.style.transform = `rotate(${rotation}deg)`;
-      
-      // Counter-rotate all markers and popups so they stay upright
-      const markerElements = mapWrapper.current.querySelectorAll('.leaflet-marker-icon, .leaflet-popup');
-      markerElements.forEach((el) => {
-        const htmlEl = el as HTMLElement;
-        // Remove any existing rotate transform and add new one
-        const currentTransform = htmlEl.style.transform?.replace(/rotate\([^)]*\)/g, '').trim() || '';
-        htmlEl.style.transform = `${currentTransform} rotate(${normalizedHeading}deg)`;
-      });
+      counterRotateMarkers(mapWrapper.current, normalizedHeading);
     } else if (!isNavigating && mapWrapper.current) {
       mapWrapper.current.style.transform = 'rotate(0deg)';
       currentRotation.current = 0;
-      
-      // Reset marker rotations
-      const markerElements = mapWrapper.current.querySelectorAll('.leaflet-marker-icon, .leaflet-popup');
-      markerElements.forEach((el) => {
-        const htmlEl = el as HTMLElement;
-        htmlEl.style.transform = htmlEl.style.transform?.replace(/rotate\([^)]*\)/g, '').trim() || '';
-      });
+      counterRotateMarkers(mapWrapper.current, 0);
     }
   }, [heading, isNavigating]);
 
@@ -651,18 +636,9 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
 
     const applyRotation = (rotationDeg: number) => {
       if (!mapWrapper.current || isNavigating) return;
-
-      // Rotate map opposite to the dial so it feels like Google Maps
       mapWrapper.current.style.transform = `rotate(${-rotationDeg}deg)`;
       currentRotation.current = -rotationDeg;
-
-      // Counter-rotate markers/popup DOM so they stay upright
-      const markerElements = mapWrapper.current.querySelectorAll('.leaflet-marker-icon, .leaflet-popup');
-      markerElements.forEach((el) => {
-        const htmlEl = el as HTMLElement;
-        const base = htmlEl.style.transform?.replace(/rotate\([^)]*\)/g, '').trim() || '';
-        htmlEl.style.transform = `${base} rotate(${rotationDeg}deg)`;
-      });
+      counterRotateMarkers(mapWrapper.current, rotationDeg);
     };
 
     const handleTouchStart = (e: TouchEvent) => {
