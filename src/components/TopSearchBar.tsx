@@ -98,6 +98,9 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
         const data = await response.json();
         const address = data.display_name?.split(',').slice(0, 2).join(',') || 'Current Location';
         onOriginChange(address);
+        // Cache position for auto-theme sun calculation
+        try { sessionStorage.setItem('lastKnownPos', JSON.stringify({ lat: pos.lat, lng: pos.lng })); } catch {}
+        setHasAutoLocated(true);
         setHasAutoLocated(true);
       } catch (error) {
         console.warn('Could not auto-detect location:', error);
@@ -248,6 +251,22 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
           compact
         />
       </div>
+
+      {/* Smart Suggestions - AI-like predictions */}
+      {tripHistory.length > 0 && !destination && (
+        <div className="mt-1.5 ml-1">
+          <SmartSuggestions
+            tripHistory={tripHistory}
+            onSelect={(dest) => {
+              onDestinationChange(dest);
+              if (origin && dest) {
+                setTimeout(() => onCalculate(origin, dest), 100);
+              }
+            }}
+            compact
+          />
+        </div>
+      )}
     </div>
   );
 };
