@@ -3,9 +3,11 @@ import { Search, Loader2, X, Menu, Crosshair, Car, Fuel, Clock, Settings, HelpCi
 import { useNavigate } from 'react-router-dom';
 import LocationAutocomplete from './LocationAutocomplete';
 import FavoriteLocations from './FavoriteLocations';
+import SmartSuggestions from './SmartSuggestions';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { Trip } from '@/pages/TripHistory';
 import {
   Sheet,
   SheetContent,
@@ -25,6 +27,7 @@ interface TopSearchBarProps {
   getCurrentPosition: () => Promise<{ lat: number; lng: number; heading: number | null }>;
   onLocateMe?: () => void;
   isLocating?: boolean;
+  tripHistory?: Trip[];
 }
 
 const TopSearchBar: React.FC<TopSearchBarProps> = ({
@@ -37,7 +40,8 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
   hasRoute,
   getCurrentPosition,
   onLocateMe,
-  isLocating = false
+  isLocating = false,
+  tripHistory = []
 }) => {
   const navigate = useNavigate();
   const [isGettingLocation, setIsGettingLocation] = useState(false);
