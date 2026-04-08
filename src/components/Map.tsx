@@ -567,6 +567,11 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
     return () => {
       map.current?.remove();
       map.current = null;
+      userMarker.current = null;
+      userAccuracyCircle.current = null;
+      tileLayerRef.current = null;
+      routeCoordinates.current = null;
+      routesData.current = [];
     };
   }, []);
 
