@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, Volume2, VolumeX, Crosshair, ChevronUp, CornerUpLeft, CornerUpRight, ArrowUp, MapPin, MoveUp, MoveUpLeft, MoveUpRight } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, Volume2, VolumeX, Crosshair, ChevronUp, CornerUpLeft, CornerUpRight, ArrowUp, MapPin, MoveUp, MoveUpLeft, MoveUpRight, AlertTriangle, Gauge } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NavigationStep } from './NavigationPanel';
 import { cn } from '@/lib/utils';
@@ -115,6 +115,17 @@ const LaneGuidance: React.FC<{
       </div>
     </div>;
 };
+// Estimate speed limit based on road context from instruction text
+const estimateSpeedLimit = (instruction: string): number => {
+  const lower = instruction.toLowerCase();
+  if (lower.includes('highway') || lower.includes('expressway') || lower.includes('motorway') || lower.includes('national')) return 100;
+  if (lower.includes('ring road') || lower.includes('bypass') || lower.includes('flyover')) return 80;
+  if (lower.includes('main road') || lower.includes('state') || lower.includes('road')) return 60;
+  if (lower.includes('residential') || lower.includes('lane') || lower.includes('gali')) return 30;
+  if (lower.includes('school') || lower.includes('hospital')) return 25;
+  return 50; // default city speed
+};
+
 interface DriverNavigationViewProps {
   steps: NavigationStep[];
   currentStepIndex: number;
@@ -139,6 +150,53 @@ const DriverNavigationView = React.forwardRef<HTMLDivElement, DriverNavigationVi
 }, ref) => {
   const currentStep = steps[currentStepIndex];
   const nextStep = steps[currentStepIndex + 1];
+
+  // Smart ETA - recalculate based on current speed
+  const [smartETA, setSmartETA] = useState<Date>(new Date());
+  const [etaDelayWarning, setEtaDelayWarning] = useState(false);
+
+  const speedKmh = speed && speed > 0 ? Math.round(speed * 3.6) : 0;
+  
+  // Speed limit for current road segment
+  const speedLimit = useMemo(() => {
+    if (!currentStep) return 50;
+    return estimateSpeedLimit(currentStep.instruction);
+  }, [currentStep]);
+
+  const isOverSpeed = speedKmh > speedLimit;
+
+  // Turn countdown - distance to next turn in meters
+  const turnCountdown = useMemo(() => {
+    if (!currentStep) return null;
+    const distM = currentStep.distance;
+    if (distM <= 0) return null;
+    // Estimate time to turn based on current speed
+    const speedMs = speed && speed > 0 ? speed : 8.33; // default ~30kmh
+    const secondsToTurn = Math.round(distM / speedMs);
+    return { distance: distM, seconds: secondsToTurn };
+  }, [currentStep, speed]);
+
+  // Smart ETA recalculation every 10 seconds
+  useEffect(() => {
+    const recalcETA = () => {
+      if (remainingDistance <= 0) return;
+      const avgSpeed = speedKmh > 5 ? speedKmh : 30; // fallback 30 km/h
+      const hoursRemaining = remainingDistance / avgSpeed;
+      const eta = new Date(Date.now() + hoursRemaining * 3600 * 1000);
+      
+      // Compare with original estimated ETA
+      const originalETA = new Date(Date.now() + estimatedTime * 3600 * 1000);
+      const delayMinutes = (eta.getTime() - originalETA.getTime()) / 60000;
+      setEtaDelayWarning(delayMinutes > 5);
+      
+      setSmartETA(eta);
+    };
+
+    recalcETA();
+    const interval = setInterval(recalcETA, 10000);
+    return () => clearInterval(interval);
+  }, [remainingDistance, speedKmh, estimatedTime]);
+
   const getDirectionIcon = (type: NavigationStep['type']) => {
     const iconClass = "w-16 h-16 text-white";
     switch (type) {
@@ -169,10 +227,8 @@ const DriverNavigationView = React.forwardRef<HTMLDivElement, DriverNavigationVi
     const m = mins % 60;
     return `${h}h ${m}m`;
   };
-  const getETA = () => {
-    const now = new Date();
-    const eta = new Date(now.getTime() + estimatedTime * 60 * 60 * 1000);
-    return eta.toLocaleTimeString('en-IN', {
+  const getSmartETAString = () => {
+    return smartETA.toLocaleTimeString('en-IN', {
       hour: '2-digit',
       minute: '2-digit'
     });
