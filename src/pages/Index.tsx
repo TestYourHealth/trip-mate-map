@@ -424,6 +424,7 @@ const Index = () => {
           getCurrentPosition={getCurrentPosition}
           onLocateMe={handleLocateMe}
           isLocating={isLocating}
+          tripHistory={tripHistory}
         />
       )}
 
