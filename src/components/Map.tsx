@@ -277,6 +277,32 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
               routeCoordinates.current = e.routes[0].coordinates.map(
                 (coord: any) => L.latLng(coord.lat, coord.lng)
               );
+
+              // Add traffic-colored segments overlay on the primary route
+              const coords = routeCoordinates.current;
+              if (coords && coords.length > 10 && map.current) {
+                clearAlternateLines();
+                const segmentSize = Math.max(5, Math.floor(coords.length / 6));
+                const trafficColors = ['#22c55e', '#22c55e', '#eab308', '#22c55e', '#ef4444', '#22c55e']; // simulated
+                const hour = new Date().getHours();
+                const isRush = (hour >= 8 && hour <= 10) || (hour >= 17 && hour <= 20);
+
+                for (let i = 0; i < coords.length - 1; i += segmentSize) {
+                  const end = Math.min(i + segmentSize + 1, coords.length);
+                  const segment = coords.slice(i, end);
+                  const segIndex = Math.floor(i / segmentSize);
+                  // During rush hours, some segments turn yellow/red
+                  const color = isRush ? (trafficColors[segIndex % trafficColors.length]) : '#22c55e';
+                  
+                  const line = L.polyline(segment, {
+                    color,
+                    weight: 7,
+                    opacity: 0.7,
+                    className: 'traffic-overlay'
+                  }).addTo(map.current!);
+                  alternateRouteLines.current.push(line);
+                }
+              }
             }
 
             routesData.current = routes;
