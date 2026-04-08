@@ -3,9 +3,11 @@ import { Search, Loader2, X, Menu, Crosshair, Car, Fuel, Clock, Settings, HelpCi
 import { useNavigate } from 'react-router-dom';
 import LocationAutocomplete from './LocationAutocomplete';
 import FavoriteLocations from './FavoriteLocations';
+import SmartSuggestions from './SmartSuggestions';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { Trip } from '@/pages/TripHistory';
 import {
   Sheet,
   SheetContent,
@@ -25,6 +27,7 @@ interface TopSearchBarProps {
   getCurrentPosition: () => Promise<{ lat: number; lng: number; heading: number | null }>;
   onLocateMe?: () => void;
   isLocating?: boolean;
+  tripHistory?: Trip[];
 }
 
 const TopSearchBar: React.FC<TopSearchBarProps> = ({
@@ -37,7 +40,8 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
   hasRoute,
   getCurrentPosition,
   onLocateMe,
-  isLocating = false
+  isLocating = false,
+  tripHistory = []
 }) => {
   const navigate = useNavigate();
   const [isGettingLocation, setIsGettingLocation] = useState(false);
@@ -94,6 +98,9 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
         const data = await response.json();
         const address = data.display_name?.split(',').slice(0, 2).join(',') || 'Current Location';
         onOriginChange(address);
+        // Cache position for auto-theme sun calculation
+        try { sessionStorage.setItem('lastKnownPos', JSON.stringify({ lat: pos.lat, lng: pos.lng })); } catch {}
+        setHasAutoLocated(true);
         setHasAutoLocated(true);
       } catch (error) {
         console.warn('Could not auto-detect location:', error);
@@ -244,6 +251,22 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
           compact
         />
       </div>
+
+      {/* Smart Suggestions - AI-like predictions */}
+      {tripHistory.length > 0 && !destination && (
+        <div className="mt-1.5 ml-1">
+          <SmartSuggestions
+            tripHistory={tripHistory}
+            onSelect={(dest) => {
+              onDestinationChange(dest);
+              if (origin && dest) {
+                setTimeout(() => onCalculate(origin, dest), 100);
+              }
+            }}
+            compact
+          />
+        </div>
+      )}
     </div>
   );
 };
