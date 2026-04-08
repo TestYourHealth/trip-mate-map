@@ -78,6 +78,17 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
     _setManualRotation(val);
   };
 
+  // Safe counter-rotation of markers to prevent transform corruption
+  const counterRotateMarkers = (wrapper: HTMLElement, degrees: number) => {
+    const markerElements = wrapper.querySelectorAll('.leaflet-marker-icon, .leaflet-popup');
+    markerElements.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      // Store Leaflet's original transform separately, only modify rotation
+      const baseTransform = htmlEl.style.transform?.replace(/\s*rotate\([^)]*\)/g, '').trim() || '';
+      htmlEl.style.transform = degrees === 0 ? baseTransform : `${baseTransform} rotate(${degrees}deg)`;
+    });
+  };
+
   const clearMarkers = () => {
     markers.current.forEach(m => m.remove());
     markers.current = [];
