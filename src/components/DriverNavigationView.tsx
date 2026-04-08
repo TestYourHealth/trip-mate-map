@@ -237,6 +237,22 @@ const DriverNavigationView = React.forwardRef<HTMLDivElement, DriverNavigationVi
   return <div className="fixed inset-0 z-[1000] pointer-events-none">
       {/* Road Alerts */}
       <RoadAlerts steps={steps} currentStepIndex={currentStepIndex} speed={speed} isActive={true} />
+
+      {/* Turn Countdown Badge - appears when approaching turn */}
+      {turnCountdown && turnCountdown.distance < 500 && turnCountdown.distance > 10 && (
+        <div className="absolute top-[120px] left-1/2 -translate-x-1/2 z-[1001] pointer-events-none">
+          <div className={cn(
+            "px-3 py-1 rounded-full text-white text-sm font-bold animate-pulse shadow-lg",
+            turnCountdown.seconds < 10 ? "bg-destructive" : "bg-amber-500"
+          )}>
+            {turnCountdown.seconds < 60 
+              ? `${turnCountdown.seconds}s`
+              : `${Math.ceil(turnCountdown.seconds / 60)}min`
+            } • {formatDistance(turnCountdown.distance)}
+          </div>
+        </div>
+      )}
+
       {/* Top Navigation Card - Current Direction */}
       <div className="absolute top-0 left-0 right-0 pointer-events-auto">
         <div className="bg-primary m-2 rounded-xl shadow-2xl overflow-hidden">
@@ -286,13 +302,26 @@ const DriverNavigationView = React.forwardRef<HTMLDivElement, DriverNavigationVi
         </div>
       </div>
 
-      {/* Speed Indicator - Left Side */}
+      {/* Speed Indicator with Speed Limit - Left Side */}
       <div className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-auto">
-        <div className="bg-background/95 backdrop-blur rounded-xl shadow-lg p-2 text-center min-w-[56px]">
-          <p className="text-xl font-bold text-foreground leading-tight">
-            {speed && speed > 0 ? Math.round(speed * 3.6) : '0'}
-          </p>
-          <p className="text-[9px] text-muted-foreground">km/h</p>
+        <div className="flex flex-col items-center gap-1.5">
+          {/* Speed Limit Sign */}
+          <div className="w-11 h-11 rounded-full border-[3px] border-destructive bg-background flex items-center justify-center shadow-md">
+            <span className="text-xs font-black text-foreground leading-none">{speedLimit}</span>
+          </div>
+          {/* Current Speed */}
+          <div className={cn(
+            "backdrop-blur rounded-xl shadow-lg p-2 text-center min-w-[56px] transition-colors",
+            isOverSpeed ? "bg-destructive/95 animate-pulse" : "bg-background/95"
+          )}>
+            <p className={cn("text-xl font-bold leading-tight", isOverSpeed ? "text-white" : "text-foreground")}>
+              {speedKmh}
+            </p>
+            <p className={cn("text-[9px]", isOverSpeed ? "text-white/70" : "text-muted-foreground")}>km/h</p>
+            {isOverSpeed && (
+              <AlertTriangle className="w-3 h-3 text-white mx-auto mt-0.5" />
+            )}
+          </div>
         </div>
       </div>
 
@@ -303,14 +332,30 @@ const DriverNavigationView = React.forwardRef<HTMLDivElement, DriverNavigationVi
         </Button>
       </div>
 
-      {/* Bottom Stats Bar - Compact */}
+      {/* Bottom Stats Bar - Smart ETA */}
       <div className="absolute bottom-0 left-0 right-0 pointer-events-auto safe-area-bottom">
         <div className="bg-background/95 backdrop-blur mx-2 mb-2 rounded-xl shadow-xl">
+          {/* Delay Warning Banner */}
+          {etaDelayWarning && (
+            <div className="bg-amber-500/10 border-b border-amber-500/20 px-3 py-1 flex items-center gap-1.5">
+              <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                Delay detected • ETA updated
+              </span>
+            </div>
+          )}
           <div className="flex items-center justify-around py-2 px-1">
-            {/* ETA */}
+            {/* Smart ETA */}
             <div className="text-center flex-1">
-              <p className="text-lg font-bold text-primary">{getETA()}</p>
-              <p className="text-[10px] text-muted-foreground">ETA</p>
+              <p className={cn(
+                "text-lg font-bold",
+                etaDelayWarning ? "text-amber-500" : "text-primary"
+              )}>
+                {getSmartETAString()}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                {etaDelayWarning ? 'Updated ETA' : 'ETA'}
+              </p>
             </div>
 
             <div className="w-px h-6 bg-border" />
