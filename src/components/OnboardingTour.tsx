@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Navigation, Fuel, Users, MapPin, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -48,6 +48,14 @@ const OnboardingTour: React.FC = () => {
   const [hasSeenTour, setHasSeenTour] = useLocalStorage('hasSeenOnboardingTour', false);
   const [currentStep, setCurrentStep] = useState(0);
   const [isDismissing, setIsDismissing] = useState(false);
+  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup any pending dismiss timer on unmount to avoid setState on unmounted component
+  useEffect(() => {
+    return () => {
+      if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+    };
+  }, []);
 
   if (hasSeenTour) return null;
 
@@ -61,7 +69,8 @@ const OnboardingTour: React.FC = () => {
 
   const handleDismiss = () => {
     setIsDismissing(true);
-    setTimeout(() => {
+    if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+    dismissTimerRef.current = setTimeout(() => {
       setHasSeenTour(true);
     }, 300);
   };
