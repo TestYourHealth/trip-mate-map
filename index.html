@@ -15,8 +15,9 @@
     <link rel="dns-prefetch" href="https://router.project-osrm.org" />
     <link rel="dns-prefetch" href="https://cdn.gpteng.co" />
     
-    <!-- Preload critical map tile for LCP -->
-    <link rel="preload" href="https://a.basemaps.cartocdn.com/rastertiles/voyager/2/2/1.png" as="image" fetchpriority="high" />
+    <!-- Tile preloading removed — Leaflet computes tiles dynamically based on viewport,
+         so a hard-coded preload was unused and triggered "preloaded but not used" warnings -->
+
     
     <!-- App Info -->
     <title>TripMate - Trip Cost Calculator</title>
