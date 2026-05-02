@@ -314,7 +314,35 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
             resolve({ routes, instructions });
           });
 
-          control.on('routingerror', () => {
+          let retried = false;
+          control.on('routingerror', (err: any) => {
+            console.warn('Routing error:', err?.error?.message || err);
+            if (!retried) {
+              retried = true;
+              // Retry once after short delay (handles transient OSRM rate limits)
+              setTimeout(() => {
+                try {
+                  if (routingControl.current && map.current) {
+                    map.current.removeControl(routingControl.current);
+                  }
+                  const retry = buildControl();
+                  retry.addTo(map.current!);
+                  routingControl.current = retry;
+                  retry.on('routesfound', (e: L.Routing.RoutingResultEvent) => {
+                    // Re-emit by triggering same handler path — simplest: reload
+                    control.fire('routesfound', e);
+                  });
+                  retry.on('routingerror', () => {
+                    clearMarkers();
+                    resolve(null);
+                  });
+                } catch {
+                  clearMarkers();
+                  resolve(null);
+                }
+              }, 1200);
+              return;
+            }
             clearMarkers();
             resolve(null);
           });
