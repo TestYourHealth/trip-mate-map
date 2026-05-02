@@ -433,10 +433,14 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       <button
         key={key}
         data-item
+        type="button"
+        // Prevent input blur on mobile so tap registers reliably
+        onMouseDown={(e) => e.preventDefault()}
+        onTouchStart={(e) => e.stopPropagation()}
         onClick={onClick}
         onMouseEnter={() => setActiveIndex(idx)}
         className={cn(
-          "w-full px-3 py-2.5 text-left transition-colors flex items-start gap-3",
+          "w-full px-3 py-3 sm:py-2.5 text-left transition-colors flex items-start gap-3 active:bg-accent",
           idx === activeIndex ? "bg-accent" : "hover:bg-muted/50"
         )}
       >
