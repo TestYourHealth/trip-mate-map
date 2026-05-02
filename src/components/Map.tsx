@@ -330,7 +330,7 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
                   routingControl.current = retry;
                   retry.on('routesfound', (e: L.Routing.RoutingResultEvent) => {
                     // Re-emit by triggering same handler path — simplest: reload
-                    control.fire('routesfound', e);
+                    (control as any).fire('routesfound', e);
                   });
                   retry.on('routingerror', () => {
                     clearMarkers();
