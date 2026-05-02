@@ -400,16 +400,20 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     }
   }, [activeIndex]);
 
-  // Click outside
+  // Click outside (handle both mouse + touch for mobile reliability)
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const handler = (e: Event) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setShowDropdown(false);
         setActiveIndex(-1);
       }
     };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
   }, []);
 
   const hasQuery = value.trim().length >= 2;
