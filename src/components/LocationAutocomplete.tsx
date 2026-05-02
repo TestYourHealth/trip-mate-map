@@ -325,7 +325,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     }
 
     // 150ms debounce - fast but still respects rate limits
-    debounceRef.current = setTimeout(() => search(newValue), 150);
+    debounceRef.current = setTimeout(() => search(newValue), 120);
   }, [onChange, search]);
 
   const handleSelect = useCallback((suggestion: LocationSuggestion) => {
@@ -400,16 +400,20 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     }
   }, [activeIndex]);
 
-  // Click outside
+  // Click outside (handle both mouse + touch for mobile reliability)
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const handler = (e: Event) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setShowDropdown(false);
         setActiveIndex(-1);
       }
     };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
   }, []);
 
   const hasQuery = value.trim().length >= 2;
@@ -429,10 +433,14 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       <button
         key={key}
         data-item
+        type="button"
+        // Prevent input blur on mobile so tap registers reliably
+        onMouseDown={(e) => e.preventDefault()}
+        onTouchStart={(e) => e.stopPropagation()}
         onClick={onClick}
         onMouseEnter={() => setActiveIndex(idx)}
         className={cn(
-          "w-full px-3 py-2.5 text-left transition-colors flex items-start gap-3",
+          "w-full px-3 py-3 sm:py-2.5 text-left transition-colors flex items-start gap-3 active:bg-accent",
           idx === activeIndex ? "bg-accent" : "hover:bg-muted/50"
         )}
       >
@@ -459,8 +467,15 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           onFocus={() => { setShowDropdown(true); externalOnFocus?.(); }}
           onBlur={() => externalOnBlur?.()}
           placeholder={placeholder}
+          inputMode="search"
+          enterKeyHint="search"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="words"
+          spellCheck={false}
           className={cn(
-            "bg-muted/50 border-0 focus-visible:ring-primary h-12",
+            // text-base (16px) prevents iOS zoom-on-focus
+            "bg-muted/50 border-0 focus-visible:ring-primary h-12 text-base sm:text-sm",
             icon && "pl-10",
             rightElement && "pr-12",
             className
@@ -471,7 +486,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       </div>
 
       {shouldShowDropdown && (
-        <div ref={listRef} className="absolute top-full left-0 mt-1 bg-background border border-border rounded-xl shadow-xl z-[300] max-h-80 overflow-y-auto min-w-[calc(100vw-1.5rem)] sm:min-w-[400px] -translate-x-12">
+        <div ref={listRef} className="fixed left-3 right-3 top-[68px] sm:absolute sm:top-full sm:left-0 sm:right-auto sm:mt-1 sm:min-w-[420px] sm:max-w-[520px] bg-background border border-border rounded-xl shadow-2xl z-[300] max-h-[70vh] sm:max-h-80 overflow-y-auto overscroll-contain">
           
           {/* Filter Chips */}
           <div className="px-2 pt-2 pb-1 flex gap-1.5 flex-wrap sticky top-0 bg-background z-10 border-b border-border/50">
