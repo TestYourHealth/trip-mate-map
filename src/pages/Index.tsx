@@ -326,10 +326,11 @@ const Index = () => {
           setIsPanelExpanded(false);
         }
       } else {
-        toast.error('Could not find route. Please check the locations.');
+        toast.error('Route nahi mil paya. Locations check karo ya thodi der me retry karo.');
       }
     } catch (error) {
-      toast.error('Error calculating route');
+      console.error('calculateTrip error:', error);
+      toast.error('Route calculation me error. Internet check karo.');
     } finally {
       setIsCalculating(false);
     }

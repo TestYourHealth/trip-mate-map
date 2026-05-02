@@ -330,6 +330,25 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
 
   const handleSelect = useCallback((suggestion: LocationSuggestion) => {
     const displayName = suggestion.display_name.split(',').slice(0, 3).join(',').trim();
+    // Save coords so Map can skip re-geocoding (prevents route-calc failures)
+    try {
+      const raw = sessionStorage.getItem('pickedCoords');
+      const map = raw ? JSON.parse(raw) : {};
+      const lat = parseFloat(suggestion.lat);
+      const lng = parseFloat(suggestion.lon);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        map[displayName.toLowerCase()] = { lat, lng };
+        // Cap to last 50 entries
+        const keys = Object.keys(map);
+        if (keys.length > 50) {
+          const trimmed: Record<string, unknown> = {};
+          keys.slice(-50).forEach(k => { trimmed[k] = map[k]; });
+          sessionStorage.setItem('pickedCoords', JSON.stringify(trimmed));
+        } else {
+          sessionStorage.setItem('pickedCoords', JSON.stringify(map));
+        }
+      }
+    } catch { /* ignore */ }
     onChange(displayName);
     onSelect?.(displayName);
     saveToRecent(displayName);

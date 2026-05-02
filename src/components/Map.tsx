@@ -150,13 +150,17 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
         ];
 
         return new Promise((resolve) => {
-          const control = L.Routing.control({
+          const buildControl = (serviceUrl?: string) => L.Routing.control({
             waypoints: allWaypoints,
             routeWhileDragging: false,
             showAlternatives: true,
             addWaypoints: false,
             fitSelectedRoutes: true,
             show: false,
+            router: L.Routing.osrmv1({
+              serviceUrl: serviceUrl || 'https://router.project-osrm.org/route/v1',
+              timeout: 15000,
+            } as any),
             altLineOptions: {
               styles: [
                 { color: '#6b7280', opacity: 0.5, weight: 5 },
@@ -174,6 +178,7 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
               missingRouteTolerance: 0
             }
           } as L.Routing.RoutingControlOptions);
+          const control = buildControl();
 
           // Add origin marker (green)
           const originMarker = L.marker([originCoords.lat, originCoords.lng], {
@@ -309,7 +314,35 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
             resolve({ routes, instructions });
           });
 
-          control.on('routingerror', () => {
+          let retried = false;
+          control.on('routingerror', (err: any) => {
+            console.warn('Routing error:', err?.error?.message || err);
+            if (!retried) {
+              retried = true;
+              // Retry once after short delay (handles transient OSRM rate limits)
+              setTimeout(() => {
+                try {
+                  if (routingControl.current && map.current) {
+                    map.current.removeControl(routingControl.current);
+                  }
+                  const retry = buildControl();
+                  retry.addTo(map.current!);
+                  routingControl.current = retry;
+                  retry.on('routesfound', (e: L.Routing.RoutingResultEvent) => {
+                    // Re-emit by triggering same handler path — simplest: reload
+                    (control as any).fire('routesfound', e);
+                  });
+                  retry.on('routingerror', () => {
+                    clearMarkers();
+                    resolve(null);
+                  });
+                } catch {
+                  clearMarkers();
+                  resolve(null);
+                }
+              }, 1200);
+              return;
+            }
             clearMarkers();
             resolve(null);
           });
@@ -755,39 +788,96 @@ Map.displayName = 'Map';
 // Geocoding cache to avoid repeated API calls
 const geocodingCache: Record<string, { lat: number; lng: number }> = {};
 
-// Geocode using Nominatim (free OpenStreetMap geocoding) with caching
+// Pre-pick cache shared with LocationAutocomplete: when a user picks a suggestion
+// we already have lat/lon — store it here so we don't re-geocode (which often
+// fails due to rate limits or string mismatches).
+function getPrePickedCoords(query: string): { lat: number; lng: number } | null {
+  try {
+    const raw = sessionStorage.getItem('pickedCoords');
+    if (!raw) return null;
+    const map = JSON.parse(raw) as Record<string, { lat: number; lng: number }>;
+    const key = query.toLowerCase().trim();
+    return map[key] || null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, {
+      headers: { 'User-Agent': 'TripMate/1.0', 'Accept': 'application/json' },
+      signal: ctrl.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Geocode using Nominatim with: pre-pick cache → memory cache → India search → global fallback → retry
 async function geocodeLocation(query: string): Promise<{ lat: number; lng: number } | null> {
-  const cacheKey = query.toLowerCase().trim();
-  
-  // Check cache first
-  if (cacheKey in geocodingCache) {
-    return geocodingCache[cacheKey];
+  const trimmed = query.trim();
+  if (!trimmed) return null;
+  const cacheKey = trimmed.toLowerCase();
+
+  // 1. User already picked this from autocomplete? Use those coords directly.
+  const prePicked = getPrePickedCoords(trimmed);
+  if (prePicked) {
+    geocodingCache[cacheKey] = prePicked;
+    return prePicked;
   }
 
-  try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&limit=1`,
-      {
-        headers: {
-          'User-Agent': 'TripMate/1.0'
-        }
+  // 2. In-memory cache
+  if (cacheKey in geocodingCache) return geocodingCache[cacheKey];
+
+  // 3. Build progressively-relaxed query variants (helps when full address fails)
+  const variants: string[] = [trimmed];
+  const parts = trimmed.split(',').map(p => p.trim()).filter(Boolean);
+  if (parts.length > 1) variants.push(parts.slice(0, 2).join(', '));
+  if (parts.length > 0) variants.push(parts[0]);
+
+  const tryFetch = async (q: string, global = false): Promise<{ lat: number; lng: number } | null> => {
+    const cc = global ? '' : '&countrycodes=in';
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}${cc}&limit=1`;
+    try {
+      const res = await fetchWithTimeout(url, 8000);
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
       }
-    );
-    const data = await response.json();
-    if (data && data.length > 0) {
-      const result = {
-        lat: parseFloat(data[0].lat),
-        lng: parseFloat(data[0].lon)
-      };
-      // Cache the result
-      geocodingCache[cacheKey] = result;
-      return result;
+    } catch (e) {
+      // network/abort/timeout — caller decides retry
     }
     return null;
-  } catch (error) {
-    console.error('Geocoding error:', error);
-    return null;
+  };
+
+  // Try each variant (India scoped first)
+  for (const v of variants) {
+    const r = await tryFetch(v, false);
+    if (r) {
+      geocodingCache[cacheKey] = r;
+      return r;
+    }
   }
+  // Global fallback
+  for (const v of variants) {
+    const r = await tryFetch(v, true);
+    if (r) {
+      geocodingCache[cacheKey] = r;
+      return r;
+    }
+  }
+  // One delayed retry to dodge transient rate limit
+  await new Promise(r => setTimeout(r, 800));
+  const last = await tryFetch(trimmed, false);
+  if (last) {
+    geocodingCache[cacheKey] = last;
+    return last;
+  }
+  return null;
 }
 
 export default Map;
