@@ -150,13 +150,17 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
         ];
 
         return new Promise((resolve) => {
-          const control = L.Routing.control({
+          const buildControl = (serviceUrl?: string) => L.Routing.control({
             waypoints: allWaypoints,
             routeWhileDragging: false,
             showAlternatives: true,
             addWaypoints: false,
             fitSelectedRoutes: true,
             show: false,
+            router: L.Routing.osrmv1({
+              serviceUrl: serviceUrl || 'https://router.project-osrm.org/route/v1',
+              timeout: 15000,
+            } as any),
             altLineOptions: {
               styles: [
                 { color: '#6b7280', opacity: 0.5, weight: 5 },
@@ -174,6 +178,7 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
               missingRouteTolerance: 0
             }
           } as L.Routing.RoutingControlOptions);
+          const control = buildControl();
 
           // Add origin marker (green)
           const originMarker = L.marker([originCoords.lat, originCoords.lng], {
