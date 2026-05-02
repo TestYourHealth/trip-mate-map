@@ -467,8 +467,15 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           onFocus={() => { setShowDropdown(true); externalOnFocus?.(); }}
           onBlur={() => externalOnBlur?.()}
           placeholder={placeholder}
+          inputMode="search"
+          enterKeyHint="search"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="words"
+          spellCheck={false}
           className={cn(
-            "bg-muted/50 border-0 focus-visible:ring-primary h-12",
+            // text-base (16px) prevents iOS zoom-on-focus
+            "bg-muted/50 border-0 focus-visible:ring-primary h-12 text-base sm:text-sm",
             icon && "pl-10",
             rightElement && "pr-12",
             className
