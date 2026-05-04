@@ -387,7 +387,14 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           cache[cacheKey] = fallbackData;
           setResults(fallbackData);
         } catch {
-          setResults(offlineResults);
+          try {
+            const photonData = await fetchPhotonSuggestions(trimmed, abortRef.current?.signal);
+            const fallbackResults = photonData.length > 0 ? photonData : offlineResults;
+            cache[cacheKey] = fallbackResults;
+            setResults(fallbackResults);
+          } catch {
+            setResults(offlineResults);
+          }
         }
       }
     } finally {
