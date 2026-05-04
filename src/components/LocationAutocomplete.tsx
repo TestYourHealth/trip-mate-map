@@ -29,6 +29,15 @@ interface LocationAutocompleteProps {
 // Simple in-memory cache
 const cache: Record<string, LocationSuggestion[]> = {};
 
+const normalizeSearchText = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s,]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
 // Common Indian cities for fuzzy matching (covers typos like "delih" → "Delhi")
 const FUZZY_CITIES: string[] = [
   'Delhi', 'New Delhi', 'Mumbai', 'Bangalore', 'Bengaluru', 'Chennai', 'Kolkata',
@@ -67,7 +76,7 @@ const levenshtein = (a: string, b: string): number => {
 
 // Find best fuzzy match for a query
 const fuzzyMatch = (query: string): string | null => {
-  const q = query.toLowerCase().trim();
+  const q = normalizeSearchText(query);
   if (q.length < 3) return null;
 
   let bestMatch: string | null = null;
@@ -75,7 +84,7 @@ const fuzzyMatch = (query: string): string | null => {
   const maxDist = Math.max(2, Math.floor(q.length * 0.4)); // Allow ~40% typo tolerance
 
   for (const city of FUZZY_CITIES) {
-    const c = city.toLowerCase();
+    const c = normalizeSearchText(city);
     // Check if starts similarly
     if (c.startsWith(q) || q.startsWith(c)) return city;
     // Check substring match
@@ -100,6 +109,92 @@ const POPULAR_PLACES: LocationSuggestion[] = [
   { display_name: 'Connaught Place, New Delhi, Delhi, India', lat: '28.6315', lon: '77.2167', place_id: -7 },
   { display_name: 'MG Road, Bangalore, Karnataka, India', lat: '12.9758', lon: '77.6045', place_id: -8 },
 ];
+
+const CITY_SUGGESTIONS: LocationSuggestion[] = FUZZY_CITIES.map((city, index) => {
+  const coords: Record<string, [string, string, string]> = {
+    Delhi: ['28.6139', '77.2090', 'Delhi, India'],
+    'New Delhi': ['28.6139', '77.2090', 'New Delhi, Delhi, India'],
+    Mumbai: ['19.0760', '72.8777', 'Mumbai, Maharashtra, India'],
+    Bangalore: ['12.9716', '77.5946', 'Bangalore, Karnataka, India'],
+    Bengaluru: ['12.9716', '77.5946', 'Bengaluru, Karnataka, India'],
+    Chennai: ['13.0827', '80.2707', 'Chennai, Tamil Nadu, India'],
+    Kolkata: ['22.5726', '88.3639', 'Kolkata, West Bengal, India'],
+    Hyderabad: ['17.3850', '78.4867', 'Hyderabad, Telangana, India'],
+    Pune: ['18.5204', '73.8567', 'Pune, Maharashtra, India'],
+    Ahmedabad: ['23.0225', '72.5714', 'Ahmedabad, Gujarat, India'],
+    Jaipur: ['26.9124', '75.7873', 'Jaipur, Rajasthan, India'],
+    Lucknow: ['26.8467', '80.9462', 'Lucknow, Uttar Pradesh, India'],
+    Agra: ['27.1767', '78.0081', 'Agra, Uttar Pradesh, India'],
+    Noida: ['28.5355', '77.3910', 'Noida, Uttar Pradesh, India'],
+    Gurugram: ['28.4595', '77.0266', 'Gurugram, Haryana, India'],
+    Gurgaon: ['28.4595', '77.0266', 'Gurgaon, Haryana, India'],
+    Chandigarh: ['30.7333', '76.7794', 'Chandigarh, India'],
+    Goa: ['15.2993', '74.1240', 'Goa, India'],
+    Panaji: ['15.4909', '73.8278', 'Panaji, Goa, India'],
+    Surat: ['21.1702', '72.8311', 'Surat, Gujarat, India'],
+    Nagpur: ['21.1458', '79.0882', 'Nagpur, Maharashtra, India'],
+    Indore: ['22.7196', '75.8577', 'Indore, Madhya Pradesh, India'],
+    Bhopal: ['23.2599', '77.4126', 'Bhopal, Madhya Pradesh, India'],
+    Kochi: ['9.9312', '76.2673', 'Kochi, Kerala, India'],
+    Dehradun: ['30.3165', '78.0322', 'Dehradun, Uttarakhand, India'],
+    Manali: ['32.2396', '77.1887', 'Manali, Himachal Pradesh, India'],
+    Shimla: ['31.1048', '77.1734', 'Shimla, Himachal Pradesh, India'],
+    Rishikesh: ['30.0869', '78.2676', 'Rishikesh, Uttarakhand, India'],
+    Haridwar: ['29.9457', '78.1642', 'Haridwar, Uttarakhand, India'],
+    Udaipur: ['24.5854', '73.7125', 'Udaipur, Rajasthan, India'],
+    Varanasi: ['25.3176', '82.9739', 'Varanasi, Uttar Pradesh, India'],
+  };
+  const [lat, lon, displayName] = coords[city] || ['20.5937', '78.9629', `${city}, India`];
+  return { display_name: displayName, lat, lon, place_id: -1000 - index, type: 'city', class: 'place', importance: 0.7 };
+});
+
+const getOfflineSuggestions = (query: string): LocationSuggestion[] => {
+  const q = normalizeSearchText(query);
+  if (q.length < 2) return [];
+  const matches = [...POPULAR_PLACES, ...CITY_SUGGESTIONS].filter((place) => {
+    const name = normalizeSearchText(place.display_name);
+    const title = normalizeSearchText(place.display_name.split(',')[0] || '');
+    return name.includes(q) || title.startsWith(q) || q.includes(title);
+  });
+
+  const corrected = fuzzyMatch(query);
+  if (corrected) {
+    const correctedNorm = normalizeSearchText(corrected);
+    CITY_SUGGESTIONS.forEach((place) => {
+      if (normalizeSearchText(place.display_name).includes(correctedNorm)) matches.push(place);
+    });
+  }
+
+  const seen = new Set<string>();
+  return matches.filter((place) => {
+    const key = `${place.lat},${place.lon}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 8);
+};
+
+const fetchPhotonSuggestions = async (query: string, signal?: AbortSignal): Promise<LocationSuggestion[]> => {
+  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=8&lang=en&bbox=68.0,6.0,98.0,37.5`;
+  const response = await fetch(url, { signal, headers: { 'Accept': 'application/json' } });
+  if (!response.ok) throw new Error(`Photon ${response.status}`);
+  const json = await response.json();
+  const features = Array.isArray(json?.features) ? json.features : [];
+  return features.map((feature: any, index: number) => {
+    const props = feature.properties || {};
+    const [lon, lat] = feature.geometry?.coordinates || [];
+    const labelParts = [props.name, props.city, props.state, props.country].filter(Boolean);
+    return {
+      display_name: labelParts.join(', ') || query,
+      lat: String(lat),
+      lon: String(lon),
+      place_id: Number(props.osm_id) || -5000 - index,
+      type: props.type,
+      class: props.osm_key,
+      importance: 0.6,
+    } as LocationSuggestion;
+  }).filter((item: LocationSuggestion) => item.display_name && !Number.isNaN(parseFloat(item.lat)) && !Number.isNaN(parseFloat(item.lon)));
+};
 
 // Cached user position
 let cachedUserPos: { lat: number; lng: number } | null = null;
@@ -214,6 +309,11 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       return;
     }
 
+    const offlineResults = getOfflineSuggestions(trimmed);
+    if (offlineResults.length > 0) {
+      setResults(offlineResults);
+    }
+
     // Abort previous
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
@@ -254,12 +354,17 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
             }
           }
         }
+        if (data.length === 0) {
+          try {
+            data = await fetchPhotonSuggestions(trimmed, abortRef.current.signal);
+          } catch { /* keep offline fallback */ }
+        }
       } else {
         correctedQueryRef.current = null;
       }
 
       // Sort: nearby first, then by importance
-      let sorted = data;
+      let sorted = data.length > 0 ? data : offlineResults;
       if (userPos) {
         sorted = [...data].sort((a, b) => {
           const distA = haversine(userPos.lat, userPos.lng, parseFloat(a.lat), parseFloat(a.lon));
@@ -287,7 +392,14 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           cache[cacheKey] = fallbackData;
           setResults(fallbackData);
         } catch {
-          setResults([]);
+          try {
+            const photonData = await fetchPhotonSuggestions(trimmed, abortRef.current?.signal);
+            const fallbackResults = photonData.length > 0 ? photonData : offlineResults;
+            cache[cacheKey] = fallbackResults;
+            setResults(fallbackResults);
+          } catch {
+            setResults(offlineResults);
+          }
         }
       }
     } finally {
@@ -313,12 +425,17 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     // Instant for cached
+    if (activeFilter !== 'all') setActiveFilter('all');
+
     const cacheKey = newValue.trim().toLowerCase();
     if (cache[cacheKey]) {
       setResults(cache[cacheKey]);
       setIsLoading(false);
       return;
     }
+
+    const offlineResults = getOfflineSuggestions(newValue);
+    if (offlineResults.length > 0) setResults(offlineResults);
 
     if (newValue.trim().length >= 2) {
       setIsLoading(true);
@@ -338,7 +455,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       const lng = parseFloat(suggestion.lon);
       if (!isNaN(lat) && !isNaN(lng)) {
         const coords = { lat, lng };
-        const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ,]/g, '').replace(/\s+/g, ' ').trim();
+        const normalize = normalizeSearchText;
         const fullDisplay = suggestion.display_name;
         const aliases = new Set<string>([
           displayName,
