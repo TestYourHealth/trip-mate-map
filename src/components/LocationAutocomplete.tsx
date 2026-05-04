@@ -421,7 +421,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       const lng = parseFloat(suggestion.lon);
       if (!isNaN(lat) && !isNaN(lng)) {
         const coords = { lat, lng };
-        const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ,]/g, '').replace(/\s+/g, ' ').trim();
+        const normalize = normalizeSearchText;
         const fullDisplay = suggestion.display_name;
         const aliases = new Set<string>([
           displayName,
