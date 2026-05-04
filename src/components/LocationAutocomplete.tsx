@@ -110,6 +110,70 @@ const POPULAR_PLACES: LocationSuggestion[] = [
   { display_name: 'MG Road, Bangalore, Karnataka, India', lat: '12.9758', lon: '77.6045', place_id: -8 },
 ];
 
+const CITY_SUGGESTIONS: LocationSuggestion[] = FUZZY_CITIES.map((city, index) => {
+  const coords: Record<string, [string, string, string]> = {
+    Delhi: ['28.6139', '77.2090', 'Delhi, India'],
+    'New Delhi': ['28.6139', '77.2090', 'New Delhi, Delhi, India'],
+    Mumbai: ['19.0760', '72.8777', 'Mumbai, Maharashtra, India'],
+    Bangalore: ['12.9716', '77.5946', 'Bangalore, Karnataka, India'],
+    Bengaluru: ['12.9716', '77.5946', 'Bengaluru, Karnataka, India'],
+    Chennai: ['13.0827', '80.2707', 'Chennai, Tamil Nadu, India'],
+    Kolkata: ['22.5726', '88.3639', 'Kolkata, West Bengal, India'],
+    Hyderabad: ['17.3850', '78.4867', 'Hyderabad, Telangana, India'],
+    Pune: ['18.5204', '73.8567', 'Pune, Maharashtra, India'],
+    Ahmedabad: ['23.0225', '72.5714', 'Ahmedabad, Gujarat, India'],
+    Jaipur: ['26.9124', '75.7873', 'Jaipur, Rajasthan, India'],
+    Lucknow: ['26.8467', '80.9462', 'Lucknow, Uttar Pradesh, India'],
+    Agra: ['27.1767', '78.0081', 'Agra, Uttar Pradesh, India'],
+    Noida: ['28.5355', '77.3910', 'Noida, Uttar Pradesh, India'],
+    Gurugram: ['28.4595', '77.0266', 'Gurugram, Haryana, India'],
+    Gurgaon: ['28.4595', '77.0266', 'Gurgaon, Haryana, India'],
+    Chandigarh: ['30.7333', '76.7794', 'Chandigarh, India'],
+    Goa: ['15.2993', '74.1240', 'Goa, India'],
+    Panaji: ['15.4909', '73.8278', 'Panaji, Goa, India'],
+    Surat: ['21.1702', '72.8311', 'Surat, Gujarat, India'],
+    Nagpur: ['21.1458', '79.0882', 'Nagpur, Maharashtra, India'],
+    Indore: ['22.7196', '75.8577', 'Indore, Madhya Pradesh, India'],
+    Bhopal: ['23.2599', '77.4126', 'Bhopal, Madhya Pradesh, India'],
+    Kochi: ['9.9312', '76.2673', 'Kochi, Kerala, India'],
+    Dehradun: ['30.3165', '78.0322', 'Dehradun, Uttarakhand, India'],
+    Manali: ['32.2396', '77.1887', 'Manali, Himachal Pradesh, India'],
+    Shimla: ['31.1048', '77.1734', 'Shimla, Himachal Pradesh, India'],
+    Rishikesh: ['30.0869', '78.2676', 'Rishikesh, Uttarakhand, India'],
+    Haridwar: ['29.9457', '78.1642', 'Haridwar, Uttarakhand, India'],
+    Udaipur: ['24.5854', '73.7125', 'Udaipur, Rajasthan, India'],
+    Varanasi: ['25.3176', '82.9739', 'Varanasi, Uttar Pradesh, India'],
+  };
+  const [lat, lon, displayName] = coords[city] || ['20.5937', '78.9629', `${city}, India`];
+  return { display_name: displayName, lat, lon, place_id: -1000 - index, type: 'city', class: 'place', importance: 0.7 };
+});
+
+const getOfflineSuggestions = (query: string): LocationSuggestion[] => {
+  const q = normalizeSearchText(query);
+  if (q.length < 2) return [];
+  const matches = [...POPULAR_PLACES, ...CITY_SUGGESTIONS].filter((place) => {
+    const name = normalizeSearchText(place.display_name);
+    const title = normalizeSearchText(place.display_name.split(',')[0] || '');
+    return name.includes(q) || title.startsWith(q) || q.includes(title);
+  });
+
+  const corrected = fuzzyMatch(query);
+  if (corrected) {
+    const correctedNorm = normalizeSearchText(corrected);
+    CITY_SUGGESTIONS.forEach((place) => {
+      if (normalizeSearchText(place.display_name).includes(correctedNorm)) matches.push(place);
+    });
+  }
+
+  const seen = new Set<string>();
+  return matches.filter((place) => {
+    const key = `${place.lat},${place.lon}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 8);
+};
+
 // Cached user position
 let cachedUserPos: { lat: number; lng: number } | null = null;
 const getUserPos = (): Promise<{ lat: number; lng: number } | null> => {
