@@ -29,6 +29,15 @@ interface LocationAutocompleteProps {
 // Simple in-memory cache
 const cache: Record<string, LocationSuggestion[]> = {};
 
+const normalizeSearchText = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s,]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
 // Common Indian cities for fuzzy matching (covers typos like "delih" → "Delhi")
 const FUZZY_CITIES: string[] = [
   'Delhi', 'New Delhi', 'Mumbai', 'Bangalore', 'Bengaluru', 'Chennai', 'Kolkata',
@@ -67,7 +76,7 @@ const levenshtein = (a: string, b: string): number => {
 
 // Find best fuzzy match for a query
 const fuzzyMatch = (query: string): string | null => {
-  const q = query.toLowerCase().trim();
+  const q = normalizeSearchText(query);
   if (q.length < 3) return null;
 
   let bestMatch: string | null = null;
@@ -75,7 +84,7 @@ const fuzzyMatch = (query: string): string | null => {
   const maxDist = Math.max(2, Math.floor(q.length * 0.4)); // Allow ~40% typo tolerance
 
   for (const city of FUZZY_CITIES) {
-    const c = city.toLowerCase();
+    const c = normalizeSearchText(city);
     // Check if starts similarly
     if (c.startsWith(q) || q.startsWith(c)) return city;
     // Check substring match
