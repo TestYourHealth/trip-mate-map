@@ -354,6 +354,11 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
             }
           }
         }
+        if (data.length === 0) {
+          try {
+            data = await fetchPhotonSuggestions(trimmed, abortRef.current.signal);
+          } catch { /* keep offline fallback */ }
+        }
       } else {
         correctedQueryRef.current = null;
       }
