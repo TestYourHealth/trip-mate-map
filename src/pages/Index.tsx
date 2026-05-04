@@ -6,6 +6,7 @@ import DriverNavigationView from '@/components/DriverNavigationView';
 import CompassIndicator from '@/components/CompassIndicator';
 import QuickActions from '@/components/QuickActions';
 import OnboardingTour from '@/components/OnboardingTour';
+import RouteDebugPanel from '@/components/RouteDebugPanel';
 import WeatherWidget from '@/components/WeatherWidget';
 import { NavigationStep } from '@/components/NavigationPanel';
 import { VehicleConfig } from '@/types/vehicle';
@@ -385,6 +386,9 @@ const Index = () => {
     <div className="h-full w-full relative">
       {/* Onboarding Tour */}
       <OnboardingTour />
+
+      {/* Route geocoding debug panel */}
+      {!isNavigating && <RouteDebugPanel />}
 
       {/* Map Background - Full Screen */}
       <div className="absolute inset-0 z-0">

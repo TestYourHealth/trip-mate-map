@@ -788,16 +788,57 @@ Map.displayName = 'Map';
 // Geocoding cache to avoid repeated API calls
 const geocodingCache: Record<string, { lat: number; lng: number }> = {};
 
-// Pre-pick cache shared with LocationAutocomplete: when a user picks a suggestion
-// we already have lat/lon — store it here so we don't re-geocode (which often
-// fails due to rate limits or string mismatches).
+// ---------- Route debug log (consumed by RouteDebugPanel) ----------
+export type GeocodeSource = 'autocomplete' | 'cache' | 'nominatim' | 'failed';
+export interface GeocodeDebugEntry {
+  query: string;
+  source: GeocodeSource;
+  status: string; // e.g. "ok", "404", "timeout", "no-results"
+  variant?: string;
+  coords?: { lat: number; lng: number };
+  ts: number;
+}
+const DEBUG_KEY = 'routeDebugLog';
+const DEBUG_EVENT = 'route-debug-update';
+function pushDebug(entry: GeocodeDebugEntry) {
+  try {
+    const raw = sessionStorage.getItem(DEBUG_KEY);
+    const list: GeocodeDebugEntry[] = raw ? JSON.parse(raw) : [];
+    list.unshift(entry);
+    sessionStorage.setItem(DEBUG_KEY, JSON.stringify(list.slice(0, 30)));
+    window.dispatchEvent(new CustomEvent(DEBUG_EVENT));
+  } catch { /* ignore */ }
+}
+
+const normalizeKey = (s: string) =>
+  s.toLowerCase().replace(/[^a-z0-9 ,]/g, '').replace(/\s+/g, ' ').trim();
+
+// Fuzzy lookup in pickedCoords: exact → normalized → first-segment → substring match
 function getPrePickedCoords(query: string): { lat: number; lng: number } | null {
   try {
     const raw = sessionStorage.getItem('pickedCoords');
     if (!raw) return null;
     const map = JSON.parse(raw) as Record<string, { lat: number; lng: number }>;
-    const key = query.toLowerCase().trim();
-    return map[key] || null;
+    const exact = query.toLowerCase().trim();
+    if (map[exact]) return map[exact];
+
+    const norm = normalizeKey(query);
+    if (map[norm]) return map[norm];
+
+    const first = normalizeKey(query.split(',')[0] || '');
+    if (first && map[first]) return map[first];
+
+    // Substring fuzzy: any stored key contained in query (or vice versa)
+    const keys = Object.keys(map);
+    const hit = keys.find(k => k.length >= 4 && (norm.includes(k) || k.includes(norm)));
+    if (hit) return map[hit];
+
+    // First-segment substring match
+    if (first.length >= 4) {
+      const hit2 = keys.find(k => k.includes(first) || first.includes(k.split(',')[0] || ''));
+      if (hit2) return map[hit2];
+    }
+    return null;
   } catch {
     return null;
   }
@@ -826,11 +867,16 @@ async function geocodeLocation(query: string): Promise<{ lat: number; lng: numbe
   const prePicked = getPrePickedCoords(trimmed);
   if (prePicked) {
     geocodingCache[cacheKey] = prePicked;
+    pushDebug({ query: trimmed, source: 'autocomplete', status: 'ok', coords: prePicked, ts: Date.now() });
     return prePicked;
   }
 
   // 2. In-memory cache
-  if (cacheKey in geocodingCache) return geocodingCache[cacheKey];
+  if (cacheKey in geocodingCache) {
+    const c = geocodingCache[cacheKey];
+    pushDebug({ query: trimmed, source: 'cache', status: 'ok', coords: c, ts: Date.now() });
+    return c;
+  }
 
   // 3. Build progressively-relaxed query variants (helps when full address fails)
   const variants: string[] = [trimmed];
@@ -838,18 +884,20 @@ async function geocodeLocation(query: string): Promise<{ lat: number; lng: numbe
   if (parts.length > 1) variants.push(parts.slice(0, 2).join(', '));
   if (parts.length > 0) variants.push(parts[0]);
 
+  let lastStatus = 'no-results';
   const tryFetch = async (q: string, global = false): Promise<{ lat: number; lng: number } | null> => {
     const cc = global ? '' : '&countrycodes=in';
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}${cc}&limit=1`;
     try {
       const res = await fetchWithTimeout(url, 8000);
-      if (!res.ok) return null;
+      if (!res.ok) { lastStatus = `http-${res.status}`; return null; }
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
         return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
       }
-    } catch (e) {
-      // network/abort/timeout — caller decides retry
+      lastStatus = 'no-results';
+    } catch (e: any) {
+      lastStatus = e?.name === 'AbortError' ? 'timeout' : 'network-error';
     }
     return null;
   };
@@ -859,6 +907,7 @@ async function geocodeLocation(query: string): Promise<{ lat: number; lng: numbe
     const r = await tryFetch(v, false);
     if (r) {
       geocodingCache[cacheKey] = r;
+      pushDebug({ query: trimmed, source: 'nominatim', status: 'ok', variant: v, coords: r, ts: Date.now() });
       return r;
     }
   }
@@ -867,6 +916,7 @@ async function geocodeLocation(query: string): Promise<{ lat: number; lng: numbe
     const r = await tryFetch(v, true);
     if (r) {
       geocodingCache[cacheKey] = r;
+      pushDebug({ query: trimmed, source: 'nominatim', status: 'ok-global', variant: v, coords: r, ts: Date.now() });
       return r;
     }
   }
@@ -875,9 +925,12 @@ async function geocodeLocation(query: string): Promise<{ lat: number; lng: numbe
   const last = await tryFetch(trimmed, false);
   if (last) {
     geocodingCache[cacheKey] = last;
+    pushDebug({ query: trimmed, source: 'nominatim', status: 'ok-retry', coords: last, ts: Date.now() });
     return last;
   }
+  pushDebug({ query: trimmed, source: 'failed', status: lastStatus, ts: Date.now() });
   return null;
 }
 
 export default Map;
+
