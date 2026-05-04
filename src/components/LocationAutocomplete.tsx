@@ -287,6 +287,11 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       return;
     }
 
+    const offlineResults = getOfflineSuggestions(trimmed);
+    if (offlineResults.length > 0) {
+      setResults(offlineResults);
+    }
+
     // Abort previous
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
@@ -332,7 +337,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       }
 
       // Sort: nearby first, then by importance
-      let sorted = data;
+      let sorted = data.length > 0 ? data : offlineResults;
       if (userPos) {
         sorted = [...data].sort((a, b) => {
           const distA = haversine(userPos.lat, userPos.lng, parseFloat(a.lat), parseFloat(a.lon));
@@ -360,7 +365,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           cache[cacheKey] = fallbackData;
           setResults(fallbackData);
         } catch {
-          setResults([]);
+          setResults(offlineResults);
         }
       }
     } finally {
@@ -386,12 +391,17 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     // Instant for cached
+    if (activeFilter !== 'all') setActiveFilter('all');
+
     const cacheKey = newValue.trim().toLowerCase();
     if (cache[cacheKey]) {
       setResults(cache[cacheKey]);
       setIsLoading(false);
       return;
     }
+
+    const offlineResults = getOfflineSuggestions(newValue);
+    if (offlineResults.length > 0) setResults(offlineResults);
 
     if (newValue.trim().length >= 2) {
       setIsLoading(true);
