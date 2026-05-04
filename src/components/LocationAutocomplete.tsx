@@ -174,6 +174,28 @@ const getOfflineSuggestions = (query: string): LocationSuggestion[] => {
   }).slice(0, 8);
 };
 
+const fetchPhotonSuggestions = async (query: string, signal?: AbortSignal): Promise<LocationSuggestion[]> => {
+  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=8&lang=en&bbox=68.0,6.0,98.0,37.5`;
+  const response = await fetch(url, { signal, headers: { 'Accept': 'application/json' } });
+  if (!response.ok) throw new Error(`Photon ${response.status}`);
+  const json = await response.json();
+  const features = Array.isArray(json?.features) ? json.features : [];
+  return features.map((feature: any, index: number) => {
+    const props = feature.properties || {};
+    const [lon, lat] = feature.geometry?.coordinates || [];
+    const labelParts = [props.name, props.city, props.state, props.country].filter(Boolean);
+    return {
+      display_name: labelParts.join(', ') || query,
+      lat: String(lat),
+      lon: String(lon),
+      place_id: Number(props.osm_id) || -5000 - index,
+      type: props.type,
+      class: props.osm_key,
+      importance: 0.6,
+    } as LocationSuggestion;
+  }).filter((item: LocationSuggestion) => item.display_name && !Number.isNaN(parseFloat(item.lat)) && !Number.isNaN(parseFloat(item.lon)));
+};
+
 // Cached user position
 let cachedUserPos: { lat: number; lng: number } | null = null;
 const getUserPos = (): Promise<{ lat: number; lng: number } | null> => {
