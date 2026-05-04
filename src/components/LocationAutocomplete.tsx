@@ -330,20 +330,33 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
 
   const handleSelect = useCallback((suggestion: LocationSuggestion) => {
     const displayName = suggestion.display_name.split(',').slice(0, 3).join(',').trim();
-    // Save coords so Map can skip re-geocoding (prevents route-calc failures)
+    // Save coords (multiple aliases) so Map can skip re-geocoding even if formatting differs
     try {
       const raw = sessionStorage.getItem('pickedCoords');
       const map = raw ? JSON.parse(raw) : {};
       const lat = parseFloat(suggestion.lat);
       const lng = parseFloat(suggestion.lon);
       if (!isNaN(lat) && !isNaN(lng)) {
-        map[displayName.toLowerCase()] = { lat, lng };
-        // Cap to last 50 entries
+        const coords = { lat, lng };
+        const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ,]/g, '').replace(/\s+/g, ' ').trim();
+        const fullDisplay = suggestion.display_name;
+        const aliases = new Set<string>([
+          displayName,
+          fullDisplay,
+          fullDisplay.split(',').slice(0, 2).join(',').trim(),
+          fullDisplay.split(',')[0].trim(),
+          displayName.split(',')[0].trim(),
+        ]);
+        aliases.forEach(a => {
+          const k = normalize(a);
+          if (k) map[k] = coords;
+        });
+        // Cap to last 80 entries
         const keys = Object.keys(map);
-        if (keys.length > 50) {
-          const trimmed: Record<string, unknown> = {};
-          keys.slice(-50).forEach(k => { trimmed[k] = map[k]; });
-          sessionStorage.setItem('pickedCoords', JSON.stringify(trimmed));
+        if (keys.length > 80) {
+          const trimmedMap: Record<string, unknown> = {};
+          keys.slice(-80).forEach(k => { trimmedMap[k] = map[k]; });
+          sessionStorage.setItem('pickedCoords', JSON.stringify(trimmedMap));
         } else {
           sessionStorage.setItem('pickedCoords', JSON.stringify(map));
         }
