@@ -226,14 +226,24 @@ const Index = () => {
     // Electric vehicles don't pay tolls based on fuel (some toll exemptions), but we'll still estimate
     const tollCost = route.distance * 1.5;
     
-    setTripData({
+    const data = {
       distance: route.distance,
       duration: route.duration,
       fuelCost: Math.round(fuelCost),
       tollCost: Math.round(tollCost),
       totalCost: Math.round(fuelCost + tollCost),
-    });
-  }, [vehicleConfig]);
+    };
+    setTripData(data);
+    try {
+      localStorage.setItem('currentTrip', JSON.stringify({
+        ...data,
+        origin,
+        destination,
+        updatedAt: Date.now(),
+      }));
+      window.dispatchEvent(new Event('local-storage-change'));
+    } catch {}
+  }, [vehicleConfig, origin, destination]);
 
   const handleLocateMe = useCallback(async () => {
     setIsLocating(true);
