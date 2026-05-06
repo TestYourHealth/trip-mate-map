@@ -12,6 +12,7 @@ import { cityFuelPrices, CityData, CityFuelPrices, defaultFuelPrices } from '@/d
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { FUEL_STORAGE_KEYS } from '@/constants/storageKeys';
 
 interface CitySelectorProps {
   compact?: boolean;
@@ -20,9 +21,9 @@ interface CitySelectorProps {
 const CitySelector: React.FC<CitySelectorProps> = ({ compact = false }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
-  const [currentCity, setCurrentCity] = useLocalStorage('currentCity', '');
-  const [, setFuelPrices] = useLocalStorage<CityFuelPrices>('fuelPrices', defaultFuelPrices);
-  const [, setLastUpdated] = useLocalStorage('fuelPricesLastUpdated', '');
+  const [currentCity, setCurrentCity] = useLocalStorage(FUEL_STORAGE_KEYS.currentCity, '');
+  const [, setFuelPrices] = useLocalStorage<CityFuelPrices>(FUEL_STORAGE_KEYS.prices, defaultFuelPrices);
+  const [, setLastUpdated] = useLocalStorage(FUEL_STORAGE_KEYS.lastUpdated, '');
 
   // Get unique cities from data
   const cities = React.useMemo(() => {

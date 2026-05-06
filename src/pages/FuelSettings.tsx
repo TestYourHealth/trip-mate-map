@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 import { cityFuelPrices, defaultFuelPrices as defaultCityPrices, findCityFromLocation, CityData } from '@/data/cityFuelPrices';
+import { FUEL_STORAGE_KEYS } from '@/constants/storageKeys';
 
 interface FuelPrices {
   petrol: number;
@@ -24,9 +25,9 @@ const defaultFuelPrices: FuelPrices = {
 };
 
 const FuelSettings = () => {
-  const [fuelPrices, setFuelPrices] = useLocalStorage<FuelPrices>('fuelPrices', defaultFuelPrices);
-  const [lastUpdated, setLastUpdated] = useLocalStorage<string>('fuelPricesLastUpdated', new Date().toISOString());
-  const [currentCity, setCurrentCity] = useLocalStorage<string>('currentCity', 'India Average');
+  const [fuelPrices, setFuelPrices] = useLocalStorage<FuelPrices>(FUEL_STORAGE_KEYS.prices, defaultFuelPrices);
+  const [lastUpdated, setLastUpdated] = useLocalStorage<string>(FUEL_STORAGE_KEYS.lastUpdated, new Date().toISOString());
+  const [currentCity, setCurrentCity] = useLocalStorage<string>(FUEL_STORAGE_KEYS.currentCity, 'India Average');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
 

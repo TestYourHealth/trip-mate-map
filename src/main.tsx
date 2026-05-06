@@ -1,6 +1,9 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { runStorageMigrations } from "./utils/migrateStorage";
+
+runStorageMigrations();
 
 // Debounced viewport height setter to prevent forced reflows
 let resizeTimeout: number | null = null;
