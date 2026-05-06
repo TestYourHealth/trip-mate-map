@@ -6,6 +6,7 @@ import {
   Navigation, 
   History,
   BarChart3,
+  Receipt,
   Car, 
   Fuel, 
   Settings, 
@@ -28,6 +29,7 @@ const navigationItems = [
   { title: 'Navigate', url: '/', icon: Navigation, description: 'Plan your trip' },
   { title: 'Trip History', url: '/history', icon: History, description: 'View past trips' },
   { title: 'Trip Analytics', url: '/analytics', icon: BarChart3, description: 'Spending insights' },
+  { title: 'Bill Splitter', url: '/bill-split', icon: Receipt, description: 'Split costs with friends' },
 ];
 
 const settingsItems = [
