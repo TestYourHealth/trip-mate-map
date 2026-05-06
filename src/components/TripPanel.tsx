@@ -5,7 +5,7 @@ import VehicleSelector from './VehicleSelector';
 import RouteSelector from './RouteSelector';
 import DirectionsList from './DirectionsList';
 import CitySelector from './CitySelector';
-import BillSplitter from './BillSplitter';
+
 import { RouteInfo } from './Map';
 import { NavigationStep } from './NavigationPanel';
 import { VehicleConfig } from '@/types/vehicle';
@@ -246,16 +246,6 @@ const TripPanel: React.FC<TripPanelProps> = ({
                 </div>
               </div>
             </div>
-
-            {/* Bill Splitter */}
-            <div className="h-px bg-border" />
-            <BillSplitter
-              tripFuelCost={tripData.fuelCost}
-              tripTollCost={tripData.tollCost}
-              tripTotalCost={tripData.totalCost}
-              origin={origin}
-              destination={destination}
-            />
 
             {/* Turn-by-turn Directions */}
             {navigationSteps.length > 0 && (
