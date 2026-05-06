@@ -25,7 +25,7 @@ const defaultFuelPrices: FuelPrices = {
 
 const FuelSettings = () => {
   const [fuelPrices, setFuelPrices] = useLocalStorage<FuelPrices>('fuelPrices', defaultFuelPrices);
-  const [lastUpdated, setLastUpdated] = useLocalStorage<string>('fuelPricesUpdated', new Date().toISOString());
+  const [lastUpdated, setLastUpdated] = useLocalStorage<string>('fuelPricesLastUpdated', new Date().toISOString());
   const [currentCity, setCurrentCity] = useLocalStorage<string>('currentCity', 'India Average');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
