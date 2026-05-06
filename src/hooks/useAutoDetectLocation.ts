@@ -2,12 +2,13 @@ import { useEffect, useRef } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import { findCityFromLocation, defaultFuelPrices, CityFuelPrices } from '@/data/cityFuelPrices';
 import { toast } from 'sonner';
+import { FUEL_STORAGE_KEYS } from '@/constants/storageKeys';
 
 export function useAutoDetectLocation() {
-  const [, setFuelPrices] = useLocalStorage<CityFuelPrices>('fuelPrices', defaultFuelPrices);
-  const [, setCurrentCity] = useLocalStorage('currentCity', '');
-  const [, setLastUpdated] = useLocalStorage('fuelPricesLastUpdated', '');
-  const [hasAutoDetected, setHasAutoDetected] = useLocalStorage('hasAutoDetectedLocation', false);
+  const [, setFuelPrices] = useLocalStorage<CityFuelPrices>(FUEL_STORAGE_KEYS.prices, defaultFuelPrices);
+  const [, setCurrentCity] = useLocalStorage(FUEL_STORAGE_KEYS.currentCity, '');
+  const [, setLastUpdated] = useLocalStorage(FUEL_STORAGE_KEYS.lastUpdated, '');
+  const [hasAutoDetected, setHasAutoDetected] = useLocalStorage(FUEL_STORAGE_KEYS.hasAutoDetected, false);
   const attemptedRef = useRef(false);
 
   useEffect(() => {
