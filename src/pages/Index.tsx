@@ -17,6 +17,17 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useAutoDetectLocation } from '@/hooks/useAutoDetectLocation';
 import { useMapTheme } from '@/hooks/useMapTheme';
 import { Trip } from '@/pages/TripHistory';
+import SEO from '@/components/SEO';
+
+const HOME_JSONLD = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "TripMate",
+  "applicationCategory": "NavigationApplication",
+  "operatingSystem": "Web, Android, iOS",
+  "url": "https://mapbuddy.lovable.app/",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "INR" }
+};
 
 const Index = () => {
   // Auto-detect location for fuel prices on first visit
@@ -394,6 +405,13 @@ const Index = () => {
 
   return (
     <div className="h-full w-full relative">
+      <SEO
+        title="TripMate — Fuel, Toll & GPS Trip Cost Calculator"
+        description="Plan trips across India with accurate fuel cost, toll estimates, turn-by-turn navigation and offline maps. Free PWA built for Indian drivers."
+        path="/"
+        jsonLd={HOME_JSONLD}
+      />
+
       {/* Onboarding Tour */}
       <OnboardingTour />
 

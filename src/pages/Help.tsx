@@ -3,6 +3,7 @@ import { HelpCircle, MessageCircle, Mail, ExternalLink, ChevronRight } from 'luc
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import SEO from '@/components/SEO';
 
 const faqs = [
   {
