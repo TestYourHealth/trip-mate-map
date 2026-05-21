@@ -1,0 +1,16 @@
+# TripMate
+
+> India-focused trip cost calculator and GPS navigator. Plan trips, estimate fuel and toll costs, navigate turn-by-turn, and split bills with friends.
+
+TripMate is a PWA optimized for Indian drivers. Defaults include fuel ₹105/L, mileage 15 km/L, and toll ₹1.5/km. It works offline and ships as a native-style web view via Median.co.
+
+## Pages
+
+- [Navigate](/): Plan trips with fuel, toll, and time estimates plus GPS navigation.
+- [Trip History](/history): Review past trips and their costs.
+- [Trip Analytics](/analytics): Visualize spending and driving patterns.
+- [Bill Splitter](/bill-split): Split fuel and toll costs with co-travellers.
+- [Vehicle Settings](/settings/vehicle): Manage vehicles and mileage.
+- [Fuel Prices](/settings/fuel): Update city-specific fuel prices.
+- [Preferences](/settings): App settings and units.
+- [Help & Support](/help): FAQs and support contact.
