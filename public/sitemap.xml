@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://mapbuddy.lovable.app/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://mapbuddy.lovable.app/history</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://mapbuddy.lovable.app/analytics</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://mapbuddy.lovable.app/bill-split</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://mapbuddy.lovable.app/settings</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://mapbuddy.lovable.app/settings/vehicle</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://mapbuddy.lovable.app/settings/fuel</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://mapbuddy.lovable.app/help</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+</urlset>

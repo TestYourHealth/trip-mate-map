@@ -44,16 +44,35 @@
     <link rel="apple-touch-icon" href="/pwa-192x192.png" />
     <link rel="apple-touch-icon" sizes="192x192" href="/pwa-192x192.png" />
     <link rel="apple-touch-icon" sizes="512x512" href="/pwa-512x512.png" />
-    
-    <!-- Open Graph -->
+
+    <!-- Open Graph (sitewide fallback; per-route Helmet overrides) -->
     <meta property="og:title" content="TripMate - Trip Cost Calculator" />
     <meta property="og:description" content="Calculate trip costs with fuel, toll estimates and GPS navigation" />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="/pwa-512x512.png" />
+    <meta property="og:image" content="https://mapbuddy.lovable.app/pwa-512x512.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="TripMate - Trip Cost Calculator" />
-    <meta name="twitter:image" content="/pwa-512x512.png" />
+    <meta name="twitter:image" content="https://mapbuddy.lovable.app/pwa-512x512.png" />
+
+    <!-- Sitewide JSON-LD: Organization + WebSite -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "TripMate",
+        "url": "https://mapbuddy.lovable.app",
+        "logo": "https://mapbuddy.lovable.app/pwa-512x512.png"
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "TripMate",
+        "url": "https://mapbuddy.lovable.app"
+      }
+    </script>
     
     <!-- Native App Styles -->
     <style>

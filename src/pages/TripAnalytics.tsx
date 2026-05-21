@@ -5,6 +5,15 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Trip } from './TripHistory';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import SEO from '@/components/SEO';
+
+const ANALYTICS_SEO = (
+  <SEO
+    title="Trip Analytics — Spending & Driving Insights | TripMate"
+    description="Visualize your monthly fuel spending, top routes, weekly driving patterns and total kilometres covered with TripMate's analytics dashboard."
+    path="/analytics"
+  />
+);
 
 const TripAnalytics = () => {
   const [trips] = useLocalStorage<Trip[]>('tripHistory', []);
@@ -67,6 +76,7 @@ const TripAnalytics = () => {
   if (!stats) {
     return (
       <div className="p-6 max-w-4xl mx-auto">
+        {ANALYTICS_SEO}
         <div className="flex items-center gap-3 mb-8">
           <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
             <BarChart3 className="w-6 h-6 text-primary" />

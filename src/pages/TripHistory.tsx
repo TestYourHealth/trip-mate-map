@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { exportToCSV, exportToPDF } from '@/utils/exportTrips';
+import SEO from '@/components/SEO';
 
 export interface Trip {
   id: string;
@@ -65,6 +66,11 @@ const TripHistory = () => {
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
+      <SEO
+        title="Trip History — Past Trips & Costs | TripMate"
+        description="Browse your past trips with distance, duration and fuel cost. Export your trip history as CSV or PDF for records and reimbursement."
+        path="/history"
+      />
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">

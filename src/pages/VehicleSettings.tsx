@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import SEO from '@/components/SEO';
 
 interface Vehicle {
   id: string;
@@ -134,6 +135,11 @@ const VehicleSettings = () => {
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
+      <SEO
+        title="Vehicle Settings — Manage Cars & Mileage | TripMate"
+        description="Add, edit and set default vehicles with fuel type and mileage for accurate trip cost calculations in TripMate."
+        path="/settings/vehicle"
+      />
       <div className="flex items-center gap-3 mb-8">
         <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
           <Car className="w-6 h-6 text-primary" />
