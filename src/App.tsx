@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import MainLayout from "./layouts/MainLayout";
 import NativeAppWrapper from "./components/NativeAppWrapper";
 import { useAutoTheme } from "./hooks/useAutoTheme";
@@ -33,34 +34,36 @@ const App = () => {
   useAutoTheme();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <NativeAppWrapper>
-          <Toaster />
-          <Sonner />
-          <Suspense fallback={null}>
-            <InstallPWA />
-          </Suspense>
-          <BrowserRouter>
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                <Route element={<MainLayout />}>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/settings/vehicle" element={<VehicleSettings />} />
-                  <Route path="/settings/fuel" element={<FuelSettings />} />
-                  <Route path="/history" element={<TripHistory />} />
-                  <Route path="/analytics" element={<TripAnalytics />} />
-                  <Route path="/bill-split" element={<BillSplit />} />
-                  <Route path="/help" element={<Help />} />
-                </Route>
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <NativeAppWrapper>
+            <Toaster />
+            <Sonner />
+            <Suspense fallback={null}>
+              <InstallPWA />
             </Suspense>
-          </BrowserRouter>
-        </NativeAppWrapper>
-      </TooltipProvider>
-    </QueryClientProvider>
+            <BrowserRouter>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route element={<MainLayout />}>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/settings/vehicle" element={<VehicleSettings />} />
+                    <Route path="/settings/fuel" element={<FuelSettings />} />
+                    <Route path="/history" element={<TripHistory />} />
+                    <Route path="/analytics" element={<TripAnalytics />} />
+                    <Route path="/bill-split" element={<BillSplit />} />
+                    <Route path="/help" element={<Help />} />
+                  </Route>
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
+          </NativeAppWrapper>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 };
 
