@@ -3,6 +3,7 @@ import BillSplitter from '@/components/BillSplitter';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { MapPin, Trash2 } from 'lucide-react';
+import SEO from '@/components/SEO';
 
 interface CurrentTrip {
   fuelCost: number;
@@ -47,6 +48,11 @@ const BillSplit = () => {
 
   return (
     <div className="container max-w-2xl mx-auto p-4 md:p-6">
+      <SEO
+        title="Bill Splitter — Share Trip Fuel & Toll Costs | TripMate"
+        description="Split fuel, toll and trip expenses fairly with friends and co-travellers. Auto-fills from your active TripMate trip."
+        path="/bill-split"
+      />
       <div className="mb-4">
         <h1 className="text-2xl font-bold text-foreground">Bill Splitter</h1>
         <p className="text-sm text-muted-foreground">Split trip costs and expenses with friends</p>

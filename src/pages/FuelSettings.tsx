@@ -9,6 +9,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 import { cityFuelPrices, defaultFuelPrices as defaultCityPrices, findCityFromLocation, CityData } from '@/data/cityFuelPrices';
 import { FUEL_STORAGE_KEYS } from '@/constants/storageKeys';
+import SEO from '@/components/SEO';
 
 interface FuelPrices {
   petrol: number;
@@ -120,6 +121,11 @@ const FuelSettings = () => {
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
+      <SEO
+        title="Fuel Prices — City-wise Petrol, Diesel & CNG | TripMate"
+        description="Set current petrol, diesel, CNG and EV charging prices for your city to keep TripMate's trip cost estimates accurate."
+        path="/settings/fuel"
+      />
       <div className="flex items-center gap-3 mb-8">
         <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
           <Fuel className="w-6 h-6 text-primary" />

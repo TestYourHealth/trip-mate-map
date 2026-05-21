@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { useAutoTheme } from '@/hooks/useAutoTheme';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import SEO from '@/components/SEO';
 
 const Settings = () => {
   const { themeMode, setMode, isDark } = useAutoTheme();
@@ -18,6 +19,11 @@ const Settings = () => {
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
+      <SEO
+        title="Preferences — Theme, Voice & Units | TripMate"
+        description="Customize TripMate: light/dark/auto theme, voice navigation, auto-reroute, distance units and language preferences."
+        path="/settings"
+      />
       <div className="flex items-center gap-3 mb-8">
         <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
           <SettingsIcon className="w-6 h-6 text-primary" />
