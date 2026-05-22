@@ -22,6 +22,8 @@ export interface RouteInstruction {
 export interface RouteResult {
   routes: RouteInfo[];
   instructions: RouteInstruction[];
+  error?: 'geocode' | 'routing';
+  failedFields?: string[];
 }
 
 export interface NearbyPlace {
