@@ -297,9 +297,10 @@ const Index = () => {
     let tripOrigin = overrideOrigin || origin;
     const tripDestination = overrideDestination || destination;
     if (!tripOrigin || !tripDestination) return;
-    
+
     setIsCalculating(true);
-    
+    const retry = () => calculateTrip(overrideOrigin, overrideDestination);
+
     try {
       // If origin is generic "Current Location", resolve to actual GPS address
       if (tripOrigin === 'Current Location') {
@@ -312,8 +313,19 @@ const Index = () => {
           const data = await response.json();
           tripOrigin = data.display_name?.split(',').slice(0, 3).join(',') || `${pos.lat},${pos.lng}`;
           setOrigin(tripOrigin);
-        } catch {
-          toast.error('Location detect nahi ho paya. Please manually enter origin.');
+        } catch (geoErr: any) {
+          // Identify reason: permission, timeout, unavailable
+          const code = geoErr?.code;
+          let reason = 'Location detect nahi ho paya.';
+          if (code === 1) reason = 'Location permission denied. Browser settings me allow karo.';
+          else if (code === 2) reason = 'GPS signal weak. Khule area me try karo.';
+          else if (code === 3) reason = 'Location request timeout ho gaya.';
+          // Clear bad origin so the field becomes empty for manual entry
+          setOrigin('');
+          toast.error(reason, {
+            description: 'Origin manually type karo ya retry karo.',
+            action: { label: 'Retry', onClick: retry },
+          });
           setIsCalculating(false);
           return;
         }
@@ -321,12 +333,12 @@ const Index = () => {
 
       const validWaypoints = waypoints.filter(w => w.trim() !== '');
       const result = await mapRef.current?.showRoute(tripOrigin, tripDestination, validWaypoints);
-      
+
       if (result && result.routes.length > 0) {
         setRoutes(result.routes);
         setSelectedRouteIndex(0);
         updateTripData(result.routes[0]);
-        
+
         // Convert instructions to navigation steps
         if (result.instructions && result.instructions.length > 0) {
           const steps: NavigationStep[] = result.instructions.map((inst) => ({
@@ -336,7 +348,7 @@ const Index = () => {
           }));
           setNavigationSteps(steps);
         }
-        
+
         if (result.routes.length > 1) {
           toast.success(`${result.routes.length} routes found! Select your preferred route.`);
         } else {
@@ -347,12 +359,23 @@ const Index = () => {
         if (isMobile) {
           setIsPanelExpanded(false);
         }
+      } else if (result?.error === 'geocode') {
+        const failed = (result.failedFields || []).join(', ') || 'one of the locations';
+        toast.error(`Couldn't find: ${failed}`, {
+          description: 'Spelling check karo ya suggestion list me se pick karo.',
+          action: { label: 'Retry', onClick: retry },
+        });
       } else {
-        toast.error('Route nahi mil paya. Locations check karo ya thodi der me retry karo.');
+        toast.error('Route fetch nahi hua. OSRM busy ya network issue.', {
+          description: 'Thodi der me retry karo.',
+          action: { label: 'Retry', onClick: retry },
+        });
       }
     } catch (error) {
       console.error('calculateTrip error:', error);
-      toast.error('Route calculation me error. Internet check karo.');
+      toast.error('Route calculation me error. Internet check karo.', {
+        action: { label: 'Retry', onClick: retry },
+      });
     } finally {
       setIsCalculating(false);
     }
