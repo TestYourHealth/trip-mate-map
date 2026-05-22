@@ -335,22 +335,22 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
                   });
                   retry.on('routingerror', () => {
                     clearMarkers();
-                    resolve(null);
+                    resolve({ routes: [], instructions: [], error: 'routing' });
                   });
                 } catch {
                   clearMarkers();
-                  resolve(null);
+                  resolve({ routes: [], instructions: [], error: 'routing' });
                 }
               }, 1200);
               return;
             }
             clearMarkers();
-            resolve(null);
+            resolve({ routes: [], instructions: [], error: 'routing' });
           });
         });
       } catch (error) {
         console.error('Routing error:', error);
-        return null;
+        return { routes: [], instructions: [], error: 'routing' };
       }
     },
     selectRoute: (index: number) => {
