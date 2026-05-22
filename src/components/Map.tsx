@@ -131,18 +131,17 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
 
       try {
         // Geocode all locations in parallel for faster loading
-        const geocodePromises = [
-          geocodeLocation(origin),
-          geocodeLocation(destination),
-          ...waypoints.filter(wp => wp.trim()).map(wp => geocodeLocation(wp))
-        ];
-        
-        const results = await Promise.all(geocodePromises);
+        const labels = ['origin', 'destination', ...waypoints.filter(wp => wp.trim()).map((_, i) => `waypoint-${i + 1}`)];
+        const queries = [origin, destination, ...waypoints.filter(wp => wp.trim())];
+        const results = await Promise.all(queries.map(q => geocodeLocation(q)));
         const originCoords = results[0];
         const destCoords = results[1];
         const waypointCoords = results.slice(2).filter((c): c is { lat: number; lng: number } => c !== null);
-        
-        if (!originCoords || !destCoords) return null;
+
+        const failed = labels.filter((_, i) => !results[i]);
+        if (!originCoords || !destCoords || failed.length > 0) {
+          return { routes: [], instructions: [], error: 'geocode', failedFields: failed };
+        }
 
         // Build all waypoints array for routing
         const allWaypoints = [
