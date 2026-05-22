@@ -412,6 +412,10 @@ const Index = () => {
         jsonLd={HOME_JSONLD}
       />
 
+      <h1 className="sr-only">TripMate — Fuel, Toll & GPS Trip Cost Calculator for India</h1>
+
+
+
       {/* Onboarding Tour */}
       <OnboardingTour />
 
