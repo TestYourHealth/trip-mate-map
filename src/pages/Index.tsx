@@ -324,7 +324,7 @@ const Index = () => {
           setOrigin('');
           toast.error(reason, {
             description: 'Origin manually type karo ya retry karo.',
-            action: { label: 'Retry', onClick: () => detectMyLocationAndCalculate() },
+            action: { label: 'Retry', onClick: retry },
           });
           setIsCalculating(false);
           return;
