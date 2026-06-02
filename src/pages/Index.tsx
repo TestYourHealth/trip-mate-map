@@ -457,6 +457,9 @@ const Index = () => {
         />
       </div>
 
+      {/* Map busy indicator while calculating */}
+      {isCalculating && !isNavigating && <MapBusyIndicator />}
+
       {/* Full-Screen Driver Navigation View (when navigating) */}
       {isNavigating && (
         <DriverNavigationView
