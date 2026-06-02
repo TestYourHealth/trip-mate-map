@@ -174,8 +174,25 @@ const getOfflineSuggestions = (query: string): LocationSuggestion[] => {
   }).slice(0, 8);
 };
 
-const fetchPhotonSuggestions = async (query: string, signal?: AbortSignal): Promise<LocationSuggestion[]> => {
-  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=8&lang=en&bbox=68.0,6.0,98.0,37.5`;
+const fetchPhotonSuggestions = async (
+  query: string,
+  signal?: AbortSignal,
+  userPos?: { lat: number; lng: number } | null,
+): Promise<LocationSuggestion[]> => {
+  // Proximity bias: when we know the user, use lat/lon to surface nearby POIs
+  // (shops, malls, chaurahas, landmarks). Fallback to India bbox otherwise.
+  const params = new URLSearchParams({
+    q: query,
+    limit: '10',
+    lang: 'en',
+  });
+  if (userPos) {
+    params.set('lat', String(userPos.lat));
+    params.set('lon', String(userPos.lng));
+  } else {
+    params.set('bbox', '68.0,6.0,98.0,37.5');
+  }
+  const url = `https://photon.komoot.io/api/?${params.toString()}`;
   const response = await fetch(url, { signal, headers: { 'Accept': 'application/json' } });
   if (!response.ok) throw new Error(`Photon ${response.status}`);
   const json = await response.json();
@@ -183,15 +200,21 @@ const fetchPhotonSuggestions = async (query: string, signal?: AbortSignal): Prom
   return features.map((feature: any, index: number) => {
     const props = feature.properties || {};
     const [lon, lat] = feature.geometry?.coordinates || [];
-    const labelParts = [props.name, props.city, props.state, props.country].filter(Boolean);
+    // Build a richer label: prefer name + locality + state
+    const locality = props.city || props.town || props.village || props.suburb || props.district || props.county;
+    const labelParts = [props.name, props.street, locality, props.state, props.country].filter(Boolean);
+    // Importance heuristic: POIs (shop, amenity, tourism, leisure) deserve a boost
+    // when present in the user's nearby area so they don't get drowned by admin places.
+    const poiKeys = new Set(['shop', 'amenity', 'tourism', 'leisure', 'building', 'historic', 'office']);
+    const isPoi = poiKeys.has(props.osm_key);
     return {
       display_name: labelParts.join(', ') || query,
       lat: String(lat),
       lon: String(lon),
       place_id: Number(props.osm_id) || -5000 - index,
-      type: props.type,
+      type: props.type || props.osm_value,
       class: props.osm_key,
-      importance: 0.6,
+      importance: isPoi ? 0.55 : 0.5,
     } as LocationSuggestion;
   }).filter((item: LocationSuggestion) => item.display_name && !Number.isNaN(parseFloat(item.lat)) && !Number.isNaN(parseFloat(item.lon)));
 };
