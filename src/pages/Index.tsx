@@ -18,6 +18,7 @@ import { useAutoDetectLocation } from '@/hooks/useAutoDetectLocation';
 import { useMapTheme } from '@/hooks/useMapTheme';
 import { Trip } from '@/pages/TripHistory';
 import SEO from '@/components/SEO';
+import RouteLoadingSkeleton, { MapBusyIndicator } from '@/components/RouteLoadingSkeleton';
 
 const HOME_JSONLD = {
   "@context": "https://schema.org",
@@ -456,6 +457,9 @@ const Index = () => {
         />
       </div>
 
+      {/* Map busy indicator while calculating */}
+      {isCalculating && !isNavigating && <MapBusyIndicator />}
+
       {/* Full-Screen Driver Navigation View (when navigating) */}
       {isNavigating && (
         <DriverNavigationView
@@ -543,61 +547,69 @@ const Index = () => {
         </div>
       )}
 
-      {/* Trip Details Panel - Desktop (only show after route calculation) */}
-      {!isMobile && tripData && !isNavigating && (
+      {/* Trip Details Panel - Desktop (skeleton while calculating, then real panel) */}
+      {!isMobile && !isNavigating && (isCalculating || tripData) && (
         <div className="absolute bottom-6 right-4 z-[100]">
-          <TripPanel
-            origin={origin}
-            destination={destination}
-            waypoints={waypoints}
-            vehicleConfig={vehicleConfig}
-            routes={routes}
-            selectedRouteIndex={selectedRouteIndex}
-            navigationSteps={navigationSteps}
-            onOriginChange={setOrigin}
-            onDestinationChange={setDestination}
-            onWaypointsChange={setWaypoints}
-            onVehicleConfigChange={setVehicleConfig}
-            onRouteSelect={handleRouteSelect}
-            onCalculate={calculateTrip}
-            onClear={clearTrip}
-            onStartNavigation={startNavigation}
-            tripData={tripData}
-            isCalculating={isCalculating}
-            isMobile={false}
-            onUseCurrentLocation={useCurrentLocation}
-            isLocating={isLocating}
-          />
+          {isCalculating && !tripData ? (
+            <RouteLoadingSkeleton />
+          ) : (
+            <TripPanel
+              origin={origin}
+              destination={destination}
+              waypoints={waypoints}
+              vehicleConfig={vehicleConfig}
+              routes={routes}
+              selectedRouteIndex={selectedRouteIndex}
+              navigationSteps={navigationSteps}
+              onOriginChange={setOrigin}
+              onDestinationChange={setDestination}
+              onWaypointsChange={setWaypoints}
+              onVehicleConfigChange={setVehicleConfig}
+              onRouteSelect={handleRouteSelect}
+              onCalculate={calculateTrip}
+              onClear={clearTrip}
+              onStartNavigation={startNavigation}
+              tripData={tripData}
+              isCalculating={isCalculating}
+              isMobile={false}
+              onUseCurrentLocation={useCurrentLocation}
+              isLocating={isLocating}
+            />
+          )}
         </div>
       )}
 
-      {/* Trip Details Panel - Mobile (Bottom Sheet) - only show after route calculation */}
-      {isMobile && tripData && !isNavigating && (
+      {/* Trip Details Panel - Mobile (skeleton while calculating, then real panel) */}
+      {isMobile && !isNavigating && (isCalculating || tripData) && (
         <div className="absolute bottom-0 left-0 right-0 z-[100]">
-          <TripPanel
-            origin={origin}
-            destination={destination}
-            waypoints={waypoints}
-            vehicleConfig={vehicleConfig}
-            routes={routes}
-            selectedRouteIndex={selectedRouteIndex}
-            navigationSteps={navigationSteps}
-            onOriginChange={setOrigin}
-            onDestinationChange={setDestination}
-            onWaypointsChange={setWaypoints}
-            onVehicleConfigChange={setVehicleConfig}
-            onRouteSelect={handleRouteSelect}
-            onCalculate={calculateTrip}
-            onClear={clearTrip}
-            onStartNavigation={startNavigation}
-            tripData={tripData}
-            isCalculating={isCalculating}
-            isMobile={true}
-            isExpanded={isPanelExpanded}
-            onToggleExpand={() => setIsPanelExpanded(!isPanelExpanded)}
-            onUseCurrentLocation={useCurrentLocation}
-            isLocating={isLocating}
-          />
+          {isCalculating && !tripData ? (
+            <RouteLoadingSkeleton isMobile />
+          ) : (
+            <TripPanel
+              origin={origin}
+              destination={destination}
+              waypoints={waypoints}
+              vehicleConfig={vehicleConfig}
+              routes={routes}
+              selectedRouteIndex={selectedRouteIndex}
+              navigationSteps={navigationSteps}
+              onOriginChange={setOrigin}
+              onDestinationChange={setDestination}
+              onWaypointsChange={setWaypoints}
+              onVehicleConfigChange={setVehicleConfig}
+              onRouteSelect={handleRouteSelect}
+              onCalculate={calculateTrip}
+              onClear={clearTrip}
+              onStartNavigation={startNavigation}
+              tripData={tripData}
+              isCalculating={isCalculating}
+              isMobile={true}
+              isExpanded={isPanelExpanded}
+              onToggleExpand={() => setIsPanelExpanded(!isPanelExpanded)}
+              onUseCurrentLocation={useCurrentLocation}
+              isLocating={isLocating}
+            />
+          )}
         </div>
       )}
 
