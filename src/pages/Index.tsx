@@ -547,31 +547,35 @@ const Index = () => {
         </div>
       )}
 
-      {/* Trip Details Panel - Desktop (only show after route calculation) */}
-      {!isMobile && tripData && !isNavigating && (
+      {/* Trip Details Panel - Desktop (skeleton while calculating, then real panel) */}
+      {!isMobile && !isNavigating && (isCalculating || tripData) && (
         <div className="absolute bottom-6 right-4 z-[100]">
-          <TripPanel
-            origin={origin}
-            destination={destination}
-            waypoints={waypoints}
-            vehicleConfig={vehicleConfig}
-            routes={routes}
-            selectedRouteIndex={selectedRouteIndex}
-            navigationSteps={navigationSteps}
-            onOriginChange={setOrigin}
-            onDestinationChange={setDestination}
-            onWaypointsChange={setWaypoints}
-            onVehicleConfigChange={setVehicleConfig}
-            onRouteSelect={handleRouteSelect}
-            onCalculate={calculateTrip}
-            onClear={clearTrip}
-            onStartNavigation={startNavigation}
-            tripData={tripData}
-            isCalculating={isCalculating}
-            isMobile={false}
-            onUseCurrentLocation={useCurrentLocation}
-            isLocating={isLocating}
-          />
+          {isCalculating && !tripData ? (
+            <RouteLoadingSkeleton />
+          ) : (
+            <TripPanel
+              origin={origin}
+              destination={destination}
+              waypoints={waypoints}
+              vehicleConfig={vehicleConfig}
+              routes={routes}
+              selectedRouteIndex={selectedRouteIndex}
+              navigationSteps={navigationSteps}
+              onOriginChange={setOrigin}
+              onDestinationChange={setDestination}
+              onWaypointsChange={setWaypoints}
+              onVehicleConfigChange={setVehicleConfig}
+              onRouteSelect={handleRouteSelect}
+              onCalculate={calculateTrip}
+              onClear={clearTrip}
+              onStartNavigation={startNavigation}
+              tripData={tripData}
+              isCalculating={isCalculating}
+              isMobile={false}
+              onUseCurrentLocation={useCurrentLocation}
+              isLocating={isLocating}
+            />
+          )}
         </div>
       )}
 
