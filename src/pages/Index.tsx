@@ -18,6 +18,7 @@ import { useAutoDetectLocation } from '@/hooks/useAutoDetectLocation';
 import { useMapTheme } from '@/hooks/useMapTheme';
 import { Trip } from '@/pages/TripHistory';
 import SEO from '@/components/SEO';
+import RouteLoadingSkeleton, { MapBusyIndicator } from '@/components/RouteLoadingSkeleton';
 
 const HOME_JSONLD = {
   "@context": "https://schema.org",
