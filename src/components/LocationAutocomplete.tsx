@@ -13,10 +13,21 @@ interface LocationSuggestion {
   importance?: number;
 }
 
+export interface PickedPlaceDetails {
+  name: string;
+  address: string;
+  fullDisplayName: string;
+  lat: number;
+  lng: number;
+  distanceKm: number | null;
+  class?: string;
+  type?: string;
+}
+
 interface LocationAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
-  onSelect?: (value: string) => void;
+  onSelect?: (value: string, details?: PickedPlaceDetails) => void;
   placeholder?: string;
   icon?: React.ReactNode;
   className?: string;
@@ -474,6 +485,24 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
 
   const handleSelect = useCallback((suggestion: LocationSuggestion) => {
     const displayName = suggestion.display_name.split(',').slice(0, 3).join(',').trim();
+    const lat = parseFloat(suggestion.lat);
+    const lng = parseFloat(suggestion.lon);
+    const parts = suggestion.display_name.split(',').map(s => s.trim()).filter(Boolean);
+    const placeName = parts[0] || displayName;
+    const address = parts.slice(1).join(', ');
+    const distanceKm = userPos && !isNaN(lat) && !isNaN(lng)
+      ? haversine(userPos.lat, userPos.lng, lat, lng)
+      : null;
+    const details: PickedPlaceDetails | undefined = (!isNaN(lat) && !isNaN(lng)) ? {
+      name: placeName,
+      address,
+      fullDisplayName: suggestion.display_name,
+      lat,
+      lng,
+      distanceKm,
+      class: suggestion.class,
+      type: suggestion.type,
+    } : undefined;
     // Save coords (multiple aliases) so Map can skip re-geocoding even if formatting differs
     try {
       const raw = sessionStorage.getItem('pickedCoords');
