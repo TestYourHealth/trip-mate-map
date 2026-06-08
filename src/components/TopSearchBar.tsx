@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Search, Loader2, X, Menu, Crosshair, Car, Fuel, Clock, Settings, HelpCircle, MapPin, Mic, MicOff, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import LocationAutocomplete from './LocationAutocomplete';
+import LocationAutocomplete, { PickedPlaceDetails } from './LocationAutocomplete';
 import FavoriteLocations from './FavoriteLocations';
 import SmartSuggestions from './SmartSuggestions';
 import { cn } from '@/lib/utils';
@@ -28,6 +28,7 @@ interface TopSearchBarProps {
   onLocateMe?: () => void;
   isLocating?: boolean;
   tripHistory?: Trip[];
+  onDestinationPlacePicked?: (details: PickedPlaceDetails) => void;
 }
 
 const TopSearchBar: React.FC<TopSearchBarProps> = ({
@@ -41,7 +42,8 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
   getCurrentPosition,
   onLocateMe,
   isLocating = false,
-  tripHistory = []
+  tripHistory = [],
+  onDestinationPlacePicked,
 }) => {
   const navigate = useNavigate();
   const [isGettingLocation, setIsGettingLocation] = useState(false);
@@ -115,7 +117,8 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
   }, [getCurrentPosition, onOriginChange, hasAutoLocated, origin]);
 
   // Auto-calculate when destination is selected
-  const handleDestinationSelect = (value: string) => {
+  const handleDestinationSelect = (value: string, details?: PickedPlaceDetails) => {
+    if (details) onDestinationPlacePicked?.(details);
     if (origin && value && !isCalculating) {
       // Pass values directly to avoid stale closure
       setTimeout(() => onCalculate(origin, value), 100);
