@@ -46,6 +46,8 @@ export interface MapRef {
   getRotation: () => number;
   showNearbyMarkers: (places: NearbyPlace[], color?: string) => void;
   clearNearbyMarkers: () => void;
+  showPlaceMarker: (place: { name: string; address?: string; lat: number; lng: number; distanceKm?: number | null }) => void;
+  clearPlaceMarker: () => void;
 }
 
 interface MapProps {
