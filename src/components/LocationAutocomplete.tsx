@@ -507,8 +507,6 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     try {
       const raw = sessionStorage.getItem('pickedCoords');
       const map = raw ? JSON.parse(raw) : {};
-      const lat = parseFloat(suggestion.lat);
-      const lng = parseFloat(suggestion.lon);
       if (!isNaN(lat) && !isNaN(lng)) {
         const coords = { lat, lng };
         const normalize = normalizeSearchText;
@@ -536,7 +534,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       }
     } catch { /* ignore */ }
     onChange(displayName);
-    onSelect?.(displayName);
+    onSelect?.(displayName, details);
     saveToRecent(displayName);
     setResults([]);
     setShowDropdown(false);
