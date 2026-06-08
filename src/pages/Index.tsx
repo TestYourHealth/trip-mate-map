@@ -450,6 +450,8 @@ const Index = () => {
     setNavigationSteps([]);
     setIsNavigating(false);
     setCurrentStepIndex(0);
+    setSelectedPlace(null);
+    mapRef.current?.clearPlaceMarker();
     stopTracking();
   }, [stopTracking]);
 
