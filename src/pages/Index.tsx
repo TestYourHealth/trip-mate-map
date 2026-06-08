@@ -19,6 +19,8 @@ import { useMapTheme } from '@/hooks/useMapTheme';
 import { Trip } from '@/pages/TripHistory';
 import SEO from '@/components/SEO';
 import RouteLoadingSkeleton, { MapBusyIndicator } from '@/components/RouteLoadingSkeleton';
+import SelectedPlaceCard, { SelectedPlaceInfo } from '@/components/SelectedPlaceCard';
+import type { PickedPlaceDetails } from '@/components/LocationAutocomplete';
 
 const HOME_JSONLD = {
   "@context": "https://schema.org",
@@ -108,6 +110,30 @@ const Index = () => {
   const lastOffRouteWarning = useRef<number>(0);
   const [isLocating, setIsLocating] = useState(false);
   const [mapRotation, setMapRotation] = useState(0);
+  const [selectedPlace, setSelectedPlace] = useState<SelectedPlaceInfo | null>(null);
+
+  const handleDestinationPlacePicked = useCallback((details: PickedPlaceDetails) => {
+    const info: SelectedPlaceInfo = {
+      name: details.name,
+      address: details.address,
+      lat: details.lat,
+      lng: details.lng,
+      distanceKm: details.distanceKm,
+    };
+    setSelectedPlace(info);
+    mapRef.current?.showPlaceMarker({
+      name: info.name,
+      address: info.address,
+      lat: info.lat,
+      lng: info.lng,
+      distanceKm: info.distanceKm,
+    });
+  }, []);
+
+  const dismissSelectedPlace = useCallback(() => {
+    setSelectedPlace(null);
+    mapRef.current?.clearPlaceMarker();
+  }, []);
 
   // GPS tracking
   const { 
@@ -424,6 +450,8 @@ const Index = () => {
     setNavigationSteps([]);
     setIsNavigating(false);
     setCurrentStepIndex(0);
+    setSelectedPlace(null);
+    mapRef.current?.clearPlaceMarker();
     stopTracking();
   }, [stopTracking]);
 
@@ -489,7 +517,25 @@ const Index = () => {
           onLocateMe={handleLocateMe}
           isLocating={isLocating}
           tripHistory={tripHistory}
+          onDestinationPlacePicked={handleDestinationPlacePicked}
         />
+      )}
+
+      {/* Selected place info card - shows landmark name, address, distance */}
+      {!isNavigating && selectedPlace && (
+        <div className="absolute left-3 right-3 top-[150px] sm:top-[140px] sm:left-auto sm:right-4 sm:max-w-sm z-[140]">
+          <SelectedPlaceCard
+            place={selectedPlace}
+            onDismiss={dismissSelectedPlace}
+            onLocate={() => mapRef.current?.showPlaceMarker({
+              name: selectedPlace.name,
+              address: selectedPlace.address,
+              lat: selectedPlace.lat,
+              lng: selectedPlace.lng,
+              distanceKm: selectedPlace.distanceKm,
+            })}
+          />
+        </div>
       )}
 
       {/* Compass + Weather - visible when not navigating */}

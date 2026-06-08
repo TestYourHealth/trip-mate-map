@@ -46,6 +46,8 @@ export interface MapRef {
   getRotation: () => number;
   showNearbyMarkers: (places: NearbyPlace[], color?: string) => void;
   clearNearbyMarkers: () => void;
+  showPlaceMarker: (place: { name: string; address?: string; lat: number; lng: number; distanceKm?: number | null }) => void;
+  clearPlaceMarker: () => void;
 }
 
 interface MapProps {
@@ -65,6 +67,7 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
   const userAccuracyCircle = useRef<L.Circle | null>(null);
   const alternateRouteLines = useRef<L.Polyline[]>([]);
   const nearbyMarkers = useRef<L.Marker[]>([]);
+  const placeMarker = useRef<L.Marker | null>(null);
   const selectedRouteIndex = useRef<number>(0);
   const routesData = useRef<RouteInfo[]>([]);
   const routeCoordinates = useRef<L.LatLng[] | null>(null);
@@ -586,7 +589,53 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
     clearNearbyMarkers: () => {
       nearbyMarkers.current.forEach(m => m.remove());
       nearbyMarkers.current = [];
-    }
+    },
+    showPlaceMarker: (place) => {
+      if (!map.current) return;
+      if (placeMarker.current) {
+        placeMarker.current.remove();
+        placeMarker.current = null;
+      }
+      const distLabel = place.distanceKm != null
+        ? (place.distanceKm < 1
+            ? `${Math.round(place.distanceKm * 1000)} m away`
+            : place.distanceKm < 100
+              ? `${place.distanceKm.toFixed(1)} km away`
+              : `${Math.round(place.distanceKm)} km away`)
+        : '';
+      const safeName = (place.name || '').replace(/</g, '&lt;');
+      const safeAddr = (place.address || '').replace(/</g, '&lt;');
+      const marker = L.marker([place.lat, place.lng], {
+        icon: L.divIcon({
+          className: 'selected-place-marker',
+          html: `<div style="
+            width: 36px; height: 36px;
+            background: hsl(var(--primary)); border: 3px solid white;
+            border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+            display: flex; align-items: center; justify-content: center;
+          "><div style="transform: rotate(45deg); width:10px; height:10px; background:white; border-radius:50%;"></div></div>`,
+          iconSize: [36, 36],
+          iconAnchor: [18, 32],
+        }),
+      }).addTo(map.current);
+      marker.bindPopup(
+        `<div style="min-width:180px">
+          <b style="font-size:13px">${safeName}</b>
+          ${safeAddr ? `<div style="font-size:11px;color:#666;margin-top:2px">${safeAddr}</div>` : ''}
+          ${distLabel ? `<div style="font-size:11px;color:hsl(var(--primary));margin-top:4px;font-weight:600">${distLabel}</div>` : ''}
+        </div>`,
+        { className: 'selected-place-popup' }
+      ).openPopup();
+      placeMarker.current = marker;
+      map.current.flyTo([place.lat, place.lng], Math.max(map.current.getZoom(), 14), { duration: 0.6 });
+    },
+    clearPlaceMarker: () => {
+      if (placeMarker.current) {
+        placeMarker.current.remove();
+        placeMarker.current = null;
+      }
+    },
   }));
 
   useEffect(() => {
