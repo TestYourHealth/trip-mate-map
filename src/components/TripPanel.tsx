@@ -5,6 +5,7 @@ import VehicleSelector from './VehicleSelector';
 import RouteSelector from './RouteSelector';
 import DirectionsList from './DirectionsList';
 import CitySelector from './CitySelector';
+import WaypointInput from './WaypointInput';
 
 import { RouteInfo } from './Map';
 import { NavigationStep } from './NavigationPanel';
@@ -119,6 +120,16 @@ const TripPanel: React.FC<TripPanelProps> = ({
         "transition-all duration-300 overflow-hidden",
         isMobile && !isExpanded ? "max-h-0 opacity-0" : "max-h-[2000px] opacity-100"
       )}>
+
+        {/* Waypoints (multi-stop) */}
+        <div className="mb-4">
+          <WaypointInput
+            waypoints={waypoints}
+            onWaypointsChange={onWaypointsChange}
+            origin={origin}
+            destination={destination}
+          />
+        </div>
 
         {/* Vehicle Selector */}
         <div className="mb-4">
