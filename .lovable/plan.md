@@ -1,27 +1,29 @@
+# Multi-stop Waypoints + Cleanup
 
-# Smart Upgrade Plan
+## Current state
+- `WaypointInput.tsx` is fully built (add/remove stops, drag-reorder, nearest-neighbor TSP "Optimize" button) but never imported.
+- `Index.tsx` already manages `waypoints` state and passes `waypoints` + `onWaypointsChange` to `TripPanel`, and `Map.showRoute` already routes through them — so routing/cost calculation already accounts for stops.
+- `TripPanel.tsx` accepts those props but never renders any waypoint UI. **That's the only missing wire.**
+- `SpeedIndicator.tsx` is genuinely orphaned with zero imports.
 
-## Feature 1: Smart Search & Predict
-- **Time-based suggestions**: Subah office, shaam ghar - recent trips se pattern detect karke suggest
-- **Frequent routes auto-suggest**: Most used routes ko top pe dikhao with "Go Again" button
-- **Smart greeting**: Good Morning/Evening with weather-aware suggestion
-- **File**: New `src/components/SmartSuggestions.tsx` + update `TopSearchBar.tsx`
+## Changes
 
-## Feature 2: Smart Navigation HUD
-- **Speed limit display**: Road type ke hisaab se estimated speed limit (Highway: 100, City: 50, Residential: 30)
-- **Turn countdown timer**: Next turn kitne seconds/meters door hai with countdown animation
-- **Auto night mode**: Sunset/sunrise ke time automatic dark theme switch
-- **Enhanced lane guidance**: Visual lane arrows with highlighted recommended lane
-- **File**: Update `DriverNavigationView.tsx` + update `useAutoTheme.ts`
+### 1. Render WaypointInput inside TripPanel
+In `src/components/TripPanel.tsx`:
+- Import `WaypointInput`.
+- Render `<WaypointInput waypoints={waypoints} onWaypointsChange={onWaypointsChange} origin={origin} destination={destination} />` between the origin/destination fields and the trip summary (so stops appear in the natural source→stops→destination order).
+- Show it on both mobile sheet and desktop panel layouts (single render works since TripPanel handles both).
 
-## Feature 3: Smart ETA & Traffic
-- **Live ETA updates**: Distance remaining ke hisaab se ETA recalculate har 30 sec
-- **Traffic-aware coloring**: Route line color change based on traffic level (green/yellow/red)
-- **Delay warning toast**: Jab estimated delay badhta hai to alert
-- **File**: Update `Map.tsx` route colors + `DriverNavigationView.tsx` ETA logic
+### 2. "Calculate route" already triggers automatically
+`Index.tsx` line 409 has `useEffect` dependency `[origin, destination, waypoints, ...]` calling `calculateTrip`, so adding/removing/reordering a stop will re-run routing + cost calculation. No new button needed.
 
-## Technical Notes
-- No backend needed - all client-side logic
-- localStorage for trip patterns (frequent routes)
-- SunCalc-style sunset detection for auto dark mode (calculated, no API)
-- ~3 new/modified files, focused changes
+### 3. Remove orphan component
+- Delete `src/components/SpeedIndicator.tsx` (zero references).
+
+## Out of scope
+- Not touching `RouteDebugPanel` (still referenced; likely intentional dev panel).
+- Not adding new optimization algorithms — existing nearest-neighbor TSP in WaypointInput is kept.
+
+## Files touched
+- `src/components/TripPanel.tsx` — import + render WaypointInput
+- `src/components/SpeedIndicator.tsx` — deleted
