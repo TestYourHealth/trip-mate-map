@@ -1,3 +1,4 @@
+/// <reference types="google.maps" />
 // Google Places (New) browser integration via Maps JS API.
 // Uses the public, referrer-restricted browser key. Safe for client.
 
