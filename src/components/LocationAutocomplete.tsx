@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MapPin, Loader2, Search, Clock, Navigation, Star, Globe } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { searchGooglePlaces, isGoogleMapsAvailable } from '@/lib/googlePlaces';
 
 interface LocationSuggestion {
   display_name: string;
@@ -355,28 +356,38 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     lastQueryRef.current = trimmed;
 
     try {
-      // Build Nominatim URL with viewbox bias (admin places, addresses)
-      let nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&limit=8&addressdetails=1&dedupe=1&countrycodes=in`;
-      if (userPos) {
-        const delta = 2;
-        nominatimUrl += `&viewbox=${userPos.lng - delta},${userPos.lat - delta},${userPos.lng + delta},${userPos.lat + delta}`;
+      // PRIMARY: Google Places (New) via browser key — best POI/business coverage
+      let googleData: LocationSuggestion[] = [];
+      if (isGoogleMapsAvailable()) {
+        try {
+          googleData = await searchGooglePlaces(trimmed, userPos, abortRef.current.signal);
+        } catch (e: any) {
+          if (e?.message === 'Aborted' || e?.name === 'AbortError') throw e;
+          // fall through to OSM sources
+        }
       }
 
-      // Run Nominatim + Photon IN PARALLEL.
-      // Photon is much better for POIs: shops, malls, chaurahas, landmarks, temples, restaurants.
-      // Nominatim handles cities/addresses well. Merging both gives the user everything.
-      const [nominatimRes, photonRes] = await Promise.allSettled([
-        fetch(nominatimUrl, {
-          headers: { 'User-Agent': 'TripMate/1.0', 'Accept': 'application/json' },
-          signal: abortRef.current.signal,
-        }).then(r => r.ok ? r.json() as Promise<LocationSuggestion[]> : []),
-        fetchPhotonSuggestions(trimmed, abortRef.current.signal, userPos),
-      ]);
+      // FALLBACK: Nominatim + Photon (also runs if Google returned <3 results to enrich)
+      let nominatimData: LocationSuggestion[] = [];
+      let photonData: LocationSuggestion[] = [];
+      if (googleData.length < 3) {
+        let nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&limit=8&addressdetails=1&dedupe=1&countrycodes=in`;
+        if (userPos) {
+          const delta = 2;
+          nominatimUrl += `&viewbox=${userPos.lng - delta},${userPos.lat - delta},${userPos.lng + delta},${userPos.lat + delta}`;
+        }
+        const [nRes, pRes] = await Promise.allSettled([
+          fetch(nominatimUrl, {
+            headers: { 'User-Agent': 'TripMate/1.0', 'Accept': 'application/json' },
+            signal: abortRef.current.signal,
+          }).then(r => r.ok ? r.json() as Promise<LocationSuggestion[]> : []),
+          fetchPhotonSuggestions(trimmed, abortRef.current.signal, userPos),
+        ]);
+        nominatimData = nRes.status === 'fulfilled' ? nRes.value : [];
+        photonData = pRes.status === 'fulfilled' ? pRes.value : [];
+      }
 
-      const nominatimData: LocationSuggestion[] = nominatimRes.status === 'fulfilled' ? nominatimRes.value : [];
-      const photonData: LocationSuggestion[] = photonRes.status === 'fulfilled' ? photonRes.value : [];
-
-      // Merge with dedupe (by rounded lat,lon)
+      // Merge: Google first (highest quality), then OSM sources
       const seen = new Set<string>();
       const merged: LocationSuggestion[] = [];
       const pushUnique = (item: LocationSuggestion) => {
@@ -385,6 +396,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         seen.add(key);
         merged.push(item);
       };
+      googleData.forEach(pushUnique);
       nominatimData.forEach(pushUnique);
       photonData.forEach(pushUnique);
 
