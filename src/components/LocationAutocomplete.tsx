@@ -270,23 +270,44 @@ const formatDistance = (km: number): string => {
   return `${Math.round(km)} km`;
 };
 
-// Highlight matching text in results
-const HighlightText = React.forwardRef<HTMLSpanElement, { text: string; query: string }>(
-  ({ text, query }, ref) => {
-    if (!query || query.length < 2) return <span ref={ref}>{text}</span>;
-    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
-    return (
-      <span ref={ref}>
-        {parts.map((part, i) =>
-          part.toLowerCase() === query.toLowerCase()
-            ? <span key={i} className="text-primary font-semibold">{part}</span>
-            : <React.Fragment key={i}>{part}</React.Fragment>
-        )}
-      </span>
-    );
+// Highlight matching text in results. Supports explicit ranges (from Google
+// Places "matches") for precise highlighting; falls back to query substring.
+interface MatchRange { start: number; end: number }
+const HighlightText = React.forwardRef<
+  HTMLSpanElement,
+  { text: string; query: string; ranges?: MatchRange[] }
+>(({ text, query, ranges }, ref) => {
+  if (ranges && ranges.length > 0) {
+    // Merge & clamp ranges
+    const sorted = [...ranges]
+      .map(r => ({ start: Math.max(0, r.start), end: Math.min(text.length, r.end) }))
+      .filter(r => r.end > r.start)
+      .sort((a, b) => a.start - b.start);
+    const out: React.ReactNode[] = [];
+    let cursor = 0;
+    sorted.forEach((r, i) => {
+      if (r.start > cursor) out.push(<React.Fragment key={`p${i}`}>{text.slice(cursor, r.start)}</React.Fragment>);
+      out.push(
+        <span key={`h${i}`} className="text-primary font-semibold">{text.slice(r.start, r.end)}</span>
+      );
+      cursor = Math.max(cursor, r.end);
+    });
+    if (cursor < text.length) out.push(<React.Fragment key="tail">{text.slice(cursor)}</React.Fragment>);
+    return <span ref={ref}>{out}</span>;
   }
-);
+  if (!query || query.length < 2) return <span ref={ref}>{text}</span>;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+  return (
+    <span ref={ref}>
+      {parts.map((part, i) =>
+        part.toLowerCase() === query.toLowerCase()
+          ? <span key={i} className="text-primary font-semibold">{part}</span>
+          : <React.Fragment key={i}>{part}</React.Fragment>
+      )}
+    </span>
+  );
+});
 HighlightText.displayName = 'HighlightText';
 
 const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
