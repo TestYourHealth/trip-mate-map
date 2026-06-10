@@ -38,6 +38,8 @@ export const loadGoogleMaps = (): Promise<typeof google> => {
   return loadPromise;
 };
 
+export interface MatchRange { start: number; end: number }
+
 export interface GooglePlaceResult {
   display_name: string;
   lat: string;
@@ -49,6 +51,10 @@ export interface GooglePlaceResult {
   placeId?: string;
   primaryText?: string;
   secondaryText?: string;
+  primaryMatches?: MatchRange[];
+  secondaryMatches?: MatchRange[];
+  source?: 'google';
+  rank?: number;
 }
 
 let sessionToken: any = null;
