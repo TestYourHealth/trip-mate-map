@@ -4,6 +4,8 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { searchGooglePlaces, isGoogleMapsAvailable } from '@/lib/googlePlaces';
 
+interface MatchRange { start: number; end: number }
+
 interface LocationSuggestion {
   display_name: string;
   lat: string;
@@ -12,6 +14,12 @@ interface LocationSuggestion {
   type?: string;
   class?: string;
   importance?: number;
+  primaryText?: string;
+  secondaryText?: string;
+  primaryMatches?: MatchRange[];
+  secondaryMatches?: MatchRange[];
+  source?: 'google';
+  rank?: number;
 }
 
 export interface PickedPlaceDetails {
