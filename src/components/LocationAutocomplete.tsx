@@ -4,6 +4,8 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { searchGooglePlaces, isGoogleMapsAvailable } from '@/lib/googlePlaces';
 
+interface MatchRange { start: number; end: number }
+
 interface LocationSuggestion {
   display_name: string;
   lat: string;
@@ -12,6 +14,12 @@ interface LocationSuggestion {
   type?: string;
   class?: string;
   importance?: number;
+  primaryText?: string;
+  secondaryText?: string;
+  primaryMatches?: MatchRange[];
+  secondaryMatches?: MatchRange[];
+  source?: 'google';
+  rank?: number;
 }
 
 export interface PickedPlaceDetails {
@@ -262,23 +270,44 @@ const formatDistance = (km: number): string => {
   return `${Math.round(km)} km`;
 };
 
-// Highlight matching text in results
-const HighlightText = React.forwardRef<HTMLSpanElement, { text: string; query: string }>(
-  ({ text, query }, ref) => {
-    if (!query || query.length < 2) return <span ref={ref}>{text}</span>;
-    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
-    return (
-      <span ref={ref}>
-        {parts.map((part, i) =>
-          part.toLowerCase() === query.toLowerCase()
-            ? <span key={i} className="text-primary font-semibold">{part}</span>
-            : <React.Fragment key={i}>{part}</React.Fragment>
-        )}
-      </span>
-    );
+// Highlight matching text in results. Supports explicit ranges (from Google
+// Places "matches") for precise highlighting; falls back to query substring.
+interface MatchRange { start: number; end: number }
+const HighlightText = React.forwardRef<
+  HTMLSpanElement,
+  { text: string; query: string; ranges?: MatchRange[] }
+>(({ text, query, ranges }, ref) => {
+  if (ranges && ranges.length > 0) {
+    // Merge & clamp ranges
+    const sorted = [...ranges]
+      .map(r => ({ start: Math.max(0, r.start), end: Math.min(text.length, r.end) }))
+      .filter(r => r.end > r.start)
+      .sort((a, b) => a.start - b.start);
+    const out: React.ReactNode[] = [];
+    let cursor = 0;
+    sorted.forEach((r, i) => {
+      if (r.start > cursor) out.push(<React.Fragment key={`p${i}`}>{text.slice(cursor, r.start)}</React.Fragment>);
+      out.push(
+        <span key={`h${i}`} className="text-primary font-semibold">{text.slice(r.start, r.end)}</span>
+      );
+      cursor = Math.max(cursor, r.end);
+    });
+    if (cursor < text.length) out.push(<React.Fragment key="tail">{text.slice(cursor)}</React.Fragment>);
+    return <span ref={ref}>{out}</span>;
   }
-);
+  if (!query || query.length < 2) return <span ref={ref}>{text}</span>;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+  return (
+    <span ref={ref}>
+      {parts.map((part, i) =>
+        part.toLowerCase() === query.toLowerCase()
+          ? <span key={i} className="text-primary font-semibold">{part}</span>
+          : <React.Fragment key={i}>{part}</React.Fragment>
+      )}
+    </span>
+  );
+});
 HighlightText.displayName = 'HighlightText';
 
 const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
@@ -421,21 +450,39 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         correctedQueryRef.current = null;
       }
 
-      // Sort: nearby POIs first, then nearby places, then by importance/distance
+      // Ranking strategy:
+      //   1. Google Places suggestions stay in Google's relevance order at the top
+      //      (Google already factors proximity via locationBias). Tie-break on user
+      //      distance only within Google's set so the ordering stays stable.
+      //   2. Non-Google (OSM) results are ranked with the legacy nearby/POI heuristic.
       let sorted = data.length > 0 ? data : offlineResults;
       const poiClasses = new Set(['shop', 'amenity', 'tourism', 'leisure', 'historic', 'building', 'office']);
-      if (userPos && sorted.length > 0) {
-        sorted = [...sorted].sort((a, b) => {
-          const distA = haversine(userPos.lat, userPos.lng, parseFloat(a.lat), parseFloat(a.lon));
-          const distB = haversine(userPos.lat, userPos.lng, parseFloat(b.lat), parseFloat(b.lon));
-          const poiA = poiClasses.has(a.class || '') ? 1 : 0;
-          const poiB = poiClasses.has(b.class || '') ? 1 : 0;
-          // Within 25km, prefer POIs (landmarks, shops, malls) so user can find them
-          const nearA = distA < 25 ? -2000 + (poiA ? -500 : 0) : distA < 100 ? -800 : distA < 300 ? -200 : 0;
-          const nearB = distB < 25 ? -2000 + (poiB ? -500 : 0) : distB < 100 ? -800 : distB < 300 ? -200 : 0;
-          return (nearA - nearB) || (distA - distB);
-        });
-      }
+      const qNorm = normalizeSearchText(trimmed);
+
+      const scoreOsm = (s: LocationSuggestion): number => {
+        let score = 0;
+        const title = normalizeSearchText((s.primaryText || s.display_name.split(',')[0] || ''));
+        // Text-relevance boosts (smaller = better)
+        if (title === qNorm) score -= 3000;
+        else if (title.startsWith(qNorm)) score -= 1500;
+        else if (title.includes(qNorm)) score -= 600;
+        if (poiClasses.has(s.class || '')) score -= 300;
+        score -= Math.round(((s.importance || 0) as number) * 400);
+        if (userPos) {
+          const d = haversine(userPos.lat, userPos.lng, parseFloat(s.lat), parseFloat(s.lon));
+          if (d < 25) score -= 800;
+          else if (d < 100) score -= 400;
+          else if (d < 300) score -= 100;
+          score += Math.min(d, 1000) * 0.1; // mild distance penalty
+        }
+        return score;
+      };
+
+      const googleResults = sorted.filter(r => r.source === 'google');
+      const otherResults = sorted.filter(r => r.source !== 'google');
+      googleResults.sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
+      otherResults.sort((a, b) => scoreOsm(a) - scoreOsm(b));
+      sorted = [...googleResults, ...otherResults];
 
       cache[cacheKey] = sorted;
       if (lastQueryRef.current === trimmed) {
@@ -849,8 +896,9 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
                 })
                 .map((s) => {
                 const parts = s.display_name.split(',');
-                const title = parts.slice(0, 2).join(',').trim();
-                const subtitle = parts.slice(2, 5).join(',').trim();
+                // Prefer Google's structured fields when present for cleaner highlighting
+                const title = s.primaryText || parts.slice(0, 2).join(',').trim();
+                const subtitle = s.secondaryText || parts.slice(2, 5).join(',').trim();
                 const dist = getDistanceLabel(s);
                 const isNearby = userPos && haversine(userPos.lat, userPos.lng, parseFloat(s.lat), parseFloat(s.lon)) < 50;
 
@@ -863,10 +911,12 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="text-sm text-foreground line-clamp-1">
-                        <HighlightText text={title} query={value} />
+                        <HighlightText text={title} query={value} ranges={s.primaryMatches} />
                       </div>
                       {subtitle && (
-                        <div className="text-xs text-muted-foreground line-clamp-1">{subtitle}</div>
+                        <div className="text-xs text-muted-foreground line-clamp-1">
+                          <HighlightText text={subtitle} query={value} ranges={s.secondaryMatches} />
+                        </div>
                       )}
                     </div>
                     {dist && (
