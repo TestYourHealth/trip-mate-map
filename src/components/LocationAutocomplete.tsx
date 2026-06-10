@@ -450,21 +450,39 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         correctedQueryRef.current = null;
       }
 
-      // Sort: nearby POIs first, then nearby places, then by importance/distance
+      // Ranking strategy:
+      //   1. Google Places suggestions stay in Google's relevance order at the top
+      //      (Google already factors proximity via locationBias). Tie-break on user
+      //      distance only within Google's set so the ordering stays stable.
+      //   2. Non-Google (OSM) results are ranked with the legacy nearby/POI heuristic.
       let sorted = data.length > 0 ? data : offlineResults;
       const poiClasses = new Set(['shop', 'amenity', 'tourism', 'leisure', 'historic', 'building', 'office']);
-      if (userPos && sorted.length > 0) {
-        sorted = [...sorted].sort((a, b) => {
-          const distA = haversine(userPos.lat, userPos.lng, parseFloat(a.lat), parseFloat(a.lon));
-          const distB = haversine(userPos.lat, userPos.lng, parseFloat(b.lat), parseFloat(b.lon));
-          const poiA = poiClasses.has(a.class || '') ? 1 : 0;
-          const poiB = poiClasses.has(b.class || '') ? 1 : 0;
-          // Within 25km, prefer POIs (landmarks, shops, malls) so user can find them
-          const nearA = distA < 25 ? -2000 + (poiA ? -500 : 0) : distA < 100 ? -800 : distA < 300 ? -200 : 0;
-          const nearB = distB < 25 ? -2000 + (poiB ? -500 : 0) : distB < 100 ? -800 : distB < 300 ? -200 : 0;
-          return (nearA - nearB) || (distA - distB);
-        });
-      }
+      const qNorm = normalizeSearchText(trimmed);
+
+      const scoreOsm = (s: LocationSuggestion): number => {
+        let score = 0;
+        const title = normalizeSearchText((s.primaryText || s.display_name.split(',')[0] || ''));
+        // Text-relevance boosts (smaller = better)
+        if (title === qNorm) score -= 3000;
+        else if (title.startsWith(qNorm)) score -= 1500;
+        else if (title.includes(qNorm)) score -= 600;
+        if (poiClasses.has(s.class || '')) score -= 300;
+        score -= Math.round(((s.importance || 0) as number) * 400);
+        if (userPos) {
+          const d = haversine(userPos.lat, userPos.lng, parseFloat(s.lat), parseFloat(s.lon));
+          if (d < 25) score -= 800;
+          else if (d < 100) score -= 400;
+          else if (d < 300) score -= 100;
+          score += Math.min(d, 1000) * 0.1; // mild distance penalty
+        }
+        return score;
+      };
+
+      const googleResults = sorted.filter(r => r.source === 'google');
+      const otherResults = sorted.filter(r => r.source !== 'google');
+      googleResults.sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
+      otherResults.sort((a, b) => scoreOsm(a) - scoreOsm(b));
+      sorted = [...googleResults, ...otherResults];
 
       cache[cacheKey] = sorted;
       if (lastQueryRef.current === trimmed) {
