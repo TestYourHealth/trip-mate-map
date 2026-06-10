@@ -95,6 +95,20 @@ export const searchGooglePlaces = async (
   if (signal?.aborted) throw new Error('Aborted');
 
   const top = (suggestions || []).slice(0, 8);
+
+  const mapMatches = (mt: any): MatchRange[] | undefined => {
+    const arr = mt?.matches;
+    if (!Array.isArray(arr) || !arr.length) return undefined;
+    return arr
+      .map((m: any) => {
+        const start = m.startOffset ?? m.offset ?? 0;
+        const len = m.endOffset != null ? m.endOffset - start : m.length;
+        if (typeof start !== 'number' || typeof len !== 'number' || len <= 0) return null;
+        return { start, end: start + len };
+      })
+      .filter((x: any): x is MatchRange => x !== null);
+  };
+
   const detailed = await Promise.all(
     top.map(async (s: any, idx: number) => {
       const pred = s.placePrediction;
@@ -120,10 +134,14 @@ export const searchGooglePlaces = async (
           place_id: -8000 - idx,
           type: types[0],
           class: cls,
-          importance: 0.9 - idx * 0.02,
+          importance: 0.95 - idx * 0.02,
           placeId: pred.placeId,
           primaryText: primary,
           secondaryText: secondary,
+          primaryMatches: mapMatches(pred.mainText),
+          secondaryMatches: mapMatches(pred.secondaryText),
+          source: 'google' as const,
+          rank: idx,
         } as GooglePlaceResult;
       } catch {
         return null;
