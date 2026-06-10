@@ -896,8 +896,9 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
                 })
                 .map((s) => {
                 const parts = s.display_name.split(',');
-                const title = parts.slice(0, 2).join(',').trim();
-                const subtitle = parts.slice(2, 5).join(',').trim();
+                // Prefer Google's structured fields when present for cleaner highlighting
+                const title = s.primaryText || parts.slice(0, 2).join(',').trim();
+                const subtitle = s.secondaryText || parts.slice(2, 5).join(',').trim();
                 const dist = getDistanceLabel(s);
                 const isNearby = userPos && haversine(userPos.lat, userPos.lng, parseFloat(s.lat), parseFloat(s.lon)) < 50;
 
@@ -910,10 +911,12 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="text-sm text-foreground line-clamp-1">
-                        <HighlightText text={title} query={value} />
+                        <HighlightText text={title} query={value} ranges={s.primaryMatches} />
                       </div>
                       {subtitle && (
-                        <div className="text-xs text-muted-foreground line-clamp-1">{subtitle}</div>
+                        <div className="text-xs text-muted-foreground line-clamp-1">
+                          <HighlightText text={subtitle} query={value} ranges={s.secondaryMatches} />
+                        </div>
                       )}
                     </div>
                     {dist && (
