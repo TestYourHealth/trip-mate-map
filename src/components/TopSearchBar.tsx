@@ -139,61 +139,93 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
   ];
 
   return (
-    <div className="absolute top-3 left-3 right-3 z-[150]">
+    <div className="absolute top-3 left-3 right-3 z-[150] animate-slide-down">
+      {/* Ambient glow halo behind the bar */}
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute -inset-2 rounded-full blur-2xl transition-opacity duration-500",
+          isFocused ? "opacity-60" : "opacity-0"
+        )}
+        style={{ background: "radial-gradient(60% 60% at 50% 50%, hsl(var(--primary) / 0.35), transparent 70%)" }}
+      />
+
       {/* Unified search card */}
       <div className={cn(
-        "flex items-center gap-0 rounded-full transition-all duration-300",
-        "glass-card",
-        isFocused && "shadow-lg ring-1 ring-primary/30"
+        "relative flex items-center gap-0 rounded-full transition-all duration-300 overflow-hidden",
+        "glass-card border-white/40 dark:border-white/10",
+        "shadow-[0_8px_28px_-8px_hsl(var(--primary)/0.25)]",
+        isFocused
+          ? "shadow-[0_12px_40px_-8px_hsl(var(--primary)/0.45)] ring-1 ring-primary/40 scale-[1.005]"
+          : "hover:shadow-[0_10px_32px_-8px_hsl(var(--primary)/0.35)]"
       )}>
+        {/* Subtle gradient sheen */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-60"
+          style={{ background: "linear-gradient(135deg, hsl(var(--primary) / 0.06), transparent 40%, hsl(var(--primary-glow) / 0.05))" }}
+        />
+
         {/* Hamburger Menu */}
         <Sheet>
           <SheetTrigger asChild>
-            <button className="flex-shrink-0 p-3 pl-3.5 text-muted-foreground hover:text-foreground transition-colors">
+            <button
+              className="relative flex-shrink-0 p-3 pl-3.5 text-muted-foreground hover:text-primary transition-all duration-200 hover:bg-primary/5 rounded-l-full active:scale-90"
+              aria-label="Open menu"
+            >
               <Menu className="w-5 h-5" />
             </button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-72" aria-describedby={undefined}>
+          <SheetContent side="left" className="w-72 border-r border-border/50" aria-describedby={undefined}>
             <SheetHeader>
-              <SheetTitle className="text-left text-lg font-bold">
+              <SheetTitle className="text-left text-xl font-extrabold tracking-tight">
                 <span className="gradient-text">TripMate</span>
               </SheetTitle>
             </SheetHeader>
-            <nav className="mt-6 flex flex-col gap-0.5">
-              {menuItems.map((item) => (
+            <nav className="mt-6 flex flex-col gap-1">
+              {menuItems.map((item, i) => (
                 <button
                   key={item.path}
                   onClick={() => navigate(item.path)}
-                  className="w-full flex items-center gap-3 text-left px-4 py-3 rounded-xl hover:bg-muted transition-colors text-foreground text-sm group"
+                  style={{ animationDelay: `${i * 40}ms` }}
+                  className="w-full flex items-center gap-3 text-left px-3 py-3 rounded-xl hover:bg-primary/10 hover:translate-x-0.5 transition-all duration-200 text-foreground text-sm group animate-fade-in"
                 >
-                  <item.icon className="w-4.5 h-4.5 text-muted-foreground group-hover:text-primary transition-colors" />
-                  {item.label}
+                  <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-muted/60 group-hover:bg-primary/15 transition-colors">
+                    <item.icon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </span>
+                  <span className="font-medium group-hover:text-primary transition-colors">{item.label}</span>
                 </button>
               ))}
             </nav>
           </SheetContent>
         </Sheet>
 
+        {/* Vertical divider */}
+        <div className="h-6 w-px bg-border/60" />
+
         {/* Search input area */}
-        <div className="flex-1 min-w-0 flex items-center">
+        <div className="relative flex-1 min-w-0 flex items-center pl-3">
           {isGettingLocation || isCalculating ? (
             <Loader2 className="w-4 h-4 text-primary animate-spin flex-shrink-0 mr-2" />
           ) : (
-            <Search className="w-4 h-4 text-muted-foreground/50 flex-shrink-0 mr-2" />
+            <Search className={cn(
+              "w-4 h-4 flex-shrink-0 mr-2 transition-colors duration-200",
+              isFocused ? "text-primary" : "text-muted-foreground/60"
+            )} />
           )}
           <LocationAutocomplete
             value={destination}
             onChange={onDestinationChange}
             onSelect={handleDestinationSelect}
-            placeholder="Search destination"
+            placeholder="Where to?"
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            className="border-0 bg-transparent shadow-none focus-visible:ring-0 h-10 text-sm placeholder:text-muted-foreground/40"
+            className="border-0 bg-transparent shadow-none focus-visible:ring-0 h-11 text-sm font-medium placeholder:text-muted-foreground/50 placeholder:font-normal"
           />
           {destination && (
             <button
               onClick={handleClear}
-              className="flex-shrink-0 p-1.5 mr-1 rounded-full hover:bg-muted transition-colors"
+              className="flex-shrink-0 p-1.5 mr-1 rounded-full hover:bg-muted active:scale-90 transition-all animate-scale-in"
               aria-label="Clear destination"
             >
               <X className="w-3.5 h-3.5 text-muted-foreground" />
@@ -204,39 +236,56 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
           <button
             onClick={startVoiceSearch}
             className={cn(
-              "flex-shrink-0 p-2 rounded-full transition-all",
+              "relative flex-shrink-0 p-2 rounded-full transition-all duration-200 active:scale-90",
               isListening
-                ? "bg-destructive/10 text-destructive animate-pulse"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                ? "bg-destructive/15 text-destructive"
+                : "text-muted-foreground hover:text-primary hover:bg-primary/10"
             )}
             aria-label="Voice search"
           >
-            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            {isListening && (
+              <span className="absolute inset-0 rounded-full bg-destructive/30 animate-ping" />
+            )}
+            {isListening ? <MicOff className="relative w-4 h-4" /> : <Mic className="relative w-4 h-4" />}
           </button>
         </div>
+
+        {/* Vertical divider */}
+        <div className="h-6 w-px bg-border/60" />
 
         {/* Locate me button */}
         <button
           onClick={onLocateMe}
           disabled={isLocating}
-          className="flex-shrink-0 p-3 pr-3.5 text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+          className={cn(
+            "relative flex-shrink-0 p-3 pr-3.5 transition-all duration-200 disabled:opacity-50 rounded-r-full active:scale-90",
+            "text-primary hover:bg-primary/10"
+          )}
           aria-label="Find my location"
         >
           {isLocating ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            <Crosshair className="w-5 h-5" />
+            <Crosshair className="w-5 h-5 drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]" />
           )}
         </button>
       </div>
 
       {/* Current location pill + Weather */}
-      <div className="mt-2 ml-4 flex items-center gap-2 flex-wrap">
+      <div className="mt-2.5 ml-4 flex items-center gap-2 flex-wrap">
         {origin && (
-          <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm rounded-full px-2.5 py-1 shadow-sm border border-border/30">
-            <MapPin className="w-3 h-3 text-primary" />
-            <span className="truncate max-w-[160px]">
-              {isGettingLocation ? 'Locating...' : origin}
+          <div className="group inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground glass-card rounded-full px-3 py-1.5 hover:text-foreground transition-all animate-fade-in cursor-default">
+            <span className="relative flex h-2 w-2">
+              {!isGettingLocation && (
+                <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-70 animate-ping" />
+              )}
+              <span className={cn(
+                "relative inline-flex rounded-full h-2 w-2",
+                isGettingLocation ? "bg-warning" : "bg-primary"
+              )} />
+            </span>
+            <span className="truncate max-w-[180px]">
+              {isGettingLocation ? 'Locating you…' : origin}
             </span>
           </div>
         )}
