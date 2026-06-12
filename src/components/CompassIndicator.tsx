@@ -16,18 +16,32 @@ const CompassIndicator: React.FC<CompassIndicatorProps> = ({ heading, onResetNor
     <button
       onClick={onResetNorth}
       className={cn(
-        "w-9 h-9 flex items-center justify-center",
-        "bg-background rounded-full shadow-md border border-border/60",
-        "transition-all duration-200 hover:shadow-lg active:scale-95",
-        isOffNorth && "ring-1 ring-destructive/20",
-        className
+        'relative w-11 h-11 flex items-center justify-center rounded-full',
+        'glass-panel border border-white/40 dark:border-white/10',
+        'shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.3)]',
+        'ring-1 ring-primary/10',
+        'transition-all duration-300 hover:scale-105 active:scale-90',
+        isOffNorth && 'ring-2 ring-primary/40',
+        className,
       )}
       aria-label={displayHeading !== null ? `Reset to north. Heading ${displayHeading}°` : 'Compass'}
     >
-      <Navigation 
-        className={cn("w-4 h-4 text-destructive/80", !isOffNorth && "text-muted-foreground")}
+      {/* Cardinal N marker */}
+      <span
+        className={cn(
+          'absolute top-1 left-1/2 -translate-x-1/2 text-[8px] font-bold tracking-wider',
+          isOffNorth ? 'text-primary' : 'text-muted-foreground/60',
+        )}
+      >
+        N
+      </span>
+      <Navigation
+        className={cn(
+          'w-4 h-4 transition-transform duration-300',
+          isOffNorth ? 'text-primary' : 'text-muted-foreground',
+        )}
         style={{ transform: `rotate(${displayHeading ?? 0}deg)` }}
-        fill={isOffNorth ? "currentColor" : "none"}
+        fill={isOffNorth ? 'currentColor' : 'none'}
         strokeWidth={2}
       />
     </button>
