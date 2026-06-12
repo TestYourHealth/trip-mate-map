@@ -5,6 +5,7 @@ import TopSearchBar from '@/components/TopSearchBar';
 import DriverNavigationView from '@/components/DriverNavigationView';
 import CompassIndicator from '@/components/CompassIndicator';
 import QuickActions from '@/components/QuickActions';
+import MapControls from '@/components/MapControls';
 import OnboardingTour from '@/components/OnboardingTour';
 import RouteDebugPanel from '@/components/RouteDebugPanel';
 import WeatherWidget from '@/components/WeatherWidget';
@@ -540,7 +541,7 @@ const Index = () => {
 
       {/* Compass + Weather - visible when not navigating */}
       {!isNavigating && (
-        <div className="absolute bottom-24 left-3 z-[100] md:bottom-6 flex flex-col gap-3">
+        <div className="absolute bottom-24 left-3 z-[100] md:bottom-6 flex flex-col gap-3 animate-fade-in">
           <WeatherWidget
             lat={position?.lat}
             lng={position?.lng}
@@ -550,6 +551,13 @@ const Index = () => {
             heading={mapRotation} 
             onResetNorth={() => mapRef.current?.resetNorth()}
           />
+        </div>
+      )}
+
+      {/* Professional map controls (zoom / layers / recenter) */}
+      {!isNavigating && (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 z-[100] animate-fade-in">
+          <MapControls mapRef={mapRef} />
         </div>
       )}
 
