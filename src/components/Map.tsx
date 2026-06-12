@@ -662,6 +662,46 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
     },
   }));
 
+  const getTileUrlFor = (style: MapLayerStyle): { url: string; attribution: string; subdomains: string; maxZoom: number } => {
+    const isRetina = window.devicePixelRatio > 1;
+    const suffix = isRetina ? '@2x' : '';
+    if (style === 'satellite') {
+      return {
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Earthstar Geographics',
+        subdomains: 'abc',
+        maxZoom: 19,
+      };
+    }
+    if (style === 'dark') {
+      return {
+        url: `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}${suffix}.png`,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20,
+      };
+    }
+    return {
+      url: `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}${suffix}.png`,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 20,
+    };
+  };
+
+  const applyTileLayer = (style: MapLayerStyle) => {
+    if (!map.current) return;
+    const cfg = getTileUrlFor(style);
+    if (tileLayerRef.current) {
+      map.current.removeLayer(tileLayerRef.current);
+    }
+    tileLayerRef.current = L.tileLayer(cfg.url, {
+      attribution: cfg.attribution,
+      subdomains: cfg.subdomains,
+      maxZoom: cfg.maxZoom,
+    }).addTo(map.current);
+  };
+
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
@@ -671,27 +711,10 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
       zoomControl: false,
     });
 
-    // Theme-aware tile layer from CartoDB
-    const isRetina = window.devicePixelRatio > 1;
-    const suffix = isRetina ? '@2x' : '';
-    const initialTileUrl = tileTheme === 'dark'
-      ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}${suffix}.png`
-      : `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}${suffix}.png`;
-    
-    tileLayerRef.current = L.tileLayer(initialTileUrl, {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 20,
-    }).addTo(map.current);
-
-    // Add zoom control to bottom right
-    L.control.zoom({
-      position: 'bottomright',
-    }).addTo(map.current);
+    applyTileLayer(tileTheme === 'dark' ? 'dark' : 'standard');
 
     map.current.whenReady(() => {
       setIsLoaded(true);
-      // Force map to recalculate size after container is properly sized
       setTimeout(() => {
         map.current?.invalidateSize();
       }, 100);
@@ -708,15 +731,11 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
     };
   }, []);
 
-  // Switch tile layer when theme changes
+  // Switch tile layer when theme changes (skip if user picked a manual override)
   useEffect(() => {
     if (!map.current || !tileLayerRef.current) return;
-    const isRetina = window.devicePixelRatio > 1;
-    const suffix = isRetina ? '@2x' : '';
-    const newUrl = tileTheme === 'dark'
-      ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}${suffix}.png`
-      : `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}${suffix}.png`;
-    tileLayerRef.current.setUrl(newUrl);
+    if (layerOverrideRef.current) return;
+    applyTileLayer(tileTheme === 'dark' ? 'dark' : 'standard');
   }, [tileTheme]);
 
   // Handle navigation mode changes
