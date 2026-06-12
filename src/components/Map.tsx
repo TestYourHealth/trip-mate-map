@@ -48,7 +48,13 @@ export interface MapRef {
   clearNearbyMarkers: () => void;
   showPlaceMarker: (place: { name: string; address?: string; lat: number; lng: number; distanceKm?: number | null }) => void;
   clearPlaceMarker: () => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  cycleTileLayer: () => MapLayerStyle;
+  getTileLayer: () => MapLayerStyle;
 }
+
+export type MapLayerStyle = 'standard' | 'dark' | 'satellite';
 
 interface MapProps {
   isNavigating?: boolean;
