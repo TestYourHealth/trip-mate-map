@@ -152,19 +152,20 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
 
       {/* Unified search card */}
       <div className={cn(
-        "relative flex items-center gap-0 rounded-full transition-all duration-300 overflow-hidden",
+        "relative flex items-center gap-0 rounded-full transition-all duration-300",
         "glass-card border-white/40 dark:border-white/10",
         "shadow-[0_8px_28px_-8px_hsl(var(--primary)/0.25)]",
         isFocused
           ? "shadow-[0_12px_40px_-8px_hsl(var(--primary)/0.45)] ring-1 ring-primary/40 scale-[1.005]"
           : "hover:shadow-[0_10px_32px_-8px_hsl(var(--primary)/0.35)]"
       )}>
-        {/* Subtle gradient sheen */}
+        {/* Subtle gradient sheen (clipped to card shape) */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-60"
+          className="pointer-events-none absolute inset-0 opacity-60 rounded-full overflow-hidden"
           style={{ background: "linear-gradient(135deg, hsl(var(--primary) / 0.06), transparent 40%, hsl(var(--primary-glow) / 0.05))" }}
         />
+
 
         {/* Hamburger Menu */}
         <Sheet>
