@@ -5,6 +5,7 @@ import TopSearchBar from '@/components/TopSearchBar';
 import DriverNavigationView from '@/components/DriverNavigationView';
 import CompassIndicator from '@/components/CompassIndicator';
 import QuickActions from '@/components/QuickActions';
+import MapControls from '@/components/MapControls';
 import OnboardingTour from '@/components/OnboardingTour';
 import RouteDebugPanel from '@/components/RouteDebugPanel';
 import WeatherWidget from '@/components/WeatherWidget';
