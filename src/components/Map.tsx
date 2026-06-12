@@ -643,6 +643,23 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
         placeMarker.current = null;
       }
     },
+    zoomIn: () => {
+      map.current?.zoomIn(1, { animate: true });
+    },
+    zoomOut: () => {
+      map.current?.zoomOut(1, { animate: true });
+    },
+    cycleTileLayer: () => {
+      const order: MapLayerStyle[] = ['standard', 'dark', 'satellite'];
+      const current = layerOverrideRef.current ?? (tileTheme === 'dark' ? 'dark' : 'standard');
+      const next = order[(order.indexOf(current) + 1) % order.length];
+      layerOverrideRef.current = next;
+      applyTileLayer(next);
+      return next;
+    },
+    getTileLayer: () => {
+      return layerOverrideRef.current ?? (tileTheme === 'dark' ? 'dark' : 'standard');
+    },
   }));
 
   useEffect(() => {
