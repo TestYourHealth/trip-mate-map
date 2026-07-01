@@ -27,7 +27,9 @@ const sourceLabel: Record<GeocodeSource, string> = {
 
 const RouteDebugPanel = () => {
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<'route' | 'search'>('route');
   const [entries, setEntries] = useState<GeocodeDebugEntry[]>([]);
+  const [stats, setStats] = useState<ProviderStats[]>([]);
 
   const refresh = () => {
     try {
@@ -36,19 +38,30 @@ const RouteDebugPanel = () => {
     } catch {
       setEntries([]);
     }
+    setStats(getAllStats());
   };
 
   useEffect(() => {
     refresh();
     const handler = () => refresh();
     window.addEventListener(DEBUG_EVENT, handler);
-    return () => window.removeEventListener(DEBUG_EVENT, handler);
+    const unsub = subscribeTelemetry(handler);
+    return () => {
+      window.removeEventListener(DEBUG_EVENT, handler);
+      unsub();
+    };
   }, []);
 
   const clear = () => {
-    sessionStorage.removeItem(DEBUG_KEY);
-    setEntries([]);
+    if (tab === 'route') {
+      sessionStorage.removeItem(DEBUG_KEY);
+      setEntries([]);
+    } else {
+      clearTelemetry();
+      setStats(getAllStats());
+    }
   };
+
 
   return (
     <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-[2000] pointer-events-none">
