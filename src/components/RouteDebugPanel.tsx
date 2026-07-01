@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Bug, X, Trash2 } from 'lucide-react';
+import { Bug, X, Trash2, Activity } from 'lucide-react';
 import type { GeocodeDebugEntry, GeocodeSource } from './Map';
+import {
+  getAllStats,
+  subscribeTelemetry,
+  clearTelemetry,
+  type ProviderStats,
+} from '@/lib/searchTelemetry';
 
 const DEBUG_KEY = 'routeDebugLog';
 const DEBUG_EVENT = 'route-debug-update';
