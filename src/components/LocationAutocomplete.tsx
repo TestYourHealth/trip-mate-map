@@ -3,6 +3,14 @@ import { MapPin, Loader2, Search, Clock, Navigation, Star, Globe } from 'lucide-
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { searchGooglePlaces, isGoogleMapsAvailable } from '@/lib/googlePlaces';
+import { withTimeoutAndRetry } from '@/lib/withTimeout';
+import { instrumentProvider } from '@/lib/searchTelemetry';
+
+// Per-provider budgets — Google gets a short budget so we fall back fast;
+// OSM sources get a longer budget with one retry because they're the fallback.
+const GOOGLE_TIMEOUT_MS = 1800;
+const NOMINATIM_TIMEOUT_MS = 2500;
+const PHOTON_TIMEOUT_MS = 2500;
 
 interface MatchRange { start: number; end: number }
 
