@@ -393,36 +393,65 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     lastQueryRef.current = trimmed;
 
     try {
-      // PRIMARY: Google Places (New) via browser key — best POI/business coverage
-      let googleData: LocationSuggestion[] = [];
-      if (isGoogleMapsAvailable()) {
-        try {
-          googleData = await searchGooglePlaces(trimmed, userPos, abortRef.current.signal);
-        } catch (e: any) {
-          if (e?.message === 'Aborted' || e?.name === 'AbortError') throw e;
-          // fall through to OSM sources
-        }
+      const parentSignal = abortRef.current.signal;
+
+      // Run all providers in parallel with independent budgets. A slow or failing
+      // source cannot block the others — whichever comes back gets rendered.
+      const googlePromise: Promise<LocationSuggestion[]> = isGoogleMapsAvailable()
+        ? instrumentProvider('google',
+            () => withTimeoutAndRetry(
+              (signal) => searchGooglePlaces(trimmed, userPos, signal),
+              { timeoutMs: GOOGLE_TIMEOUT_MS, retries: 0, parentSignal, provider: 'google' },
+            ),
+            (r) => r.length,
+          ).catch((e: any) => {
+            if (e?.name === 'AbortError') throw e;
+            return [] as LocationSuggestion[];
+          })
+        : Promise.resolve([] as LocationSuggestion[]);
+
+      let nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&limit=8&addressdetails=1&dedupe=1&countrycodes=in`;
+      if (userPos) {
+        const delta = 2;
+        nominatimUrl += `&viewbox=${userPos.lng - delta},${userPos.lat - delta},${userPos.lng + delta},${userPos.lat + delta}`;
       }
 
-      // FALLBACK: Nominatim + Photon (also runs if Google returned <3 results to enrich)
-      let nominatimData: LocationSuggestion[] = [];
-      let photonData: LocationSuggestion[] = [];
-      if (googleData.length < 3) {
-        let nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&limit=8&addressdetails=1&dedupe=1&countrycodes=in`;
-        if (userPos) {
-          const delta = 2;
-          nominatimUrl += `&viewbox=${userPos.lng - delta},${userPos.lat - delta},${userPos.lng + delta},${userPos.lat + delta}`;
-        }
-        const [nRes, pRes] = await Promise.allSettled([
-          fetch(nominatimUrl, {
-            headers: { 'User-Agent': 'TripMate/1.0', 'Accept': 'application/json' },
-            signal: abortRef.current.signal,
-          }).then(r => r.ok ? r.json() as Promise<LocationSuggestion[]> : []),
-          fetchPhotonSuggestions(trimmed, abortRef.current.signal, userPos),
-        ]);
-        nominatimData = nRes.status === 'fulfilled' ? nRes.value : [];
-        photonData = pRes.status === 'fulfilled' ? pRes.value : [];
-      }
+      const nominatimPromise: Promise<LocationSuggestion[]> = instrumentProvider('nominatim',
+        () => withTimeoutAndRetry(
+          async (signal) => {
+            const r = await fetch(nominatimUrl, {
+              headers: { 'User-Agent': 'TripMate/1.0', 'Accept': 'application/json' },
+              signal,
+            });
+            if (!r.ok) throw new Error(`Nominatim ${r.status}`);
+            return (await r.json()) as LocationSuggestion[];
+          },
+          { timeoutMs: NOMINATIM_TIMEOUT_MS, retries: 1, retryDelayMs: 300, parentSignal, provider: 'nominatim' },
+        ),
+        (r) => r.length,
+      ).catch((e: any) => {
+        if (e?.name === 'AbortError') throw e;
+        return [] as LocationSuggestion[];
+      });
+
+      const photonPromise: Promise<LocationSuggestion[]> = instrumentProvider('photon',
+        () => withTimeoutAndRetry(
+          (signal) => fetchPhotonSuggestions(trimmed, signal, userPos),
+          { timeoutMs: PHOTON_TIMEOUT_MS, retries: 1, retryDelayMs: 300, parentSignal, provider: 'photon' },
+        ),
+        (r) => r.length,
+      ).catch((e: any) => {
+        if (e?.name === 'AbortError') throw e;
+        return [] as LocationSuggestion[];
+      });
+
+      // Await all — each has its own timeout so worst case is max(budgets).
+      const [googleData, nominatimData, photonData] = await Promise.all([
+        googlePromise,
+        nominatimPromise,
+        photonPromise,
+      ]);
+
 
       // Merge: Google first (highest quality), then OSM sources
       const seen = new Set<string>();
