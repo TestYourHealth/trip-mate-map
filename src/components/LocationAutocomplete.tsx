@@ -357,6 +357,15 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       if (saved) setRecentSearches(JSON.parse(saved).slice(0, 6));
     } catch { /* ignore */ }
     getUserPos().then(pos => setUserPos(pos));
+
+    const onOnline = () => setOffline(false);
+    const onOffline = () => setOffline(true);
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+    };
   }, []);
 
   const saveToRecent = useCallback((location: string) => {
