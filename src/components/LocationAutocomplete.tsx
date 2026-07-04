@@ -545,6 +545,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       sorted = [...googleResults, ...otherResults];
 
       cache[cacheKey] = sorted;
+      setCached(trimmed, sorted);
       if (lastQueryRef.current === trimmed) {
         setResults(sorted);
       }
@@ -554,6 +555,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           const photonData = await fetchPhotonSuggestions(trimmed, abortRef.current?.signal, userPos);
           const fallbackResults = photonData.length > 0 ? photonData : offlineResults;
           cache[cacheKey] = fallbackResults;
+          setCached(trimmed, fallbackResults);
           setResults(fallbackResults);
         } catch {
           setResults(offlineResults);
