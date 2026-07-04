@@ -338,6 +338,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [activeFilter, setActiveFilter] = useState<'all' | 'nearby' | 'recent' | 'popular' | 'global'>('all');
+  const [offline, setOffline] = useState<boolean>(!isOnline());
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
