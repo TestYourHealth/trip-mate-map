@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MapPin, Loader2, Search, Clock, Navigation, Star, Globe } from 'lucide-react';
+import { MapPin, Loader2, Search, Clock, Navigation, Star, Globe, WifiOff } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { searchGooglePlaces, isGoogleMapsAvailable } from '@/lib/googlePlaces';
 import { withTimeoutAndRetry } from '@/lib/withTimeout';
 import { instrumentProvider } from '@/lib/searchTelemetry';
+import { getCached, setCached, isOnline } from '@/lib/autocompleteCache';
 
 // Per-provider budgets — Google gets a short budget so we fall back fast;
 // OSM sources get a longer budget with one retry because they're the fallback.
