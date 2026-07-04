@@ -376,14 +376,36 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     }
 
     const cacheKey = trimmed.toLowerCase();
+
+    // 1) In-memory cache (this session)
     if (cache[cacheKey]) {
       setResults(cache[cacheKey]);
       setIsLoading(false);
       return;
     }
 
+    // 2) Persistent cache (survives reloads, enables offline)
+    const persisted = getCached<LocationSuggestion[]>(trimmed);
+    if (persisted && persisted.length > 0) {
+      cache[cacheKey] = persisted;
+      setResults(persisted);
+      // If we're offline, don't attempt network at all.
+      if (!isOnline()) {
+        setIsLoading(false);
+        return;
+      }
+    }
+
     const offlineResults = getOfflineSuggestions(trimmed);
-    if (offlineResults.length > 0) {
+
+    // 3) Fully offline: serve the built-in city/POI list + fuzzy fallback and stop.
+    if (!isOnline()) {
+      setResults(offlineResults);
+      setIsLoading(false);
+      return;
+    }
+
+    if (!persisted && offlineResults.length > 0) {
       setResults(offlineResults);
     }
 
