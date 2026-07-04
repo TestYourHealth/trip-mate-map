@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MapPin, Loader2, Search, Clock, Navigation, Star, Globe } from 'lucide-react';
+import { MapPin, Loader2, Search, Clock, Navigation, Star, Globe, WifiOff } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { searchGooglePlaces, isGoogleMapsAvailable } from '@/lib/googlePlaces';
 import { withTimeoutAndRetry } from '@/lib/withTimeout';
 import { instrumentProvider } from '@/lib/searchTelemetry';
+import { getCached, setCached, isOnline } from '@/lib/autocompleteCache';
 
 // Per-provider budgets — Google gets a short budget so we fall back fast;
 // OSM sources get a longer budget with one retry because they're the fallback.
@@ -337,6 +338,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [activeFilter, setActiveFilter] = useState<'all' | 'nearby' | 'recent' | 'popular' | 'global'>('all');
+  const [offline, setOffline] = useState<boolean>(!isOnline());
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -355,6 +357,15 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       if (saved) setRecentSearches(JSON.parse(saved).slice(0, 6));
     } catch { /* ignore */ }
     getUserPos().then(pos => setUserPos(pos));
+
+    const onOnline = () => setOffline(false);
+    const onOffline = () => setOffline(true);
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+    };
   }, []);
 
   const saveToRecent = useCallback((location: string) => {
@@ -375,14 +386,36 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     }
 
     const cacheKey = trimmed.toLowerCase();
+
+    // 1) In-memory cache (this session)
     if (cache[cacheKey]) {
       setResults(cache[cacheKey]);
       setIsLoading(false);
       return;
     }
 
+    // 2) Persistent cache (survives reloads, enables offline)
+    const persisted = getCached<LocationSuggestion[]>(trimmed);
+    if (persisted && persisted.length > 0) {
+      cache[cacheKey] = persisted;
+      setResults(persisted);
+      // If we're offline, don't attempt network at all.
+      if (!isOnline()) {
+        setIsLoading(false);
+        return;
+      }
+    }
+
     const offlineResults = getOfflineSuggestions(trimmed);
-    if (offlineResults.length > 0) {
+
+    // 3) Fully offline: serve the built-in city/POI list + fuzzy fallback and stop.
+    if (!isOnline()) {
+      setResults(offlineResults);
+      setIsLoading(false);
+      return;
+    }
+
+    if (!persisted && offlineResults.length > 0) {
       setResults(offlineResults);
     }
 
@@ -522,6 +555,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       sorted = [...googleResults, ...otherResults];
 
       cache[cacheKey] = sorted;
+      setCached(trimmed, sorted);
       if (lastQueryRef.current === trimmed) {
         setResults(sorted);
       }
@@ -531,6 +565,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           const photonData = await fetchPhotonSuggestions(trimmed, abortRef.current?.signal, userPos);
           const fallbackResults = photonData.length > 0 ? photonData : offlineResults;
           cache[cacheKey] = fallbackResults;
+          setCached(trimmed, fallbackResults);
           setResults(fallbackResults);
         } catch {
           setResults(offlineResults);
@@ -786,7 +821,14 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
 
       {shouldShowDropdown && (
         <div ref={listRef} className="fixed left-3 right-3 top-[68px] sm:absolute sm:top-full sm:left-0 sm:right-auto sm:mt-1 sm:min-w-[420px] sm:max-w-[520px] bg-background border border-border rounded-xl shadow-2xl z-[300] max-h-[70vh] sm:max-h-80 overflow-y-auto overscroll-contain">
-          
+
+          {offline && (
+            <div className="px-3 py-1.5 flex items-center gap-1.5 text-[11px] font-medium text-warning bg-warning/10 border-b border-warning/20 sticky top-0 z-20">
+              <WifiOff className="w-3 h-3" />
+              Offline — showing cached &amp; built-in results
+            </div>
+          )}
+
           {/* Filter Chips */}
           <div className="px-2 pt-2 pb-1 flex gap-1.5 flex-wrap sticky top-0 bg-background z-10 border-b border-border/50">
             {(['all', 'nearby', 'recent', 'popular', 'global'] as const).map((filter) => {
