@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, act, waitFor, cleanup } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
-import { getCached, setCached, isOnline } from "@/lib/autocompleteCache";
+import { getCached, setCached, isOnline, clearCache } from "@/lib/autocompleteCache";
 import LocationAutocomplete from "@/components/LocationAutocomplete";
 
 // Mock geolocation so getUserPos resolves fast without prompting.
