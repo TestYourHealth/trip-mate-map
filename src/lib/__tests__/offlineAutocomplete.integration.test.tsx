@@ -89,7 +89,7 @@ describe("LocationAutocomplete offline behaviour", () => {
     const fetchSpy = vi.fn(() =>
       Promise.reject(new Error("network must not be called while offline")),
     );
-    // @ts-expect-error jsdom fetch override
+    // @ts-ignore jsdom fetch override
     global.fetch = fetchSpy;
 
     const onChange = vi.fn();
@@ -121,7 +121,7 @@ describe("LocationAutocomplete offline behaviour", () => {
     primeCache();
     setOnline(false);
 
-    // @ts-expect-error jsdom fetch override
+    // @ts-ignore jsdom fetch override
     global.fetch = vi.fn(() => Promise.reject(new Error("offline")));
 
     render(<LocationAutocomplete value="" onChange={() => {}} placeholder="Search" />);
@@ -145,7 +145,7 @@ describe("LocationAutocomplete offline behaviour", () => {
     // No primeCache — cache is empty. Offline should still yield built-in cities.
     setOnline(false);
     const fetchSpy = vi.fn(() => Promise.reject(new Error("offline")));
-    // @ts-expect-error jsdom fetch override
+    // @ts-ignore jsdom fetch override
     global.fetch = fetchSpy;
 
     render(<LocationAutocomplete value="" onChange={() => {}} placeholder="Search" />);
@@ -174,7 +174,7 @@ describe("LocationAutocomplete offline behaviour", () => {
         { status: 200, headers: { "Content-Type": "application/json" } },
       );
     });
-    // @ts-expect-error jsdom fetch override
+    // @ts-ignore jsdom fetch override
     global.fetch = fetchSpy;
 
     render(<LocationAutocomplete value="" onChange={() => {}} placeholder="Search" />);
