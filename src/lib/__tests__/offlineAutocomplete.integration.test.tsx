@@ -32,9 +32,10 @@ const setOnline = (online: boolean) => {
   });
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   localStorage.clear();
   sessionStorage.clear();
+  await clearCache();
   setOnline(true);
   vi.restoreAllMocks();
 });
