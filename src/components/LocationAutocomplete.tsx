@@ -838,7 +838,12 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         <div ref={listRef} className="fixed left-3 right-3 top-[68px] sm:absolute sm:top-full sm:left-0 sm:right-auto sm:mt-1 sm:min-w-[420px] sm:max-w-[520px] bg-background border border-border rounded-xl shadow-2xl z-[300] max-h-[70vh] sm:max-h-80 overflow-y-auto overscroll-contain">
 
           {offline && (
-            <div className="px-3 py-1.5 flex items-center gap-1.5 text-[11px] font-medium text-warning bg-warning/10 border-b border-warning/20 sticky top-0 z-20">
+            <div
+              data-testid="offline-dropdown-chip"
+              role="status"
+              aria-live="polite"
+              className="px-3 py-1.5 flex items-center gap-1.5 text-[11px] font-medium text-warning bg-warning/10 border-b border-warning/20"
+            >
               <WifiOff className="w-3 h-3" />
               Offline — showing cached &amp; built-in results
             </div>
