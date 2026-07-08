@@ -817,6 +817,21 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         />
         {rightElement && <div className="absolute right-2 top-1/2 -translate-y-1/2">{rightElement}</div>}
         {isLoading && <Loader2 className="absolute right-10 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />}
+        {offline && !isLoading && (
+          <div
+            data-testid="offline-input-badge"
+            role="status"
+            aria-live="polite"
+            title="Offline — using cached results"
+            className={cn(
+              "absolute top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide text-warning bg-warning/10 border border-warning/30",
+              rightElement ? "right-10" : "right-2"
+            )}
+          >
+            <WifiOff className="w-3 h-3" />
+            <span className="hidden sm:inline">Offline</span>
+          </div>
+        )}
       </div>
 
       {shouldShowDropdown && (
