@@ -817,13 +817,33 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         />
         {rightElement && <div className="absolute right-2 top-1/2 -translate-y-1/2">{rightElement}</div>}
         {isLoading && <Loader2 className="absolute right-10 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />}
+        {offline && !isLoading && (
+          <div
+            data-testid="offline-input-badge"
+            role="status"
+            aria-live="polite"
+            title="Offline — using cached results"
+            className={cn(
+              "absolute top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide text-warning bg-warning/10 border border-warning/30",
+              rightElement ? "right-10" : "right-2"
+            )}
+          >
+            <WifiOff className="w-3 h-3" />
+            <span className="hidden sm:inline">Offline</span>
+          </div>
+        )}
       </div>
 
       {shouldShowDropdown && (
         <div ref={listRef} className="fixed left-3 right-3 top-[68px] sm:absolute sm:top-full sm:left-0 sm:right-auto sm:mt-1 sm:min-w-[420px] sm:max-w-[520px] bg-background border border-border rounded-xl shadow-2xl z-[300] max-h-[70vh] sm:max-h-80 overflow-y-auto overscroll-contain">
 
           {offline && (
-            <div className="px-3 py-1.5 flex items-center gap-1.5 text-[11px] font-medium text-warning bg-warning/10 border-b border-warning/20 sticky top-0 z-20">
+            <div
+              data-testid="offline-dropdown-chip"
+              role="status"
+              aria-live="polite"
+              className="px-3 py-1.5 flex items-center gap-1.5 text-[11px] font-medium text-warning bg-warning/10 border-b border-warning/20"
+            >
               <WifiOff className="w-3 h-3" />
               Offline — showing cached &amp; built-in results
             </div>
