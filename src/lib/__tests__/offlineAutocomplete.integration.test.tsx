@@ -135,10 +135,10 @@ describe("LocationAutocomplete offline behaviour", () => {
     });
 
     await waitFor(() => {
-      // Offline chip text (matches the sticky header copy).
+      // Offline chip text (dropdown surface).
       expect(
-        screen.getByText(/offline/i),
-      ).toBeInTheDocument();
+        screen.getAllByText(/offline/i).length,
+      ).toBeGreaterThan(0);
     });
   });
 
