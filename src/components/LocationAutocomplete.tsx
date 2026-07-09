@@ -364,8 +364,20 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     } catch { /* ignore */ }
     getUserPos().then(pos => setUserPos(pos));
 
-    const onOnline = () => setOffline(false);
-    const onOffline = () => setOffline(true);
+    const onOnline = () => {
+      setOffline(false);
+      setLiveMessage('Back online. Refreshing location results.');
+      // Auto-retry: invalidate in-memory cache for current query and re-run search.
+      const q = valueRef.current?.trim() ?? '';
+      if (q.length >= 2) {
+        delete cache[q.toLowerCase()];
+        searchRef.current?.(q);
+      }
+    };
+    const onOffline = () => {
+      setOffline(true);
+      setLiveMessage('You are offline. Showing cached and built-in location results.');
+    };
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
     return () => {
@@ -373,6 +385,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       window.removeEventListener('offline', onOffline);
     };
   }, []);
+
 
   const saveToRecent = useCallback((location: string) => {
     setRecentSearches(prev => {
