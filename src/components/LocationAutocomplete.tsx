@@ -340,6 +340,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const [activeIndex, setActiveIndex] = useState(-1);
   const [activeFilter, setActiveFilter] = useState<'all' | 'nearby' | 'recent' | 'popular' | 'global'>('all');
   const [offline, setOffline] = useState<boolean>(!isOnline());
+  const [liveMessage, setLiveMessage] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -347,6 +348,10 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const abortRef = useRef<AbortController | null>(null);
   const lastQueryRef = useRef('');
   const correctedQueryRef = useRef<string | null>(null);
+  const valueRef = useRef(value);
+  const searchRef = useRef<((q: string) => void) | null>(null);
+  useEffect(() => { valueRef.current = value; }, [value]);
+
 
   useEffect(() => {
     if (autoFocus && inputRef.current) inputRef.current.focus();
