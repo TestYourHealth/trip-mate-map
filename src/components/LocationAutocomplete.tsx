@@ -597,12 +597,30 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     }
   }, [userPos]);
 
+  // Keep a stable ref to the latest search fn so window listeners can call it.
+  useEffect(() => { searchRef.current = search; }, [search]);
+
+  // Manual retry: clear caches for the current query and re-run search.
+  const handleRetry = useCallback(() => {
+    const q = valueRef.current?.trim() ?? '';
+    if (q.length < 2) return;
+    delete cache[q.toLowerCase()];
+    if (isOnline()) {
+      setOffline(false);
+      setLiveMessage('Retrying location search.');
+    } else {
+      setLiveMessage('Still offline. Showing cached results.');
+    }
+    search(q);
+  }, [search]);
+
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       if (abortRef.current) abortRef.current.abort();
     };
   }, []);
+
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
