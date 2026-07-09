@@ -858,17 +858,27 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           <div
             data-testid="offline-input-badge"
             role="status"
-            aria-live="polite"
+            aria-label="Offline. Using cached location results."
             title="Offline — using cached results"
             className={cn(
               "absolute top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide text-warning bg-warning/10 border border-warning/30",
               rightElement ? "right-10" : "right-2"
             )}
           >
-            <WifiOff className="w-3 h-3" />
+            <WifiOff className="w-3 h-3" aria-hidden="true" />
             <span className="hidden sm:inline">Offline</span>
           </div>
         )}
+        {/* Screen-reader-only live region announcing offline/online transitions */}
+        <div
+          data-testid="offline-live-region"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+        >
+          {liveMessage}
+        </div>
       </div>
 
       {shouldShowDropdown && (
@@ -878,13 +888,26 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
             <div
               data-testid="offline-dropdown-chip"
               role="status"
-              aria-live="polite"
-              className="px-3 py-1.5 flex items-center gap-1.5 text-[11px] font-medium text-warning bg-warning/10 border-b border-warning/20"
+              aria-label="Offline. Showing cached and built-in results."
+              className="px-3 py-1.5 flex items-center justify-between gap-2 text-[11px] font-medium text-warning bg-warning/10 border-b border-warning/20"
             >
-              <WifiOff className="w-3 h-3" />
-              Offline — showing cached &amp; built-in results
+              <span className="flex items-center gap-1.5">
+                <WifiOff className="w-3 h-3" aria-hidden="true" />
+                Offline — showing cached &amp; built-in results
+              </span>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={handleRetry}
+                aria-label="Retry location search"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-warning/15 hover:bg-warning/25 border border-warning/30 text-warning transition-colors"
+              >
+                <RefreshCw className={cn("w-3 h-3", isLoading && "animate-spin")} aria-hidden="true" />
+                Retry
+              </button>
             </div>
           )}
+
 
           {/* Filter Chips */}
           <div className="px-2 pt-2 pb-1 flex gap-1.5 flex-wrap sticky top-0 bg-background z-10 border-b border-border/50">
