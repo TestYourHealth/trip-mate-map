@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MapPin, Loader2, Search, Clock, Navigation, Star, Globe, WifiOff } from 'lucide-react';
+import { MapPin, Loader2, Search, Clock, Navigation, Star, Globe, WifiOff, RefreshCw } from 'lucide-react';
+
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { searchGooglePlaces, isGoogleMapsAvailable } from '@/lib/googlePlaces';
@@ -339,6 +340,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const [activeIndex, setActiveIndex] = useState(-1);
   const [activeFilter, setActiveFilter] = useState<'all' | 'nearby' | 'recent' | 'popular' | 'global'>('all');
   const [offline, setOffline] = useState<boolean>(!isOnline());
+  const [liveMessage, setLiveMessage] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -346,6 +348,10 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const abortRef = useRef<AbortController | null>(null);
   const lastQueryRef = useRef('');
   const correctedQueryRef = useRef<string | null>(null);
+  const valueRef = useRef(value);
+  const searchRef = useRef<((q: string) => void) | null>(null);
+  useEffect(() => { valueRef.current = value; }, [value]);
+
 
   useEffect(() => {
     if (autoFocus && inputRef.current) inputRef.current.focus();
@@ -358,8 +364,20 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     } catch { /* ignore */ }
     getUserPos().then(pos => setUserPos(pos));
 
-    const onOnline = () => setOffline(false);
-    const onOffline = () => setOffline(true);
+    const onOnline = () => {
+      setOffline(false);
+      setLiveMessage('Back online. Refreshing location results.');
+      // Auto-retry: invalidate in-memory cache for current query and re-run search.
+      const q = valueRef.current?.trim() ?? '';
+      if (q.length >= 2) {
+        delete cache[q.toLowerCase()];
+        searchRef.current?.(q);
+      }
+    };
+    const onOffline = () => {
+      setOffline(true);
+      setLiveMessage('You are offline. Showing cached and built-in location results.');
+    };
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
     return () => {
@@ -367,6 +385,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       window.removeEventListener('offline', onOffline);
     };
   }, []);
+
 
   const saveToRecent = useCallback((location: string) => {
     setRecentSearches(prev => {
@@ -578,12 +597,30 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     }
   }, [userPos]);
 
+  // Keep a stable ref to the latest search fn so window listeners can call it.
+  useEffect(() => { searchRef.current = search; }, [search]);
+
+  // Manual retry: clear caches for the current query and re-run search.
+  const handleRetry = useCallback(() => {
+    const q = valueRef.current?.trim() ?? '';
+    if (q.length < 2) return;
+    delete cache[q.toLowerCase()];
+    if (isOnline()) {
+      setOffline(false);
+      setLiveMessage('Retrying location search.');
+    } else {
+      setLiveMessage('Still offline. Showing cached results.');
+    }
+    search(q);
+  }, [search]);
+
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       if (abortRef.current) abortRef.current.abort();
     };
   }, []);
+
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -821,17 +858,27 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           <div
             data-testid="offline-input-badge"
             role="status"
-            aria-live="polite"
+            aria-label="Offline. Using cached location results."
             title="Offline — using cached results"
             className={cn(
               "absolute top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide text-warning bg-warning/10 border border-warning/30",
               rightElement ? "right-10" : "right-2"
             )}
           >
-            <WifiOff className="w-3 h-3" />
+            <WifiOff className="w-3 h-3" aria-hidden="true" />
             <span className="hidden sm:inline">Offline</span>
           </div>
         )}
+        {/* Screen-reader-only live region announcing offline/online transitions */}
+        <div
+          data-testid="offline-live-region"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+        >
+          {liveMessage}
+        </div>
       </div>
 
       {shouldShowDropdown && (
@@ -841,13 +888,26 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
             <div
               data-testid="offline-dropdown-chip"
               role="status"
-              aria-live="polite"
-              className="px-3 py-1.5 flex items-center gap-1.5 text-[11px] font-medium text-warning bg-warning/10 border-b border-warning/20"
+              aria-label="Offline. Showing cached and built-in results."
+              className="px-3 py-1.5 flex items-center justify-between gap-2 text-[11px] font-medium text-warning bg-warning/10 border-b border-warning/20"
             >
-              <WifiOff className="w-3 h-3" />
-              Offline — showing cached &amp; built-in results
+              <span className="flex items-center gap-1.5">
+                <WifiOff className="w-3 h-3" aria-hidden="true" />
+                Offline — showing cached &amp; built-in results
+              </span>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={handleRetry}
+                aria-label="Retry location search"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-warning/15 hover:bg-warning/25 border border-warning/30 text-warning transition-colors"
+              >
+                <RefreshCw className={cn("w-3 h-3", isLoading && "animate-spin")} aria-hidden="true" />
+                Retry
+              </button>
             </div>
           )}
+
 
           {/* Filter Chips */}
           <div className="px-2 pt-2 pb-1 flex gap-1.5 flex-wrap sticky top-0 bg-background z-10 border-b border-border/50">
