@@ -447,63 +447,71 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     try {
       const parentSignal = abortRef.current.signal;
 
-      // Run all providers in parallel with independent budgets. A slow or failing
-      // source cannot block the others — whichever comes back gets rendered.
-      const googlePromise: Promise<LocationSuggestion[]> = isGoogleMapsAvailable()
-        ? instrumentProvider('google',
+      // Strategy: Google Places (via Maps connector browser key) is primary.
+      // If Google returns enough results, skip OSM entirely — saves 2 network
+      // calls and cuts p95 latency. Only fall back to Nominatim + Photon when
+      // Google is unavailable, errors, or returns too few results.
+      const googleAvailable = isGoogleMapsAvailable();
+
+      let googleData: LocationSuggestion[] = [];
+      if (googleAvailable) {
+        try {
+          googleData = await instrumentProvider('google',
             () => withTimeoutAndRetry(
               (signal) => searchGooglePlaces(trimmed, userPos, signal),
               { timeoutMs: GOOGLE_TIMEOUT_MS, retries: 0, parentSignal, provider: 'google' },
             ),
             (r) => r.length,
-          ).catch((e: any) => {
-            if (e?.name === 'AbortError') throw e;
-            return [] as LocationSuggestion[];
-          })
-        : Promise.resolve([] as LocationSuggestion[]);
-
-      let nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&limit=8&addressdetails=1&dedupe=1&countrycodes=in`;
-      if (userPos) {
-        const delta = 2;
-        nominatimUrl += `&viewbox=${userPos.lng - delta},${userPos.lat - delta},${userPos.lng + delta},${userPos.lat + delta}`;
+          );
+        } catch (e: any) {
+          if (e?.name === 'AbortError') throw e;
+          googleData = [];
+        }
       }
 
-      const nominatimPromise: Promise<LocationSuggestion[]> = instrumentProvider('nominatim',
-        () => withTimeoutAndRetry(
-          async (signal) => {
-            const r = await fetch(nominatimUrl, {
-              headers: { 'User-Agent': 'TripMate/1.0', 'Accept': 'application/json' },
-              signal,
-            });
-            if (!r.ok) throw new Error(`Nominatim ${r.status}`);
-            return (await r.json()) as LocationSuggestion[];
-          },
-          { timeoutMs: NOMINATIM_TIMEOUT_MS, retries: 1, retryDelayMs: 300, parentSignal, provider: 'nominatim' },
-        ),
-        (r) => r.length,
-      ).catch((e: any) => {
-        if (e?.name === 'AbortError') throw e;
-        return [] as LocationSuggestion[];
-      });
+      // Google gave a strong result set — render immediately, skip OSM.
+      const GOOGLE_SUFFICIENT = 3;
+      let nominatimData: LocationSuggestion[] = [];
+      let photonData: LocationSuggestion[] = [];
 
-      const photonPromise: Promise<LocationSuggestion[]> = instrumentProvider('photon',
-        () => withTimeoutAndRetry(
-          (signal) => fetchPhotonSuggestions(trimmed, signal, userPos),
-          { timeoutMs: PHOTON_TIMEOUT_MS, retries: 1, retryDelayMs: 300, parentSignal, provider: 'photon' },
-        ),
-        (r) => r.length,
-      ).catch((e: any) => {
-        if (e?.name === 'AbortError') throw e;
-        return [] as LocationSuggestion[];
-      });
+      if (googleData.length < GOOGLE_SUFFICIENT) {
+        let nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&limit=8&addressdetails=1&dedupe=1&countrycodes=in`;
+        if (userPos) {
+          const delta = 2;
+          nominatimUrl += `&viewbox=${userPos.lng - delta},${userPos.lat - delta},${userPos.lng + delta},${userPos.lat + delta}`;
+        }
 
-      // Await all — each has its own timeout so worst case is max(budgets).
-      const [googleData, nominatimData, photonData] = await Promise.all([
-        googlePromise,
-        nominatimPromise,
-        photonPromise,
-      ]);
+        const nominatimPromise = instrumentProvider('nominatim',
+          () => withTimeoutAndRetry(
+            async (signal) => {
+              const r = await fetch(nominatimUrl, {
+                headers: { 'User-Agent': 'TripMate/1.0', 'Accept': 'application/json' },
+                signal,
+              });
+              if (!r.ok) throw new Error(`Nominatim ${r.status}`);
+              return (await r.json()) as LocationSuggestion[];
+            },
+            { timeoutMs: NOMINATIM_TIMEOUT_MS, retries: 1, retryDelayMs: 300, parentSignal, provider: 'nominatim' },
+          ),
+          (r) => r.length,
+        ).catch((e: any) => {
+          if (e?.name === 'AbortError') throw e;
+          return [] as LocationSuggestion[];
+        });
 
+        const photonPromise = instrumentProvider('photon',
+          () => withTimeoutAndRetry(
+            (signal) => fetchPhotonSuggestions(trimmed, signal, userPos),
+            { timeoutMs: PHOTON_TIMEOUT_MS, retries: 1, retryDelayMs: 300, parentSignal, provider: 'photon' },
+          ),
+          (r) => r.length,
+        ).catch((e: any) => {
+          if (e?.name === 'AbortError') throw e;
+          return [] as LocationSuggestion[];
+        });
+
+        [nominatimData, photonData] = await Promise.all([nominatimPromise, photonPromise]);
+      }
 
       // Merge: Google first (highest quality), then OSM sources
       const seen = new Set<string>();
@@ -518,7 +526,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       nominatimData.forEach(pushUnique);
       photonData.forEach(pushUnique);
 
-      // Fuzzy fallback only if BOTH sources came back empty
+      // Fuzzy fallback only if everything came back empty
       let data = merged;
       if (data.length === 0) {
         const corrected = fuzzyMatch(trimmed);
@@ -527,7 +535,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           try {
             const fuzzyRes = await fetch(fuzzyUrl, {
               headers: { 'User-Agent': 'TripMate/1.0', 'Accept': 'application/json' },
-              signal: abortRef.current.signal,
+              signal: parentSignal,
             });
             if (fuzzyRes.ok) {
               data = await fuzzyRes.json();
@@ -538,6 +546,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       } else {
         correctedQueryRef.current = null;
       }
+
 
       // Ranking strategy:
       //   1. Google Places suggestions stay in Google's relevance order at the top
