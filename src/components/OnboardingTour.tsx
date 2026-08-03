@@ -40,7 +40,7 @@ const TOUR_STEPS: TourStep[] = [
     icon: MapPin,
     title: 'Save Favorites',
     description: 'Home, Office ya frequent places save karo for quick access',
-    color: 'bg-accent',
+    color: 'bg-primary-glow',
   },
 ];
 
