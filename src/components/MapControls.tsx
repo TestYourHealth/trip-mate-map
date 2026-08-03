@@ -94,15 +94,16 @@ const ControlButton: React.FC<ControlButtonProps> = ({ onClick, label, children,
     aria-label={label}
     title={label}
     className={cn(
-      'w-9 h-9 flex items-center justify-center rounded-xl',
-      'text-foreground/80 hover:text-primary',
-      'hover:bg-primary/10 active:bg-primary/15',
+      'w-10 h-10 flex items-center justify-center rounded-[1.05rem]',
+      'text-foreground/70 hover:text-primary',
+      'hover:bg-primary/10 active:bg-primary/20',
       'active:scale-90 transition-all duration-200',
-      active && 'text-primary bg-primary/10 ring-1 ring-primary/30',
+      active && 'text-primary bg-primary/12 ring-1 ring-primary/25 shadow-[0_0_14px_-4px_hsl(var(--primary)/0.6)]',
     )}
   >
     {children}
   </button>
 );
+
 
 export default MapControls;
