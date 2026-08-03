@@ -109,7 +109,12 @@
     --border: 210 30% 17%;
     --input: 210 30% 17%;
     --ring: 172 78% 48%;
+    --success: 158 66% 44%;
+    --success-foreground: 158 80% 8%;
+    --warning: 32 95% 56%;
+    --warning-foreground: 30 60% 10%;
     --info: 200 92% 60%;
+    --info-foreground: 205 80% 8%;
 
     --glass: 200 55% 12% / 0.55;
     --glass-border: 180 40% 70% / 0.12;
