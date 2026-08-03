@@ -141,7 +141,7 @@ const TripPanel: React.FC<TripPanelProps> = ({
           <Button 
             onClick={onStartNavigation}
             variant="default"
-            className="flex-1 h-14 text-base bg-green-600 hover:bg-green-700 text-white"
+            className="flex-1 h-14 text-base bg-success hover:bg-success/90 text-success-foreground"
           >
             <Navigation className="w-5 h-5 mr-2" />
             Navigation शुरू करें
