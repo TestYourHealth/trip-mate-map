@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Navigation } from 'lucide-react';
+
 
 interface CompassIndicatorProps {
   heading: number | null;
