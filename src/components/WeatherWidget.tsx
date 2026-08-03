@@ -86,22 +86,25 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ lat, lng, compact = false
       <button
         onClick={() => setExpanded(!expanded)}
         className={cn(
-          "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
-          "bg-gradient-to-r", gradient,
-          "border border-border/40 backdrop-blur-sm shadow-sm",
-          "transition-all duration-200 hover:scale-105"
+          'group flex items-center gap-2.5 pl-2.5 pr-3.5 py-2 rounded-2xl',
+          'glass-panel glass-sheen glow-ring',
+          'transition-all duration-300 hover:scale-[1.03] active:scale-95'
         )}
+        aria-label={`Weather: ${weather.temp} degrees, ${weather.condition}`}
       >
-        <WeatherIcon className="w-3.5 h-3.5 text-foreground/70" />
-        <span className="text-foreground/80">{weather.temp}°C</span>
-        {expanded && (
-          <span className="text-muted-foreground animate-fade-in">
+        <span className={cn('flex items-center justify-center w-7 h-7 rounded-xl bg-gradient-to-br', gradient)}>
+          <WeatherIcon className="w-4 h-4 text-primary" strokeWidth={1.9} />
+        </span>
+        <span className="flex flex-col items-start leading-none">
+          <span className="text-sm font-bold text-foreground tabular-nums">{weather.temp}°</span>
+          <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-primary/80 mt-0.5">
             {weather.condition}
           </span>
-        )}
+        </span>
       </button>
     );
   }
+
 
   return (
     <div className={cn(
