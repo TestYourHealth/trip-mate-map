@@ -17,6 +17,13 @@ import "@testing-library/jest-dom";
 import { getCached, setCached, isOnline, clearCache } from "@/lib/autocompleteCache";
 import LocationAutocomplete from "@/components/LocationAutocomplete";
 
+// The Google Maps JS SDK cannot load in jsdom; force the OSM (fetch) path so
+// these tests exercise the network behaviour they are about.
+vi.mock("@/lib/googlePlaces", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/googlePlaces")>();
+  return { ...actual, isGoogleMapsAvailable: () => false };
+});
+
 // Mock geolocation so getUserPos resolves fast without prompting.
 Object.defineProperty(global.navigator, "geolocation", {
   configurable: true,

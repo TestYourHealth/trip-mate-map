@@ -473,7 +473,7 @@ const Index = () => {
       <OnboardingTour />
 
       {/* Route geocoding debug panel */}
-      {!isNavigating && <RouteDebugPanel />}
+      {import.meta.env.DEV && !isNavigating && <RouteDebugPanel />}
 
       {/* Map Background - Full Screen */}
       <div className="absolute inset-0 z-0">

@@ -30,8 +30,8 @@ const handleResize = () => {
 window.addEventListener('resize', handleResize, { passive: true });
 window.visualViewport?.addEventListener('resize', handleResize, { passive: true });
 
-// Register PWA Service Worker
-if ('serviceWorker' in navigator) {
+// Register PWA Service Worker (production only — /sw.js does not exist in dev)
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js', { scope: '/' })
       .then((registration) => {

@@ -87,10 +87,18 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
 
     // Listen for same-tab storage changes (but not from self)
     const handleSameTabChange = (event: Event) => {
-      const customEvent = event as StorageChangeEvent;
-      if (customEvent.detail.key === key && customEvent.detail.newValue !== null) {
+      const detail = (event as Partial<StorageChangeEvent>).detail;
+
+      // Detail-less broadcast (e.g. `new Event('local-storage-change')`) =>
+      // re-read the current value straight from localStorage.
+      if (!detail) {
+        setStoredValue(getStorageValue(key, initialValueRef.current));
+        return;
+      }
+
+      if (detail.key === key && detail.newValue !== null) {
         try {
-          setStoredValue(JSON.parse(customEvent.detail.newValue));
+          setStoredValue(JSON.parse(detail.newValue));
         } catch (error) {
           console.warn(`Error parsing same-tab storage event for key "${key}":`, error);
         }

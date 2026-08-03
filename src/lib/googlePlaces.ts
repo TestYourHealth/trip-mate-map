@@ -16,7 +16,17 @@ export const loadGoogleMaps = (): Promise<typeof google> => {
   if (loadPromise) return loadPromise;
 
   loadPromise = new Promise((resolve, reject) => {
-    (window as any).__initGmaps = () => resolve((window as any).google);
+    // Hard cap: if the script is blocked (adblock, offline, restricted network)
+    // `onerror` may never fire. Fail fast so OSM fallback kicks in.
+    const timer = setTimeout(() => {
+      loadPromise = null;
+      reject(new Error('Google Maps JS load timed out'));
+    }, 3000);
+
+    (window as any).__initGmaps = () => {
+      clearTimeout(timer);
+      resolve((window as any).google);
+    };
     const script = document.createElement('script');
     const params = new URLSearchParams({
       key: BROWSER_KEY,
@@ -30,6 +40,7 @@ export const loadGoogleMaps = (): Promise<typeof google> => {
     script.async = true;
     script.defer = true;
     script.onerror = () => {
+      clearTimeout(timer);
       loadPromise = null;
       reject(new Error('Failed to load Google Maps JS'));
     };

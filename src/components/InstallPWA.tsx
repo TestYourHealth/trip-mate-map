@@ -78,7 +78,7 @@ const InstallPWA: React.FC = () => {
   // Offline indicator (always visible when offline)
   if (!isOnline) {
     return (
-      <div className="fixed top-0 left-0 right-0 z-[9999] bg-amber-500 text-white px-4 py-2 flex items-center justify-center gap-2 text-sm font-medium">
+      <div className="fixed top-0 left-0 right-0 z-[9999] bg-warning text-warning-foreground px-4 py-2 flex items-center justify-center gap-2 text-sm font-medium">
         <WifiOff className="w-4 h-4" />
         Offline Mode - Limited features available
       </div>

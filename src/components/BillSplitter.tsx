@@ -238,7 +238,7 @@ const BillSplitter: React.FC<BillSplitterProps> = ({
             </Button>
             <Button
               size="sm"
-              className="flex-1 h-9 gap-1.5 text-xs bg-green-600 hover:bg-green-700 text-white"
+              className="flex-1 h-9 gap-1.5 text-xs bg-success hover:bg-success/90 text-success-foreground"
               onClick={handleShareWhatsApp}
             >
               <MessageCircle className="w-3.5 h-3.5" />

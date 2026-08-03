@@ -93,7 +93,7 @@ const NativeAppWrapper: React.FC<NativeAppWrapperProps> = ({ children }) => {
     <div className="native-app-container h-full w-full">
       {/* Offline indicator */}
       {!isOnline && (
-        <div className="fixed top-0 left-0 right-0 bg-amber-500 text-white text-center py-1 text-xs z-[9999] safe-area-top">
+        <div className="fixed top-0 left-0 right-0 bg-warning text-warning-foreground text-center py-1 text-xs z-[9999] safe-area-top">
           ऑफलाइन मोड
         </div>
       )}

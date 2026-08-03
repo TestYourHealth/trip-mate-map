@@ -34,9 +34,9 @@ const getAlertIcon = (type: AlertType) => {
 
 const getSeverityStyles = (severity: RoadAlert['severity']) => {
   switch (severity) {
-    case 'danger': return 'bg-red-500/95 text-white border-red-400';
-    case 'warning': return 'bg-amber-500/95 text-white border-amber-400';
-    case 'info': return 'bg-blue-500/95 text-white border-blue-400';
+    case 'danger': return 'bg-destructive/95 text-destructive-foreground border-destructive';
+    case 'warning': return 'bg-warning/95 text-warning-foreground border-warning';
+    case 'info': return 'bg-info/95 text-info-foreground border-info';
   }
 };
 
