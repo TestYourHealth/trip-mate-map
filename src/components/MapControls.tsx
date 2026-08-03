@@ -49,35 +49,34 @@ const MapControls: React.FC<MapControlsProps> = ({ mapRef, className }) => {
 
       <div
         className={cn(
-          'glass-panel flex flex-col items-stretch rounded-2xl p-1.5 gap-1',
-          'border border-white/40 dark:border-white/10',
-          'shadow-[0_8px_28px_-8px_hsl(var(--primary)/0.25)]',
-          'ring-1 ring-primary/10',
-          'backdrop-blur-xl',
+          'glass-panel glass-sheen flex flex-col items-stretch rounded-[1.4rem] p-1.5 gap-0.5',
+          'glow-ring',
+          'transition-shadow duration-300',
         )}
       >
         <ControlButton onClick={() => mapRef.current?.zoomIn()} label="Zoom in">
-          <Plus className="w-4 h-4" strokeWidth={2.5} />
+          <Plus className="w-[18px] h-[18px]" strokeWidth={2.25} />
         </ControlButton>
-        <div className="h-px bg-border/50 mx-1" />
+        <div className="h-px bg-foreground/10 mx-2" />
         <ControlButton onClick={() => mapRef.current?.zoomOut()} label="Zoom out">
-          <Minus className="w-4 h-4" strokeWidth={2.5} />
+          <Minus className="w-[18px] h-[18px]" strokeWidth={2.25} />
         </ControlButton>
-        <div className="h-px bg-border/50 mx-1" />
+        <div className="h-px bg-foreground/10 mx-2" />
         <ControlButton onClick={handleCycleLayer} label={`Map style: ${layerLabel[layer]}`} active={layer !== 'standard'}>
-          <Layers className="w-4 h-4" strokeWidth={2.2} />
+          <Layers className="w-[18px] h-[18px]" strokeWidth={1.9} />
         </ControlButton>
-        <div className="h-px bg-border/50 mx-1" />
+        <div className="h-px bg-foreground/10 mx-2" />
         <ControlButton onClick={handleRecenter} label="Recenter on me">
           <Locate
             className={cn(
-              'w-4 h-4 transition-transform duration-300',
-              recenterPulse && 'scale-125 text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.6)]',
+              'w-[18px] h-[18px] transition-transform duration-300',
+              recenterPulse && 'scale-125 text-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.7)]',
             )}
-            strokeWidth={2.2}
+            strokeWidth={1.9}
           />
         </ControlButton>
       </div>
+
     </div>
   );
 };
@@ -95,15 +94,16 @@ const ControlButton: React.FC<ControlButtonProps> = ({ onClick, label, children,
     aria-label={label}
     title={label}
     className={cn(
-      'w-9 h-9 flex items-center justify-center rounded-xl',
-      'text-foreground/80 hover:text-primary',
-      'hover:bg-primary/10 active:bg-primary/15',
+      'w-10 h-10 flex items-center justify-center rounded-[1.05rem]',
+      'text-foreground/70 hover:text-primary',
+      'hover:bg-primary/10 active:bg-primary/20',
       'active:scale-90 transition-all duration-200',
-      active && 'text-primary bg-primary/10 ring-1 ring-primary/30',
+      active && 'text-primary bg-primary/12 ring-1 ring-primary/25 shadow-[0_0_14px_-4px_hsl(var(--primary)/0.6)]',
     )}
   >
     {children}
   </button>
 );
+
 
 export default MapControls;

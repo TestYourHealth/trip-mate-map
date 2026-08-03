@@ -175,11 +175,10 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userPosition, onShowNearbyM
             setIsExpanded(!isExpanded);
           }}
           className={cn(
-            "w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all touch-feedback",
-            "border border-border/40",
-            isExpanded 
-              ? "bg-primary text-primary-foreground border-primary shadow-glow" 
-              : "glass-card hover:shadow-xl"
+            "w-12 h-12 rounded-full flex items-center justify-center transition-all touch-feedback",
+            isExpanded
+              ? "bg-primary text-primary-foreground shadow-[0_0_26px_-6px_hsl(var(--primary)/0.9)]"
+              : "glass-panel glass-sheen glow-ring hover:scale-105"
           )}
           aria-label="Quick actions"
         >
@@ -201,10 +200,12 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userPosition, onShowNearbyM
                   onClick={() => handleAction(action)}
                   disabled={isSearching}
                   className={cn(
-                    "w-12 h-12 rounded-full shadow-md flex items-center justify-center transition-all touch-feedback",
-                    "border border-border/40 animate-bounce-in",
+                    "w-12 h-12 rounded-full flex items-center justify-center transition-all touch-feedback",
+                    "glass-panel glass-sheen animate-bounce-in hover:scale-105",
                     isSearching && "animate-pulse opacity-70",
-                    isActive ? "ring-2 ring-primary ring-offset-2 ring-offset-background glass-card" : "glass-card hover:shadow-lg"
+                    isActive
+                      ? "ring-1 ring-primary/50 shadow-[0_0_22px_-6px_hsl(var(--primary)/0.8)]"
+                      : "glow-ring"
                   )}
                   style={{ animationDelay: `${i * 50}ms` }}
                   title={action.label}
@@ -212,13 +213,14 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userPosition, onShowNearbyM
                   {isSearching ? (
                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   ) : (
-                    <Icon className={cn("w-5 h-5", action.color)} />
+                    <Icon className={cn("w-5 h-5", action.color)} strokeWidth={1.9} />
                   )}
                 </button>
               );
             })}
           </div>
         )}
+
       </div>
     </>
   );

@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Navigation } from 'lucide-react';
+
 
 interface CompassIndicatorProps {
   heading: number | null;
@@ -16,36 +16,39 @@ const CompassIndicator: React.FC<CompassIndicatorProps> = ({ heading, onResetNor
     <button
       onClick={onResetNorth}
       className={cn(
-        'relative w-11 h-11 flex items-center justify-center rounded-full',
-        'glass-panel border border-white/40 dark:border-white/10',
-        'shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.3)]',
-        'ring-1 ring-primary/10',
+        'relative w-14 h-14 flex items-center justify-center rounded-full',
+        'glass-panel glass-sheen glow-ring',
         'transition-all duration-300 hover:scale-105 active:scale-90',
-        isOffNorth && 'ring-2 ring-primary/40',
+        isOffNorth && 'shadow-[0_0_22px_-6px_hsl(var(--primary)/0.75)]',
         className,
       )}
       aria-label={displayHeading !== null ? `Reset to north. Heading ${displayHeading}°` : 'Compass'}
     >
+      {/* Inner bezel ring */}
+      <span className="absolute inset-2 rounded-full border border-foreground/10" />
+
       {/* Cardinal N marker */}
       <span
         className={cn(
-          'absolute top-1 left-1/2 -translate-x-1/2 text-[8px] font-bold tracking-wider',
+          'absolute top-1 left-1/2 -translate-x-1/2 text-[8px] font-bold tracking-[0.15em]',
           isOffNorth ? 'text-primary' : 'text-muted-foreground/60',
         )}
       >
         N
       </span>
-      <Navigation
-        className={cn(
-          'w-4 h-4 transition-transform duration-300',
-          isOffNorth ? 'text-primary' : 'text-muted-foreground',
-        )}
+
+      {/* Needle */}
+      <span
+        className="relative block h-8 w-[3px] rounded-full transition-transform duration-300"
         style={{ transform: `rotate(${displayHeading ?? 0}deg)` }}
-        fill={isOffNorth ? 'currentColor' : 'none'}
-        strokeWidth={2}
-      />
+      >
+        <span className="absolute inset-x-0 top-0 h-1/2 rounded-full bg-gradient-to-b from-primary to-primary/40" />
+        <span className="absolute inset-x-0 bottom-0 h-1/2 rounded-full bg-foreground/20" />
+        <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary blur-[1px]" />
+      </span>
     </button>
   );
+
 };
 
 export default CompassIndicator;
