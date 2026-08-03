@@ -16,31 +16,31 @@ const TOUR_STEPS: TourStep[] = [
     icon: Search,
     title: 'Search Destination',
     description: 'Top bar me destination search karo ya voice button se bolkar search karo',
-    color: 'bg-blue-500',
+    color: 'bg-primary',
   },
   {
     icon: Navigation,
     title: 'Get Directions',
     description: 'Route calculate hoga with multiple options - fastest aur alternate routes',
-    color: 'bg-green-500',
+    color: 'bg-success',
   },
   {
     icon: Fuel,
     title: 'Cost Breakdown',
     description: 'Fuel cost, toll charges aur total trip cost automatically calculate hoti hai',
-    color: 'bg-amber-500',
+    color: 'bg-warning',
   },
   {
     icon: Users,
     title: 'Split the Bill',
     description: 'Friends ke saath travel? Bill Splitter se per-person share nikalo aur WhatsApp pe share karo',
-    color: 'bg-purple-500',
+    color: 'bg-info',
   },
   {
     icon: MapPin,
     title: 'Save Favorites',
     description: 'Home, Office ya frequent places save karo for quick access',
-    color: 'bg-pink-500',
+    color: 'bg-accent',
   },
 ];
 
@@ -85,7 +85,7 @@ const OnboardingTour: React.FC = () => {
       isDismissing ? "opacity-0 pointer-events-none" : "opacity-100"
     )}>
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleDismiss} />
+      <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" onClick={handleDismiss} />
 
       {/* Card */}
       <div className={cn(
@@ -118,7 +118,7 @@ const OnboardingTour: React.FC = () => {
           "w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300",
           step.color
         )}>
-          <Icon className="w-8 h-8 text-white" />
+          <Icon className="w-8 h-8 text-primary-foreground" />
         </div>
 
         {/* Content */}
