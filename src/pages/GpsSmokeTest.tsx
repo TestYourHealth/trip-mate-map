@@ -346,7 +346,7 @@ const GpsSmokeTest: React.FC = () => {
       return;
     }
 
-    // 6. Cost calculation (mirrors the trip cost formula)
+    // 7. Cost calculation (mirrors the trip cost formula)
     set('cost', 'running');
     const v = getVehicleConfig();
     if (!v.mileage || v.mileage <= 0) {
@@ -446,7 +446,7 @@ const GpsSmokeTest: React.FC = () => {
               <p className="text-sm font-medium">
                 <span className="text-muted-foreground mr-1.5">{i + 1}.</span>{r.label}
               </p>
-              {r.detail && <p className="text-xs text-muted-foreground mt-0.5 break-words">{r.detail}</p>}
+              {r.detail && <p className="text-xs text-muted-foreground mt-0.5 break-words whitespace-pre-line leading-relaxed">{r.detail}</p>}
             </div>
           </li>
         ))}
