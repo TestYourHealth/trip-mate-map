@@ -248,6 +248,7 @@ const GpsSmokeTest: React.FC = () => {
       <SEO
         title="GPS Smoke Test — TripMate Device Diagnostics"
         description="Run an end-to-end check of geolocation, live routing and trip cost calculation on your Android or iOS device."
+        path="/diagnostics/gps"
       />
 
       <header className="flex items-center gap-3 mb-5">
