@@ -280,8 +280,13 @@ const GpsSmokeTest: React.FC = () => {
       return;
     }
     const acc = first.coords.accuracy;
-    set('fix', acc <= 50 ? 'pass' : 'warn',
-      `${first.coords.latitude.toFixed(5)}, ${first.coords.longitude.toFixed(5)} • accuracy ±${Math.round(acc)}m${acc > 50 ? ' (coarse — likely network/wifi positioning)' : ''}`);
+    set('fix', acc <= ACCURACY_GOOD ? 'pass' : acc <= ACCURACY_COARSE ? 'warn' : 'fail',
+      `${first.coords.latitude.toFixed(5)}, ${first.coords.longitude.toFixed(5)} • accuracy ±${Math.round(acc)}m` +
+      (acc > ACCURACY_COARSE
+        ? '\n⚠ Too coarse to navigate with — this is wifi/cell positioning. Next: move outdoors and set Location to High accuracy / Precise Location.'
+        : acc > ACCURACY_GOOD
+          ? '\nUsable but not sharp — a few more seconds outdoors will tighten the fix.'
+          : ''));
 
     // 4. Live tracking for 15s
     set('live', 'running');
@@ -303,16 +308,22 @@ const GpsSmokeTest: React.FC = () => {
     const headings = samples.filter((s) => s.coords.heading != null).length;
     const speeds = samples.filter((s) => s.coords.speed != null).length;
     if (samples.length === 0) {
-      set('live', 'fail', 'watchPosition delivered no updates in 15s');
+      set('live', 'fail', 'watchPosition delivered no updates in 15s\nNext: confirm Location permission is "Allow while using", disable battery saver, and re-run.');
     } else {
       set('live', samples.length >= 3 ? 'pass' : 'warn',
-        `${samples.length} update${samples.length === 1 ? '' : 's'} in 15s • heading on ${headings}, speed on ${speeds}${samples.length < 3 ? ' — low update rate, expected when stationary' : ''}`);
+        `${samples.length} update${samples.length === 1 ? '' : 's'} in 15s • heading on ${headings}, speed on ${speeds}${samples.length < 3 ? '\nLow update rate — normal when stationary, but re-run while moving to validate live navigation.' : ''}`);
     }
 
-    // 5. Live routing from current position
+    // 5. Plausibility checks on every fix collected so far
+    set('sanity', 'running');
+    const sanity = validateFixes(first, samples);
+    set('sanity', sanity.status, sanity.detail);
+
+    // 6. Live routing from the most trustworthy fix
     set('route', 'running');
     setProgressNote('Requesting a live route from your position…');
-    const last = samples[samples.length - 1] ?? first;
+    const last = sanity.best;
+
     const oLat = last.coords.latitude, oLng = last.coords.longitude;
     // Destination ~5km north of the live position — always routable, no fixed city assumption.
     const dLat = oLat + 0.045, dLng = oLng;
