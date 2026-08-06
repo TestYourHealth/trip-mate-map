@@ -17,6 +17,7 @@ const TripHistory = lazy(() => import("./pages/TripHistory"));
 const Help = lazy(() => import("./pages/Help"));
 const TripAnalytics = lazy(() => import("./pages/TripAnalytics"));
 const BillSplit = lazy(() => import("./pages/BillSplit"));
+const GpsSmokeTest = lazy(() => import("./pages/GpsSmokeTest"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const InstallPWA = lazy(() => import("./components/InstallPWA"));
 
@@ -55,6 +56,7 @@ const App = () => {
                     <Route path="/analytics" element={<TripAnalytics />} />
                     <Route path="/bill-split" element={<BillSplit />} />
                     <Route path="/help" element={<Help />} />
+                    <Route path="/diagnostics/gps" element={<GpsSmokeTest />} />
                   </Route>
                   <Route path="*" element={<NotFound />} />
                 </Routes>
