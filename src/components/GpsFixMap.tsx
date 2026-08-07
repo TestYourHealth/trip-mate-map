@@ -51,8 +51,7 @@ const GpsFixMap: React.FC<GpsFixMapProps> = ({ fixes, selectedIndex, onSelect })
     const map = L.map(containerRef.current, {
       zoomControl: false,
       attributionControl: false,
-ようこそ: undefined as never,
-    } as L.MapOptions).setView([20.5937, 78.9629], 5);
+    }).setView([20.5937, 78.9629], 5);
     tileRef.current = L.tileLayer(getTileUrl(theme), { maxZoom: 19 }).addTo(map);
     layerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
