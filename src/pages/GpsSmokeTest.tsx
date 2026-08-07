@@ -155,11 +155,41 @@ const validateFixes = (first: GeolocationPosition, samples: GeolocationPosition[
   // Best sample = most accurate fix that isn't part of a jump.
   const best = all.reduce((acc, cur) => (cur.coords.accuracy < acc.coords.accuracy ? cur : acc), all[0]);
 
+  const t0 = all[0].timestamp;
+  const classified: ClassifiedFix[] = all.map((s, i) => {
+    const reasons: string[] = [];
+    if (isJump[i]) reasons.push(`Unrealistic jump from previous fix (${Math.round(impliedKmh[i] as number)} km/h implied)`);
+    if (s.coords.accuracy > ACCURACY_COARSE) reasons.push(`Accuracy ±${Math.round(s.coords.accuracy)}m — network positioning, not GPS`);
+    else if (s.coords.accuracy > ACCURACY_GOOD) reasons.push(`Coarse but usable (±${Math.round(s.coords.accuracy)}m)`);
+    if (s.coords.speed != null && (s.coords.speed as number) * 3.6 > MAX_PLAUSIBLE_KMH) {
+      reasons.push(`Reported speed ${Math.round((s.coords.speed as number) * 3.6)} km/h is not plausible`);
+    }
+    const accepted = !isJump[i]
+      && s.coords.accuracy <= ACCURACY_COARSE
+      && !(s.coords.speed != null && (s.coords.speed as number) * 3.6 > MAX_PLAUSIBLE_KMH);
+    return {
+      index: i,
+      step: i === 0 ? 'fix' : 'live',
+      lat: s.coords.latitude,
+      lng: s.coords.longitude,
+      accuracy: s.coords.accuracy,
+      speed: s.coords.speed ?? null,
+      heading: s.coords.heading ?? null,
+      timestamp: s.timestamp,
+      offsetMs: Math.max(0, s.timestamp - t0),
+      accepted,
+      reasons,
+      impliedKmh: impliedKmh[i],
+      isBest: s === best,
+    };
+  });
+
   const detail = [...problems, ...notes].join('\n');
   return {
     status: problems.length > 0 ? (medianAcc > ACCURACY_COARSE || jumps > 0 ? 'fail' : 'warn') : 'pass',
     detail: detail || 'All fixes look plausible.',
     best,
+    classified,
   };
 };
 
