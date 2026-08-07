@@ -68,6 +68,9 @@ const validateFixes = (first: GeolocationPosition, samples: GeolocationPosition[
   let jumps = 0;
   let worstJumpKmh = 0;
   let maxStepM = 0;
+  /** Per-sample implied speed and jump verdict, reused by the timeline. */
+  const impliedKmh: (number | null)[] = all.map(() => null);
+  const isJump: boolean[] = all.map(() => false);
   for (let i = 1; i < all.length; i++) {
     const prev = all[i - 1];
     const cur = all[i];
@@ -76,10 +79,12 @@ const validateFixes = (first: GeolocationPosition, samples: GeolocationPosition[
     maxStepM = Math.max(maxStepM, dist);
     if (dt <= 0) continue;
     const kmh = (dist / dt) * 3.6;
+    impliedKmh[i] = kmh;
     // Ignore jitter inside the combined accuracy radius of both fixes.
     const noiseFloor = (prev.coords.accuracy + cur.coords.accuracy) / 2;
     if (dist > noiseFloor && kmh > MAX_PLAUSIBLE_KMH) {
       jumps++;
+      isJump[i] = true;
       worstJumpKmh = Math.max(worstJumpKmh, kmh);
     }
   }
