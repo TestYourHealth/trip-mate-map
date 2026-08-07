@@ -361,6 +361,8 @@ const GpsSmokeTest: React.FC = () => {
     set('sanity', 'running');
     const sanity = validateFixes(first, samples);
     set('sanity', sanity.status, sanity.detail);
+    setFixes(sanity.classified);
+    setSelectedFix(sanity.classified.find((f) => f.isBest)?.index ?? null);
 
     // 6. Live routing from the most trustworthy fix
     set('route', 'running');
