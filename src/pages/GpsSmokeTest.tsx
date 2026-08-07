@@ -248,6 +248,8 @@ const GpsSmokeTest: React.FC = () => {
   );
   const [isRunning, setIsRunning] = useState(false);
   const [progressNote, setProgressNote] = useState('');
+  const [fixes, setFixes] = useState<ClassifiedFix[]>([]);
+  const [selectedFix, setSelectedFix] = useState<number | null>(null);
   const watchIdRef = useRef<number | null>(null);
 
   const set = useCallback((id: string, status: StepStatus, detail?: string) => {
@@ -259,6 +261,8 @@ const GpsSmokeTest: React.FC = () => {
     watchIdRef.current = null;
     setResults(STEPS.map((s) => ({ ...s, status: 'idle' as StepStatus })));
     setProgressNote('');
+    setFixes([]);
+    setSelectedFix(null);
   }, []);
 
   const run = useCallback(async () => {
