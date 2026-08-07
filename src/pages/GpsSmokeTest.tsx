@@ -7,6 +7,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import SEO from '@/components/SEO';
+import GpsFixMap, { type ClassifiedFix } from '@/components/GpsFixMap';
+import GpsFixTimeline from '@/components/GpsFixTimeline';
 import { cn } from '@/lib/utils';
 import { FUEL_STORAGE_KEYS } from '@/constants/storageKeys';
 
@@ -50,6 +52,8 @@ interface SanityReport {
   detail: string;
   /** Best usable sample for routing — worst fixes are discarded. */
   best: GeolocationPosition;
+  /** Per-sample accept/reject verdicts for the map overlay and timeline. */
+  classified: ClassifiedFix[];
 }
 
 /**
@@ -66,6 +70,9 @@ const validateFixes = (first: GeolocationPosition, samples: GeolocationPosition[
   let jumps = 0;
   let worstJumpKmh = 0;
   let maxStepM = 0;
+  /** Per-sample implied speed and jump verdict, reused by the timeline. */
+  const impliedKmh: (number | null)[] = all.map(() => null);
+  const isJump: boolean[] = all.map(() => false);
   for (let i = 1; i < all.length; i++) {
     const prev = all[i - 1];
     const cur = all[i];
@@ -74,10 +81,12 @@ const validateFixes = (first: GeolocationPosition, samples: GeolocationPosition[
     maxStepM = Math.max(maxStepM, dist);
     if (dt <= 0) continue;
     const kmh = (dist / dt) * 3.6;
+    impliedKmh[i] = kmh;
     // Ignore jitter inside the combined accuracy radius of both fixes.
     const noiseFloor = (prev.coords.accuracy + cur.coords.accuracy) / 2;
     if (dist > noiseFloor && kmh > MAX_PLAUSIBLE_KMH) {
       jumps++;
+      isJump[i] = true;
       worstJumpKmh = Math.max(worstJumpKmh, kmh);
     }
   }
@@ -148,11 +157,41 @@ const validateFixes = (first: GeolocationPosition, samples: GeolocationPosition[
   // Best sample = most accurate fix that isn't part of a jump.
   const best = all.reduce((acc, cur) => (cur.coords.accuracy < acc.coords.accuracy ? cur : acc), all[0]);
 
+  const t0 = all[0].timestamp;
+  const classified: ClassifiedFix[] = all.map((s, i) => {
+    const reasons: string[] = [];
+    if (isJump[i]) reasons.push(`Unrealistic jump from previous fix (${Math.round(impliedKmh[i] as number)} km/h implied)`);
+    if (s.coords.accuracy > ACCURACY_COARSE) reasons.push(`Accuracy ±${Math.round(s.coords.accuracy)}m — network positioning, not GPS`);
+    else if (s.coords.accuracy > ACCURACY_GOOD) reasons.push(`Coarse but usable (±${Math.round(s.coords.accuracy)}m)`);
+    if (s.coords.speed != null && (s.coords.speed as number) * 3.6 > MAX_PLAUSIBLE_KMH) {
+      reasons.push(`Reported speed ${Math.round((s.coords.speed as number) * 3.6)} km/h is not plausible`);
+    }
+    const accepted = !isJump[i]
+      && s.coords.accuracy <= ACCURACY_COARSE
+      && !(s.coords.speed != null && (s.coords.speed as number) * 3.6 > MAX_PLAUSIBLE_KMH);
+    return {
+      index: i,
+      step: i === 0 ? 'fix' : 'live',
+      lat: s.coords.latitude,
+      lng: s.coords.longitude,
+      accuracy: s.coords.accuracy,
+      speed: s.coords.speed ?? null,
+      heading: s.coords.heading ?? null,
+      timestamp: s.timestamp,
+      offsetMs: Math.max(0, s.timestamp - t0),
+      accepted,
+      reasons,
+      impliedKmh: impliedKmh[i],
+      isBest: s === best,
+    };
+  });
+
   const detail = [...problems, ...notes].join('\n');
   return {
     status: problems.length > 0 ? (medianAcc > ACCURACY_COARSE || jumps > 0 ? 'fail' : 'warn') : 'pass',
     detail: detail || 'All fixes look plausible.',
     best,
+    classified,
   };
 };
 
@@ -209,6 +248,8 @@ const GpsSmokeTest: React.FC = () => {
   );
   const [isRunning, setIsRunning] = useState(false);
   const [progressNote, setProgressNote] = useState('');
+  const [fixes, setFixes] = useState<ClassifiedFix[]>([]);
+  const [selectedFix, setSelectedFix] = useState<number | null>(null);
   const watchIdRef = useRef<number | null>(null);
 
   const set = useCallback((id: string, status: StepStatus, detail?: string) => {
@@ -220,6 +261,8 @@ const GpsSmokeTest: React.FC = () => {
     watchIdRef.current = null;
     setResults(STEPS.map((s) => ({ ...s, status: 'idle' as StepStatus })));
     setProgressNote('');
+    setFixes([]);
+    setSelectedFix(null);
   }, []);
 
   const run = useCallback(async () => {
@@ -318,6 +361,8 @@ const GpsSmokeTest: React.FC = () => {
     set('sanity', 'running');
     const sanity = validateFixes(first, samples);
     set('sanity', sanity.status, sanity.detail);
+    setFixes(sanity.classified);
+    setSelectedFix(sanity.classified.find((f) => f.isBest)?.index ?? null);
 
     // 6. Live routing from the most trustworthy fix
     set('route', 'running');
@@ -451,6 +496,37 @@ const GpsSmokeTest: React.FC = () => {
           </li>
         ))}
       </ol>
+
+      {fixes.length > 0 && (
+        <section className="mt-4 space-y-3 animate-fade-in" aria-label="GPS sample map and timeline">
+          <div className="glass-card rounded-2xl p-3">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm font-semibold">Sample map</h2>
+              <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-success" />
+                  {fixes.filter((f) => f.accepted).length} accepted
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-destructive" />
+                  {fixes.filter((f) => !f.accepted).length} rejected
+                </span>
+              </div>
+            </div>
+            <GpsFixMap fixes={fixes} selectedIndex={selectedFix} onSelect={setSelectedFix} />
+            <p className="text-[11px] text-muted-foreground mt-2">
+              Circles show each fix's accuracy radius. Tap a point to jump to it in the timeline below.
+            </p>
+          </div>
+
+          <div className="glass-card rounded-2xl p-3">
+            <h2 className="text-sm font-semibold mb-2">Fix timeline</h2>
+            <GpsFixTimeline fixes={fixes} selectedIndex={selectedFix} onSelect={setSelectedFix} />
+          </div>
+        </section>
+      )}
+
+
 
       {done && (
         <div className="mt-4 glass-card rounded-2xl p-4 animate-fade-in">
