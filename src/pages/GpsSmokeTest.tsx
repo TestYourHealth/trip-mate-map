@@ -7,6 +7,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import SEO from '@/components/SEO';
+import GpsFixMap, { type ClassifiedFix } from '@/components/GpsFixMap';
+import GpsFixTimeline from '@/components/GpsFixTimeline';
 import { cn } from '@/lib/utils';
 import { FUEL_STORAGE_KEYS } from '@/constants/storageKeys';
 
