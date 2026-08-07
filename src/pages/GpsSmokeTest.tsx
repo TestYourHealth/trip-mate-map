@@ -497,6 +497,37 @@ const GpsSmokeTest: React.FC = () => {
         ))}
       </ol>
 
+      {fixes.length > 0 && (
+        <section className="mt-4 space-y-3 animate-fade-in" aria-label="GPS sample map and timeline">
+          <div className="glass-card rounded-2xl p-3">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm font-semibold">Sample map</h2>
+              <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-success" />
+                  {fixes.filter((f) => f.accepted).length} accepted
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-destructive" />
+                  {fixes.filter((f) => !f.accepted).length} rejected
+                </span>
+              </div>
+            </div>
+            <GpsFixMap fixes={fixes} selectedIndex={selectedFix} onSelect={setSelectedFix} />
+            <p className="text-[11px] text-muted-foreground mt-2">
+              Circles show each fix's accuracy radius. Tap a point to jump to it in the timeline below.
+            </p>
+          </div>
+
+          <div className="glass-card rounded-2xl p-3">
+            <h2 className="text-sm font-semibold mb-2">Fix timeline</h2>
+            <GpsFixTimeline fixes={fixes} selectedIndex={selectedFix} onSelect={setSelectedFix} />
+          </div>
+        </section>
+      )}
+
+
+
       {done && (
         <div className="mt-4 glass-card rounded-2xl p-4 animate-fade-in">
           <p className="text-sm font-semibold mb-1">
