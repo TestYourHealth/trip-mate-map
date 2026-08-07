@@ -50,6 +50,8 @@ interface SanityReport {
   detail: string;
   /** Best usable sample for routing — worst fixes are discarded. */
   best: GeolocationPosition;
+  /** Per-sample accept/reject verdicts for the map overlay and timeline. */
+  classified: ClassifiedFix[];
 }
 
 /**
