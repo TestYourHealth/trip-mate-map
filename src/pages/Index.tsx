@@ -18,6 +18,8 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useAutoDetectLocation } from '@/hooks/useAutoDetectLocation';
 import { useMapTheme } from '@/hooks/useMapTheme';
 import { Trip } from '@/pages/TripHistory';
+import { calculateTripCost } from '@/lib/tripCost';
+
 import SEO from '@/components/SEO';
 import RouteLoadingSkeleton, { MapBusyIndicator } from '@/components/RouteLoadingSkeleton';
 import SelectedPlaceCard, { SelectedPlaceInfo } from '@/components/SelectedPlaceCard';
