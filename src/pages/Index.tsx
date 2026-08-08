@@ -250,29 +250,10 @@ const Index = () => {
   }, [position, isNavigating, navigationSteps, currentStepIndex, tripData, origin, destination, setTripHistory, stopNavigation]);
 
   const updateTripData = useCallback((route: RouteInfo) => {
-    // Calculate fuel cost based on fuel type
-    // Electric: distance / km per kWh * price per kWh
-    // Others: distance / km per liter * price per liter
-    let fuelCost: number;
-    if (vehicleConfig.fuelType === 'electric') {
-      // For electric, mileage is km/kWh
-      fuelCost = (route.distance / vehicleConfig.mileage) * vehicleConfig.fuelPrice;
-    } else {
-      // For petrol/diesel/cng, mileage is km/L or km/kg
-      fuelCost = (route.distance / vehicleConfig.mileage) * vehicleConfig.fuelPrice;
-    }
-    
-    // Electric vehicles don't pay tolls based on fuel (some toll exemptions), but we'll still estimate
-    const tollCost = route.distance * 1.5;
-    
-    const data = {
-      distance: route.distance,
-      duration: route.duration,
-      fuelCost: Math.round(fuelCost),
-      tollCost: Math.round(tollCost),
-      totalCost: Math.round(fuelCost + tollCost),
-    };
+    // Shared fuel + toll math (see src/lib/tripCost.ts)
+    const data = calculateTripCost(route.distance, route.duration, vehicleConfig);
     setTripData(data);
+
     try {
       localStorage.setItem('currentTrip', JSON.stringify({
         ...data,
