@@ -28,7 +28,7 @@ interface TripPanelProps {
   onWaypointsChange: (waypoints: string[]) => void;
   onVehicleConfigChange: (config: VehicleConfig) => void;
   onRouteSelect: (index: number) => void;
-  onCalculate: () => void;
+  onCalculate: (origin?: string, destination?: string) => void;
   onClear: () => void;
   onStartNavigation: () => void;
   onUseCurrentLocation?: () => void;
