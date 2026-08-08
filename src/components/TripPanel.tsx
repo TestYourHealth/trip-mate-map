@@ -1,11 +1,13 @@
 import React from 'react';
-import { Navigation, Fuel, DollarSign, Clock, Car, RotateCcw, ChevronUp, ChevronDown } from 'lucide-react';
+import { Navigation, Fuel, DollarSign, Clock, Car, RotateCcw, ChevronUp, ChevronDown, MapPin, Flag, ArrowUpDown, LocateFixed, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import VehicleSelector from './VehicleSelector';
 import RouteSelector from './RouteSelector';
 import DirectionsList from './DirectionsList';
 import CitySelector from './CitySelector';
 import WaypointInput from './WaypointInput';
+import LocationAutocomplete from './LocationAutocomplete';
+
 
 import { RouteInfo } from './Map';
 import { NavigationStep } from './NavigationPanel';
