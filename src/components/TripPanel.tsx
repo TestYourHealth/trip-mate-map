@@ -123,6 +123,73 @@ const TripPanel: React.FC<TripPanelProps> = ({
         isMobile && !isExpanded ? "max-h-0 opacity-0" : "max-h-[2000px] opacity-100"
       )}>
 
+        {/* From / To */}
+        <div className="mb-4 space-y-2">
+          <div className="relative rounded-xl border border-border/60 bg-muted/20 p-2 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <MapPin className="w-3.5 h-3.5 text-primary" />
+              </span>
+              <LocationAutocomplete
+                value={origin}
+                onChange={onOriginChange}
+                onSelect={(val) => onCalculate(val, destination)}
+                placeholder="From (start location)"
+                className="h-10 text-sm bg-background/60"
+              />
+              {onUseCurrentLocation && (
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={onUseCurrentLocation}
+                  aria-label="Use current location as start"
+                  disabled={isLocating}
+                >
+                  {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <LocateFixed className="w-4 h-4" />}
+                </Button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="w-7 h-7 rounded-lg bg-success/10 flex items-center justify-center shrink-0">
+                <Flag className="w-3.5 h-3.5 text-success" />
+              </span>
+              <LocationAutocomplete
+                value={destination}
+                onChange={onDestinationChange}
+                onSelect={(val) => onCalculate(origin, val)}
+                placeholder="To (destination)"
+                className="h-10 text-sm bg-background/60"
+              />
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Swap from and to"
+                disabled={!origin || !destination}
+                onClick={() => {
+                  const o = origin;
+                  const d = destination;
+                  onOriginChange(d);
+                  onDestinationChange(o);
+                  if (o && d) onCalculate(d, o);
+                }}
+              >
+                <ArrowUpDown className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
+          <Button
+            onClick={() => onCalculate(origin, destination)}
+            variant="secondary"
+            className="w-full h-10 text-sm"
+            disabled={!origin || !destination || isCalculating}
+          >
+            {isCalculating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Car className="w-4 h-4 mr-2" />}
+            {isCalculating ? 'Calculating…' : 'Cost calculate करें'}
+          </Button>
+        </div>
+
         {/* Waypoints (multi-stop) */}
         <div className="mb-4">
           <WaypointInput
