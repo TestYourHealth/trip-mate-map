@@ -19,6 +19,7 @@ import { useAutoDetectLocation } from '@/hooks/useAutoDetectLocation';
 import { useMapTheme } from '@/hooks/useMapTheme';
 import { Trip } from '@/pages/TripHistory';
 import { calculateTripCost } from '@/lib/tripCost';
+import { RoutePreferences, DEFAULT_ROUTE_PREFERENCES } from '@/types/routePrefs';
 
 import SEO from '@/components/SEO';
 import RouteLoadingSkeleton, { MapBusyIndicator } from '@/components/RouteLoadingSkeleton';
@@ -47,6 +48,7 @@ const Index = () => {
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [waypoints, setWaypoints] = useState<string[]>([]);
+  const [routePrefs, setRoutePrefs] = useLocalStorage<RoutePreferences>('routePreferences', DEFAULT_ROUTE_PREFERENCES);
   // Get default vehicle from localStorage
   const getDefaultVehicleConfig = (): VehicleConfig => {
     try {
@@ -253,7 +255,7 @@ const Index = () => {
 
   const updateTripData = useCallback((route: RouteInfo) => {
     // Shared fuel + toll math (see src/lib/tripCost.ts)
-    const data = calculateTripCost(route.distance, route.duration, vehicleConfig);
+    const data = calculateTripCost(route.distance, route.duration, vehicleConfig, { avoidTolls: routePrefs.avoidTolls });
     setTripData(data);
 
     try {
@@ -265,7 +267,7 @@ const Index = () => {
       }));
       window.dispatchEvent(new Event('local-storage-change'));
     } catch {}
-  }, [vehicleConfig, origin, destination]);
+  }, [vehicleConfig, origin, destination, routePrefs.avoidTolls]);
 
   const handleLocateMe = useCallback(async () => {
     setIsLocating(true);
@@ -343,12 +345,14 @@ const Index = () => {
       }
 
       const validWaypoints = waypoints.filter(w => w.trim() !== '');
-      const result = await mapRef.current?.showRoute(tripOrigin, tripDestination, validWaypoints);
+      const result = await mapRef.current?.showRoute(tripOrigin, tripDestination, validWaypoints, routePrefs);
 
       if (result && result.routes.length > 0) {
+        const preferred = Math.min(result.preferredIndex ?? 0, result.routes.length - 1);
         setRoutes(result.routes);
-        setSelectedRouteIndex(0);
-        updateTripData(result.routes[0]);
+        setSelectedRouteIndex(preferred);
+        if (preferred > 0) mapRef.current?.selectRoute(preferred);
+        updateTripData(result.routes[preferred]);
 
         // Convert instructions to navigation steps
         if (result.instructions && result.instructions.length > 0) {
@@ -390,7 +394,18 @@ const Index = () => {
     } finally {
       setIsCalculating(false);
     }
-  }, [origin, destination, waypoints, updateTripData, isMobile, getCurrentPosition]);
+  }, [origin, destination, waypoints, routePrefs, updateTripData, isMobile, getCurrentPosition]);
+
+  // Recalculate automatically when route preferences change
+  const prefsSignature = `${routePrefs.avoidTolls}|${routePrefs.avoidHighways}|${routePrefs.optimize}`;
+  const lastPrefsSignature = useRef(prefsSignature);
+  useEffect(() => {
+    if (lastPrefsSignature.current === prefsSignature) return;
+    lastPrefsSignature.current = prefsSignature;
+    if (origin && destination && (routes.length > 0 || tripData)) {
+      calculateTrip(origin, destination);
+    }
+  }, [prefsSignature, origin, destination, routes.length, tripData, calculateTrip]);
 
   const getStepType = (type: string, modifier?: string): NavigationStep['type'] => {
     if (type === 'DestinationReached' || type === 'WaypointReached') return 'destination';
@@ -602,6 +617,8 @@ const Index = () => {
               onDestinationChange={setDestination}
               onWaypointsChange={setWaypoints}
               onVehicleConfigChange={setVehicleConfig}
+              routePrefs={routePrefs}
+              onRoutePrefsChange={setRoutePrefs}
               onRouteSelect={handleRouteSelect}
               onCalculate={calculateTrip}
               onClear={clearTrip}
@@ -634,6 +651,8 @@ const Index = () => {
               onDestinationChange={setDestination}
               onWaypointsChange={setWaypoints}
               onVehicleConfigChange={setVehicleConfig}
+              routePrefs={routePrefs}
+              onRoutePrefsChange={setRoutePrefs}
               onRouteSelect={handleRouteSelect}
               onCalculate={calculateTrip}
               onClear={clearTrip}

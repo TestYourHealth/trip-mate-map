@@ -3,6 +3,7 @@ import { Navigation, Fuel, DollarSign, Clock, Car, RotateCcw, ChevronUp, Chevron
 import { Button } from '@/components/ui/button';
 import VehicleSelector from './VehicleSelector';
 import RouteSelector from './RouteSelector';
+import RouteOptions from './RouteOptions';
 import DirectionsList from './DirectionsList';
 import CitySelector from './CitySelector';
 import WaypointInput from './WaypointInput';
@@ -12,6 +13,7 @@ import LocationAutocomplete from './LocationAutocomplete';
 import { RouteInfo } from './Map';
 import { NavigationStep } from './NavigationPanel';
 import { VehicleConfig } from '@/types/vehicle';
+import { RoutePreferences } from '@/types/routePrefs';
 import { cn } from '@/lib/utils';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 
@@ -27,6 +29,8 @@ interface TripPanelProps {
   onDestinationChange: (value: string) => void;
   onWaypointsChange: (waypoints: string[]) => void;
   onVehicleConfigChange: (config: VehicleConfig) => void;
+  routePrefs: RoutePreferences;
+  onRoutePrefsChange: (prefs: RoutePreferences) => void;
   onRouteSelect: (index: number) => void;
   onCalculate: (origin?: string, destination?: string) => void;
   onClear: () => void;
@@ -58,6 +62,8 @@ const TripPanel: React.FC<TripPanelProps> = ({
   onDestinationChange,
   onWaypointsChange,
   onVehicleConfigChange,
+  routePrefs,
+  onRoutePrefsChange,
   onRouteSelect,
   onCalculate,
   onClear,
@@ -198,6 +204,11 @@ const TripPanel: React.FC<TripPanelProps> = ({
             origin={origin}
             destination={destination}
           />
+        </div>
+
+        {/* Route Options */}
+        <div className="mb-4">
+          <RouteOptions prefs={routePrefs} onChange={onRoutePrefsChange} disabled={isCalculating} />
         </div>
 
         {/* Vehicle Selector */}
