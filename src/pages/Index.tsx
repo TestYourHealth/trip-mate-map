@@ -526,7 +526,10 @@ const Index = () => {
 
       {/* Selected place info card - shows landmark name, address, distance */}
       {!isNavigating && selectedPlace && (
-        <div className="absolute left-3 right-3 top-[calc(var(--search-bar-h,150px)+0.75rem)] sm:left-auto sm:right-4 sm:max-w-sm z-map-card">
+        <div className={cn(
+          "absolute left-3 right-3 top-[calc(var(--search-bar-h,150px)+0.75rem)] sm:left-auto sm:max-w-sm z-map-card",
+          panelVisible ? "sm:right-4 md:right-[26rem]" : "sm:right-4"
+        )}>
           <SelectedPlaceCard
             place={selectedPlace}
             onDismiss={dismissSelectedPlace}
@@ -544,8 +547,9 @@ const Index = () => {
       {/* Compass + Weather - visible when not navigating */}
       {!isNavigating && (
         <div className={cn(
-          "absolute left-3 z-map-overlay md:bottom-6 flex flex-col gap-3 animate-fade-in safe-fab-bottom transition-[bottom] duration-300",
-          panelVisible ? (isPanelExpanded ? "bottom-[62vh]" : "bottom-40") : "bottom-24"
+          "absolute left-3 z-map-overlay md:bottom-6 flex-col gap-3 animate-fade-in safe-fab-bottom transition-[bottom] duration-300",
+          panelVisible && isPanelExpanded ? "hidden md:flex" : "flex",
+          panelVisible ? "bottom-44" : "bottom-24"
         )}>
           <WeatherWidget
             lat={position?.lat}
@@ -574,7 +578,8 @@ const Index = () => {
         <div className={cn(
           "absolute z-map-overlay md:bottom-6 safe-fab-bottom transition-all duration-300",
           panelVisible ? "right-3 md:right-[26rem]" : "right-3",
-          panelVisible ? (isPanelExpanded ? "bottom-[62vh]" : "bottom-40") : "bottom-24"
+          panelVisible && isPanelExpanded ? "hidden md:block" : "block",
+          panelVisible ? "bottom-44" : "bottom-24"
         )}>
           <QuickActions
             userPosition={position ? { lat: position.lat, lng: position.lng } : null}
@@ -685,7 +690,7 @@ const Index = () => {
 
       {/* Quick Stats Footer - Desktop only */}
       {!isMobile && tripData && !isNavigating && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-map-overlay">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 md:left-[calc(50%-14rem)] z-map-overlay max-w-[calc(100%-2rem)]">
           <div className="glass-card rounded-full px-6 py-3 flex items-center gap-5 animate-slide-up">
             <div className="flex items-center gap-1.5">
               <span className="text-muted-foreground text-xs">Distance</span>
