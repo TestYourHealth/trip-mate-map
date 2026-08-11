@@ -19,6 +19,7 @@ import { useAutoDetectLocation } from '@/hooks/useAutoDetectLocation';
 import { useMapTheme } from '@/hooks/useMapTheme';
 import { Trip } from '@/pages/TripHistory';
 import { calculateTripCost } from '@/lib/tripCost';
+import { cn } from '@/lib/utils';
 import { RoutePreferences, DEFAULT_ROUTE_PREFERENCES } from '@/types/routePrefs';
 
 import SEO from '@/components/SEO';
@@ -418,6 +419,9 @@ const Index = () => {
     
     return 'straight';
   };
+
+  // Trip panel visibility drives overlay offsets so nothing hides behind it
+  const panelVisible = !isNavigating && (isCalculating || !!tripData);
 
   const handleRouteSelect = useCallback((index: number) => {
     setSelectedRouteIndex(index);

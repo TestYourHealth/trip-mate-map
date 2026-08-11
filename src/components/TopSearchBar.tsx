@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Search, Loader2, X, Menu, Crosshair, Car, Fuel, Clock, Settings, HelpCircle, MapPin, Mic, MicOff, BarChart3, Satellite, ArrowUpDown, Circle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import LocationAutocomplete, { PickedPlaceDetails } from './LocationAutocomplete';
@@ -52,6 +52,25 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
   const [hasAutoLocated, setHasAutoLocated] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const barRef = useRef<HTMLDivElement>(null);
+
+  // Publish the real search-bar height so overlays below can anchor to it
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    const publish = () => {
+      const rect = el.getBoundingClientRect();
+      document.documentElement.style.setProperty('--search-bar-h', `${Math.round(rect.bottom)}px`);
+    };
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    window.addEventListener('resize', publish);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', publish);
+    };
+  }, []);
 
   // Voice search using Web Speech API
   const startVoiceSearch = useCallback(() => {
@@ -165,7 +184,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
   ];
 
   return (
-    <div className="absolute top-3 left-3 right-3 z-[150] animate-slide-down">
+    <div ref={barRef} className="absolute top-3 left-3 right-3 z-map-search animate-slide-down">
       {/* Ambient glow halo behind the bar */}
       <div
         aria-hidden
@@ -196,7 +215,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
         <Sheet>
           <SheetTrigger asChild>
             <button
-              className="relative flex-shrink-0 px-3 text-muted-foreground hover:text-primary transition-all duration-200 hover:bg-primary/5 rounded-l-3xl active:scale-90"
+              className="relative flex-shrink-0 px-3 tap-target focus-ring flex items-center justify-center text-muted-foreground hover:text-primary transition-all duration-200 hover:bg-primary/5 rounded-l-3xl active:scale-90"
               aria-label="Open menu"
             >
               <Menu className="w-5 h-5" />
@@ -250,7 +269,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
             <button
               onClick={handleUseMyLocation}
               disabled={isLocating || isGettingLocation}
-              className="flex-shrink-0 p-2 rounded-full text-primary hover:bg-primary/10 disabled:opacity-50 active:scale-90 transition-all"
+              className="flex-shrink-0 p-2 tap-target focus-ring flex items-center justify-center rounded-full text-primary hover:bg-primary/10 disabled:opacity-50 active:scale-90 transition-all"
               aria-label="Use my current location"
             >
               {isLocating || isGettingLocation ? (
@@ -266,7 +285,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
             <div className="h-px flex-1 bg-border/60" />
             <button
               onClick={handleSwap}
-              className="absolute right-2 -translate-y-0 p-1.5 rounded-full glass-card text-muted-foreground hover:text-primary active:scale-90 transition-all z-10"
+              className="absolute right-2 -translate-y-0 p-2 focus-ring flex items-center justify-center rounded-full glass-card text-muted-foreground hover:text-primary active:scale-90 transition-all z-10"
               aria-label="Swap from and to locations"
             >
               <ArrowUpDown className="w-3.5 h-3.5" />
@@ -295,7 +314,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
             {destination && (
               <button
                 onClick={handleClear}
-                className="flex-shrink-0 p-1.5 rounded-full hover:bg-muted active:scale-90 transition-all animate-scale-in"
+                className="flex-shrink-0 p-2 tap-target focus-ring flex items-center justify-center rounded-full hover:bg-muted active:scale-90 transition-all animate-scale-in"
                 aria-label="Clear destination"
               >
                 <X className="w-3.5 h-3.5 text-muted-foreground" />
@@ -304,7 +323,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
             <button
               onClick={startVoiceSearch}
               className={cn(
-                "relative flex-shrink-0 p-2 rounded-full transition-all duration-200 active:scale-90",
+                "relative flex-shrink-0 p-2 tap-target focus-ring flex items-center justify-center rounded-full transition-all duration-200 active:scale-90",
                 isListening
                   ? "bg-destructive/15 text-destructive"
                   : "text-muted-foreground hover:text-primary hover:bg-primary/10"

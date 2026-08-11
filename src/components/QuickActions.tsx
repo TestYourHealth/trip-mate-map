@@ -115,7 +115,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userPosition, onShowNearbyM
     <>
       {/* Nearby Results Panel */}
       {activeAction && results.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-[200] md:absolute md:bottom-14 md:right-0 md:left-auto md:w-80 animate-slide-up-panel">
+        <div className="fixed bottom-0 left-0 right-0 z-map-sheet md:absolute md:bottom-14 md:right-0 md:left-auto md:w-80 animate-slide-up-panel">
           <div className="bg-background/95 backdrop-blur-xl rounded-t-2xl md:rounded-2xl shadow-xl border border-border/40 max-h-[50vh] flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
@@ -128,7 +128,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userPosition, onShowNearbyM
                   Nearby {activeAction.label} ({results.length})
                 </span>
               </div>
-              <button onClick={closeResults} className="p-1.5 rounded-full hover:bg-muted transition-colors">
+              <button onClick={closeResults} aria-label="Close nearby results" className="p-2 tap-target focus-ring rounded-full hover:bg-muted transition-colors flex items-center justify-center">
                 <X className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
@@ -175,7 +175,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userPosition, onShowNearbyM
             setIsExpanded(!isExpanded);
           }}
           className={cn(
-            "w-12 h-12 rounded-full flex items-center justify-center transition-all touch-feedback",
+            "w-12 h-12 tap-target focus-ring rounded-full flex items-center justify-center transition-all touch-feedback",
             isExpanded
               ? "bg-primary text-primary-foreground shadow-[0_0_26px_-6px_hsl(var(--primary)/0.9)]"
               : "glass-panel glass-sheen glow-ring hover:scale-105"
@@ -200,7 +200,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userPosition, onShowNearbyM
                   onClick={() => handleAction(action)}
                   disabled={isSearching}
                   className={cn(
-                    "w-12 h-12 rounded-full flex items-center justify-center transition-all touch-feedback",
+                    "w-12 h-12 tap-target focus-ring rounded-full flex items-center justify-center transition-all touch-feedback",
                     "glass-panel glass-sheen animate-bounce-in hover:scale-105",
                     isSearching && "animate-pulse opacity-70",
                     isActive
