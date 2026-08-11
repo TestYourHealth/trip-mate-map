@@ -19,6 +19,7 @@ import { useAutoDetectLocation } from '@/hooks/useAutoDetectLocation';
 import { useMapTheme } from '@/hooks/useMapTheme';
 import { Trip } from '@/pages/TripHistory';
 import { calculateTripCost } from '@/lib/tripCost';
+import { cn } from '@/lib/utils';
 import { RoutePreferences, DEFAULT_ROUTE_PREFERENCES } from '@/types/routePrefs';
 
 import SEO from '@/components/SEO';
@@ -419,6 +420,9 @@ const Index = () => {
     return 'straight';
   };
 
+  // Trip panel visibility drives overlay offsets so nothing hides behind it
+  const panelVisible = !isNavigating && (isCalculating || !!tripData);
+
   const handleRouteSelect = useCallback((index: number) => {
     setSelectedRouteIndex(index);
     mapRef.current?.selectRoute(index);
@@ -474,7 +478,7 @@ const Index = () => {
       {import.meta.env.DEV && !isNavigating && <RouteDebugPanel />}
 
       {/* Map Background - Full Screen */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-map-base">
         <Map 
           ref={mapRef} 
           isNavigating={isNavigating} 
@@ -522,7 +526,10 @@ const Index = () => {
 
       {/* Selected place info card - shows landmark name, address, distance */}
       {!isNavigating && selectedPlace && (
-        <div className="absolute left-3 right-3 top-[150px] sm:top-[140px] sm:left-auto sm:right-4 sm:max-w-sm z-[140]">
+        <div className={cn(
+          "absolute left-3 right-3 top-[calc(var(--search-bar-h,150px)+0.75rem)] sm:left-auto sm:max-w-sm z-map-card",
+          panelVisible ? "sm:right-4 md:right-[26rem]" : "sm:right-4"
+        )}>
           <SelectedPlaceCard
             place={selectedPlace}
             onDismiss={dismissSelectedPlace}
@@ -539,7 +546,11 @@ const Index = () => {
 
       {/* Compass + Weather - visible when not navigating */}
       {!isNavigating && (
-        <div className="absolute bottom-24 left-3 z-[100] md:bottom-6 flex flex-col gap-3 animate-fade-in">
+        <div className={cn(
+          "absolute left-3 z-map-overlay md:bottom-6 flex-col gap-3 animate-fade-in safe-fab-bottom transition-[bottom] duration-300",
+          panelVisible && isPanelExpanded ? "hidden md:flex" : "flex",
+          panelVisible ? "bottom-44" : "bottom-24"
+        )}>
           <WeatherWidget
             lat={position?.lat}
             lng={position?.lng}
@@ -554,14 +565,22 @@ const Index = () => {
 
       {/* Professional map controls (zoom / layers / recenter) */}
       {!isNavigating && (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 z-[100] animate-fade-in">
+        <div className={cn(
+          "absolute top-1/2 -translate-y-1/2 z-map-overlay animate-fade-in transition-all duration-300",
+          panelVisible ? "right-3 md:right-[26rem]" : "right-3"
+        )}>
           <MapControls mapRef={mapRef} />
         </div>
       )}
 
       {/* Quick Action Buttons - right side */}
       {!isNavigating && (
-        <div className="absolute bottom-24 right-3 z-[100] md:bottom-6">
+        <div className={cn(
+          "absolute z-map-overlay md:bottom-6 safe-fab-bottom transition-all duration-300",
+          panelVisible ? "right-3 md:right-[26rem]" : "right-3",
+          panelVisible && isPanelExpanded ? "hidden md:block" : "block",
+          panelVisible ? "bottom-44" : "bottom-24"
+        )}>
           <QuickActions
             userPosition={position ? { lat: position.lat, lng: position.lng } : null}
             onShowNearbyMarkers={(places, color) => mapRef.current?.showNearbyMarkers(places, color)}
@@ -601,7 +620,7 @@ const Index = () => {
 
       {/* Trip Details Panel - Desktop (skeleton while calculating, then real panel) */}
       {!isMobile && !isNavigating && (isCalculating || tripData) && (
-        <div className="absolute bottom-6 right-4 z-[100]">
+        <div className="absolute bottom-6 right-4 z-map-overlay">
           {isCalculating && !tripData ? (
             <RouteLoadingSkeleton />
           ) : (
@@ -635,7 +654,7 @@ const Index = () => {
 
       {/* Trip Details Panel - Mobile (skeleton while calculating, then real panel) */}
       {isMobile && !isNavigating && (isCalculating || tripData) && (
-        <div className="absolute bottom-0 left-0 right-0 z-[100]">
+        <div className="absolute bottom-0 left-0 right-0 z-map-overlay">
           {isCalculating && !tripData ? (
             <RouteLoadingSkeleton isMobile />
           ) : (
@@ -671,7 +690,7 @@ const Index = () => {
 
       {/* Quick Stats Footer - Desktop only */}
       {!isMobile && tripData && !isNavigating && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[100]">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 md:left-[calc(50%-14rem)] z-map-overlay max-w-[calc(100%-2rem)]">
           <div className="glass-card rounded-full px-6 py-3 flex items-center gap-5 animate-slide-up">
             <div className="flex items-center gap-1.5">
               <span className="text-muted-foreground text-xs">Distance</span>

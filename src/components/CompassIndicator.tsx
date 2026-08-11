@@ -16,7 +16,8 @@ const CompassIndicator: React.FC<CompassIndicatorProps> = ({ heading, onResetNor
     <button
       onClick={onResetNorth}
       className={cn(
-        'relative w-14 h-14 flex items-center justify-center rounded-full',
+        'relative w-14 h-14 tap-target flex items-center justify-center rounded-full',
+        'focus-ring',
         'glass-panel glass-sheen glow-ring',
         'transition-all duration-300 hover:scale-105 active:scale-90',
         isOffNorth && 'shadow-[0_0_22px_-6px_hsl(var(--primary)/0.75)]',

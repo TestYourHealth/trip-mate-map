@@ -94,7 +94,8 @@ const ControlButton: React.FC<ControlButtonProps> = ({ onClick, label, children,
     aria-label={label}
     title={label}
     className={cn(
-      'w-10 h-10 flex items-center justify-center rounded-[1.05rem]',
+      'w-11 h-11 md:w-10 md:h-10 tap-target flex items-center justify-center rounded-[1.05rem]',
+      'focus-ring',
       'text-foreground/70 hover:text-primary',
       'hover:bg-primary/10 active:bg-primary/20',
       'active:scale-90 transition-all duration-200',
