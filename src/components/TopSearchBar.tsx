@@ -63,10 +63,14 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
       document.documentElement.style.setProperty('--search-bar-h', `${Math.round(rect.bottom)}px`);
     };
     publish();
-    const ro = new ResizeObserver(publish);
+    const raf = requestAnimationFrame(publish);
+    const timers = [80, 250, 800].map((ms) => window.setTimeout(publish, ms));
+    const ro = new ResizeObserver(() => publish());
     ro.observe(el);
     window.addEventListener('resize', publish);
     return () => {
+      cancelAnimationFrame(raf);
+      timers.forEach(clearTimeout);
       ro.disconnect();
       window.removeEventListener('resize', publish);
     };
