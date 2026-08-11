@@ -3,6 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
+import { RoutePreferences, DEFAULT_ROUTE_PREFERENCES, getOsrmExclude } from '@/types/routePrefs';
 
 export interface RouteInfo {
   distance: number;
@@ -21,6 +22,7 @@ export interface RouteInstruction {
 
 export interface RouteResult {
   routes: RouteInfo[];
+  preferredIndex?: number;
   instructions: RouteInstruction[];
   error?: 'geocode' | 'routing';
   failedFields?: string[];
@@ -34,7 +36,7 @@ export interface NearbyPlace {
 }
 
 export interface MapRef {
-  showRoute: (origin: string, destination: string, waypoints?: string[]) => Promise<RouteResult | null>;
+  showRoute: (origin: string, destination: string, waypoints?: string[], prefs?: RoutePreferences) => Promise<RouteResult | null>;
   selectRoute: (index: number) => void;
   clearRoute: () => void;
   updateUserLocation: (lat: number, lng: number, heading?: number | null, speed?: number | null, accuracy?: number) => void;
@@ -126,7 +128,7 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
 
 
   useImperativeHandle(ref, () => ({
-    showRoute: async (origin: string, destination: string, waypoints: string[] = []) => {
+    showRoute: async (origin: string, destination: string, waypoints: string[] = [], prefs: RoutePreferences = DEFAULT_ROUTE_PREFERENCES) => {
       if (!map.current) return null;
 
       // Clear existing route and markers
@@ -160,6 +162,8 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
           L.latLng(destCoords.lat, destCoords.lng)
         ];
 
+        const exclude = getOsrmExclude(prefs);
+
         return new Promise((resolve) => {
           const buildControl = (serviceUrl?: string) => L.Routing.control({
             waypoints: allWaypoints,
@@ -171,6 +175,7 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
             router: L.Routing.osrmv1({
               serviceUrl: serviceUrl || 'https://router.project-osrm.org/route/v1',
               timeout: 15000,
+              requestParameters: exclude ? { exclude } : undefined,
             } as any),
             altLineOptions: {
               styles: [
@@ -269,7 +274,7 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
               return {
                 distance,
                 duration: adjustedDuration,
-                name: index === 0 ? 'Fastest Route' : `Alternative ${index}`,
+                name: index === 0 ? 'Recommended Route' : `Alternative ${index}`,
                 isAlternate: index > 0,
                 trafficLevel
               };
@@ -321,8 +326,18 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
               }
             }
 
+            // Fastest vs shortest: pick the best matching route among alternatives
+            let preferredIndex = 0;
+            routes.forEach((r, i) => {
+              const best = routes[preferredIndex];
+              if (prefs.optimize === 'shortest' ? r.distance < best.distance : r.duration < best.duration) {
+                preferredIndex = i;
+              }
+            });
+            routes[preferredIndex].name = prefs.optimize === 'shortest' ? 'Shortest Route' : 'Fastest Route';
+
             routesData.current = routes;
-            resolve({ routes, instructions });
+            resolve({ routes, instructions, preferredIndex });
           });
 
           let retried = false;

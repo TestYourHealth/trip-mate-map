@@ -19,10 +19,11 @@ export function calculateTripCost(
   distance: number,
   duration: number,
   vehicle: VehicleConfig,
+  options?: { avoidTolls?: boolean },
 ): TripCost {
   const mileage = vehicle.mileage > 0 ? vehicle.mileage : 1;
   const fuelCost = (distance / mileage) * vehicle.fuelPrice;
-  const tollCost = distance * TOLL_RATE_PER_KM;
+  const tollCost = options?.avoidTolls ? 0 : distance * TOLL_RATE_PER_KM;
   return {
     distance,
     duration,
