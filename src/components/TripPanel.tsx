@@ -217,20 +217,20 @@ const TripPanel: React.FC<TripPanelProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2 mb-5">
+        <div className="flex flex-wrap gap-2 mb-5">
           <Button 
             onClick={onStartNavigation}
             variant="default"
-            className="flex-1 h-14 text-base bg-success hover:bg-success/90 text-success-foreground"
+            className="flex-1 min-w-[10rem] h-14 text-sm sm:text-base whitespace-normal leading-tight bg-success hover:bg-success/90 text-success-foreground"
           >
-            <Navigation className="w-5 h-5 mr-2" />
+            <Navigation className="w-5 h-5 mr-2 shrink-0" />
             Navigation शुरू करें
           </Button>
           <Button 
             onClick={onClear}
             variant="outline"
             size="icon"
-            className="h-14 w-14"
+            className="h-14 w-14 shrink-0"
             aria-label="Clear trip"
           >
             <RotateCcw className="w-5 h-5" />
@@ -280,7 +280,7 @@ const TripPanel: React.FC<TripPanelProps> = ({
             )}
             
             
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <div className="bg-muted/30 rounded-xl p-3">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
                   <Car className="w-3.5 h-3.5" />
@@ -316,8 +316,8 @@ const TripPanel: React.FC<TripPanelProps> = ({
               
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground flex items-center gap-2">
-                      <Fuel className="w-3.5 h-3.5" /> {vehicleConfig.fuelType.charAt(0).toUpperCase() + vehicleConfig.fuelType.slice(1)} (₹{vehicleConfig.fuelPrice}/{vehicleConfig.fuelType === 'cng' ? 'kg' : vehicleConfig.fuelType === 'electric' ? 'kWh' : 'L'})
+                    <span className="text-sm text-muted-foreground flex items-center gap-2 min-w-0 truncate">
+                      <Fuel className="w-3.5 h-3.5 shrink-0" /> {vehicleConfig.fuelType.charAt(0).toUpperCase() + vehicleConfig.fuelType.slice(1)} (₹{vehicleConfig.fuelPrice}/{vehicleConfig.fuelType === 'cng' ? 'kg' : vehicleConfig.fuelType === 'electric' ? 'kWh' : 'L'})
                     </span>
                     <span className="text-sm font-semibold text-foreground">₹{tripData.fuelCost}</span>
                   </div>
@@ -354,8 +354,8 @@ const TripPanel: React.FC<TripPanelProps> = ({
   if (isMobile) {
     return (
       <div className={cn(
-        "bg-background/95 backdrop-blur-xl border-t border-border/30 shadow-xl rounded-t-3xl p-5 w-full animate-slide-up-panel safe-area-bottom",
-        "max-h-[80vh] overflow-y-auto scrollbar-thin"
+        "bg-background/95 backdrop-blur-xl border-t border-border/30 shadow-xl rounded-t-3xl p-4 sm:p-5 w-full animate-slide-up-panel safe-area-bottom",
+        "max-h-[78svh] overflow-y-auto overscroll-contain scrollbar-thin"
       )}>
         {/* Drag Handle */}
         <div className="flex justify-center mb-2">
@@ -367,7 +367,7 @@ const TripPanel: React.FC<TripPanelProps> = ({
   }
 
   return (
-    <div className="glass-card rounded-2xl p-5 w-full max-w-sm animate-slide-in-right max-h-[calc(100vh-32px)] overflow-y-auto scrollbar-thin">
+    <div className="glass-card rounded-2xl p-5 w-full max-w-sm animate-slide-in-right max-h-[calc(100svh-9rem)] overflow-y-auto overscroll-contain scrollbar-thin">
       {panelContent}
     </div>
   );
