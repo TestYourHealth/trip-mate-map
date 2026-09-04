@@ -19,10 +19,11 @@ import LocationAutocomplete from "@/components/LocationAutocomplete";
 
 // The Google Maps JS SDK cannot load in jsdom; force the OSM (fetch) path so
 // these tests exercise the network behaviour they are about.
-vi.mock("@/lib/googlePlaces", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/googlePlaces")>();
-  return { ...actual, isGoogleMapsAvailable: () => false };
-});
+vi.mock("@/lib/googlePlaces", () => ({
+  isGoogleMapsAvailable: () => false,
+  searchGooglePlaces: () => Promise.resolve([]),
+  loadGoogleMaps: () => Promise.reject(new Error("Google Maps not available in test")),
+}));
 
 // Mock geolocation so getUserPos resolves fast without prompting.
 Object.defineProperty(global.navigator, "geolocation", {
