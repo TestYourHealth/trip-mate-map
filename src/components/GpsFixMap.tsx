@@ -52,7 +52,7 @@ const GpsFixMap: React.FC<GpsFixMapProps> = ({ fixes, selectedIndex, onSelect })
       zoomControl: false,
       attributionControl: false,
     }).setView([20.5937, 78.9629], 5);
-    tileRef.current = L.tileLayer(getTileUrl(theme), { maxZoom: 19 }).addTo(map);
+    tileRef.current = L.tileLayer(getTileUrl(theme), { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors', className: theme === 'dark' ? 'map-tiles-dark' : undefined }).addTo(map);
     layerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
     return () => {
