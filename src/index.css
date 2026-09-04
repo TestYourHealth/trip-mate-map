@@ -434,3 +434,7 @@
     border-radius: 4px;
   }
 }
+/* Dark basemap: OpenStreetMap tiles inverted for night mode (no API key needed) */
+.map-tiles-dark {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6);
+}

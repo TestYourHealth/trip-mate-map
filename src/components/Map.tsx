@@ -677,9 +677,7 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
     },
   }));
 
-  const getTileUrlFor = (style: MapLayerStyle): { url: string; attribution: string; subdomains: string; maxZoom: number } => {
-    const isRetina = window.devicePixelRatio > 1;
-    const suffix = isRetina ? '@2x' : '';
+  const getTileUrlFor = (style: MapLayerStyle): { url: string; attribution: string; subdomains: string; maxZoom: number; className?: string } => {
     if (style === 'satellite') {
       return {
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -688,19 +686,13 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
         maxZoom: 19,
       };
     }
-    if (style === 'dark') {
-      return {
-        url: `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}${suffix}.png`,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 20,
-      };
-    }
+    // OpenStreetMap standard tiles (no API key). Dark mode uses a CSS filter.
     return {
-      url: `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}${suffix}.png`,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 20,
+      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      subdomains: 'abc',
+      maxZoom: 19,
+      className: style === 'dark' ? 'map-tiles-dark' : undefined,
     };
   };
 
@@ -714,6 +706,7 @@ const Map = forwardRef<MapRef, MapProps>(({ isNavigating = false, heading = null
       attribution: cfg.attribution,
       subdomains: cfg.subdomains,
       maxZoom: cfg.maxZoom,
+      className: cfg.className,
     }).addTo(map.current);
   };
 
