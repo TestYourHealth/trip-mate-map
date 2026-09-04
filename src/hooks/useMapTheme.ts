@@ -24,12 +24,7 @@ export function useMapTheme(): MapTileTheme {
   return mapTheme;
 }
 
-export function getTileUrl(theme: MapTileTheme): string {
-  const isRetina = window.devicePixelRatio > 1;
-  const suffix = isRetina ? '@2x' : '';
-
-  if (theme === 'dark') {
-    return `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}${suffix}.png`;
-  }
-  return `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}${suffix}.png`;
+/** OpenStreetMap standard tiles — no API key required. Dark theme is applied via the `map-tiles-dark` CSS class. */
+export function getTileUrl(_theme: MapTileTheme): string {
+  return 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 }
