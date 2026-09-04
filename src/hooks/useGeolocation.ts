@@ -26,7 +26,7 @@ const calculateHeading = (lat1: number, lng1: number, lat2: number, lng2: number
   const x = Math.sin(dLng) * Math.cos(lat2Rad);
   const y = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
   
-  let heading = Math.atan2(x, y) * 180 / Math.PI;
+  const heading = Math.atan2(x, y) * 180 / Math.PI;
   return (heading + 360) % 360;
 };
 

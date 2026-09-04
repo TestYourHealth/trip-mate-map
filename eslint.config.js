@@ -21,6 +21,16 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+      // Many anys are needed for third-party APIs (Google Maps, Leaflet Routing Machine)
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
+  // Test mocks legitimately use ts-ignore and loose types.
+  {
+    files: ["src/lib/__tests__/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/ban-ts-comment": "off",
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
 );

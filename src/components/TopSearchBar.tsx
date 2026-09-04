@@ -121,7 +121,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({
       const data = await response.json();
       const address = data.display_name?.split(',').slice(0, 2).join(',') || 'Current Location';
       onOriginChange(address);
-      try { sessionStorage.setItem('lastKnownPos', JSON.stringify({ lat: pos.lat, lng: pos.lng })); } catch {}
+      try { sessionStorage.setItem('lastKnownPos', JSON.stringify({ lat: pos.lat, lng: pos.lng })); } catch { /* ignore quota errors */ }
       setHasAutoLocated(true);
       return address;
     } catch (error) {

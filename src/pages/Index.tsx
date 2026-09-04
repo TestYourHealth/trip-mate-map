@@ -267,7 +267,7 @@ const Index = () => {
         updatedAt: Date.now(),
       }));
       window.dispatchEvent(new Event('local-storage-change'));
-    } catch {}
+    } catch { /* ignore storage quota errors */ }
   }, [vehicleConfig, origin, destination, routePrefs.avoidTolls]);
 
   const handleLocateMe = useCallback(async () => {
