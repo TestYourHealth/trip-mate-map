@@ -1,6 +1,8 @@
 // Standalone geocoding + routing helper so screens without a map (e.g. Bill Split)
 // can compute distance/duration between two places.
 
+import { RoutePreferences, getOsrmExclude } from "@/types/routePrefs";
+
 export interface LatLng { lat: number; lng: number }
 
 export interface RouteResult {
@@ -40,7 +42,10 @@ async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
   try {
-    return await fetch(url, { headers: { Accept: 'application/json' }, signal: ctrl.signal });
+    return await fetch(url, {
+      headers: { Accept: 'application/json', 'User-Agent': 'TripMate/1.0' },
+      signal: ctrl.signal,
+    });
   } finally {
     clearTimeout(timer);
   }
@@ -94,28 +99,65 @@ export class RouteError extends Error {
   }
 }
 
-/** Geocode both ends and fetch a driving route from OSRM. */
-export async function getRoute(origin: string, destination: string): Promise<RouteResult> {
+const OSRM_SERVERS = [
+  'https://router.project-osrm.org/route/v1',
+  'https://routing.openstreetmap.de/routed-car/route/v1',
+];
+
+/** Geocode both ends and fetch a driving route from OSRM with retries + fallback hosts. */
+export async function getRoute(
+  origin: string,
+  destination: string,
+  prefs?: RoutePreferences,
+): Promise<RouteResult> {
   const [from, to] = await Promise.all([geocode(origin), geocode(destination)]);
   if (!from) throw new RouteError('From location नहीं मिली — दूसरा नाम try करें।', 'geocode', 'origin');
   if (!to) throw new RouteError('To location नहीं मिली — दूसरा नाम try करें।', 'geocode', 'destination');
 
-  const url = `https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=false`;
-  let res: Response;
-  try {
-    res = await fetchWithTimeout(url, 12000);
-  } catch {
-    throw new RouteError('Route server से connect नहीं हो पाया। दोबारा try करें।', 'routing');
-  }
-  if (!res.ok) throw new RouteError('Route calculate नहीं हो पाया। दोबारा try करें।', 'routing');
-  const data = await res.json();
-  const route = data?.routes?.[0];
-  if (!route) throw new RouteError('इन दो जगहों के बीच road route नहीं मिला।', 'routing');
+  const exclude = getOsrmExclude(prefs ?? { avoidTolls: false, avoidHighways: false, optimize: 'fastest' });
+  const baseParams = exclude ? `?overview=false&exclude=${encodeURIComponent(exclude)}` : '?overview=false';
+  const coords = `${from.lng},${from.lat};${to.lng},${to.lat}`;
 
-  return {
-    distance: Math.round((route.distance / 1000) * 10) / 10,
-    duration: Math.round((route.duration / 3600) * 10) / 10,
-    from,
-    to,
-  };
+  for (const server of OSRM_SERVERS) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const url = `${server}/driving/${coords}${baseParams}`;
+      try {
+        const res = await fetchWithTimeout(url, 12000);
+        if (!res.ok) {
+          // If car profile doesn't support exclude, retry without it.
+          if (res.status === 400 && exclude) {
+            const plainUrl = `${server}/driving/${coords}?overview=false`;
+            const plainRes = await fetchWithTimeout(plainUrl, 12000);
+            if (!plainRes.ok) throw new Error(`HTTP ${plainRes.status}`);
+            const plainData = await plainRes.json();
+            const plainRoute = plainData?.routes?.[0];
+            if (!plainRoute) throw new Error('No route');
+            return {
+              distance: Math.round((plainRoute.distance / 1000) * 10) / 10,
+              duration: Math.round((plainRoute.duration / 3600) * 10) / 10,
+              from,
+              to,
+            };
+          }
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        const route = data?.routes?.[0];
+        if (!route) throw new Error('No route');
+        return {
+          distance: Math.round((route.distance / 1000) * 10) / 10,
+          duration: Math.round((route.duration / 3600) * 10) / 10,
+          from,
+          to,
+        };
+      } catch {
+        if (attempt === 0) {
+          await new Promise((r) => setTimeout(r, 1000));
+          continue;
+        }
+      }
+    }
+  }
+
+  throw new RouteError('Route server से connect नहीं हो पाया। दोबारा try करें।', 'routing');
 }
