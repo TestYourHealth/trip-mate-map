@@ -42,7 +42,10 @@ async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
   try {
-    return await fetch(url, { headers: { Accept: 'application/json' }, signal: ctrl.signal });
+    return await fetch(url, {
+      headers: { Accept: 'application/json', 'User-Agent': 'TripMate/1.0' },
+      signal: ctrl.signal,
+    });
   } finally {
     clearTimeout(timer);
   }
