@@ -1,6 +1,8 @@
 // Standalone geocoding + routing helper so screens without a map (e.g. Bill Split)
 // can compute distance/duration between two places.
 
+import { RoutePreferences, getOsrmExclude } from "@/types/routePrefs";
+
 export interface LatLng { lat: number; lng: number }
 
 export interface RouteResult {
