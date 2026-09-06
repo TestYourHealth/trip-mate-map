@@ -33,7 +33,7 @@ const getSegmentTolls = async (
   const googleMapsApiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
   if (!lovableApiKey || !googleMapsApiKey) throw new Error('Google Maps connection is not configured');
 
-  const response = await fetch('https://connector-gateway.lovable.dev/google_maps/routes/v2:computeRoutes', {
+  const response = await fetch('https://connector-gateway.lovable.dev/google_maps/routes/directions/v2:computeRoutes', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${lovableApiKey}`,
