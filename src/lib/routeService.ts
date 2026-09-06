@@ -2,6 +2,8 @@
 // can compute distance/duration between two places.
 
 import { RoutePreferences, getOsrmExclude } from "@/types/routePrefs";
+import { supabase } from '@/integrations/supabase/client';
+import type { TollSegment } from '@/lib/tripCost';
 
 export interface LatLng { lat: number; lng: number }
 
@@ -10,6 +12,15 @@ export interface RouteResult {
   duration: number; // hours
   from: LatLng;
   to: LatLng;
+  tollEstimate?: TollEstimate;
+}
+
+export interface TollEstimate {
+  source: 'google-routes';
+  totalCost: number;
+  currencyCode: string;
+  segments: TollSegment[];
+  fetchedAt: number;
 }
 
 const memoryCache: Record<string, LatLng> = {};
@@ -99,6 +110,29 @@ export class RouteError extends Error {
   }
 }
 
+export async function getRouteTollEstimate(
+  origin: string,
+  destination: string,
+  waypoints: string[] = [],
+  prefs?: RoutePreferences,
+): Promise<TollEstimate | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke('route-tolls', {
+      body: {
+        origin,
+        destination,
+        waypoints: waypoints.filter(Boolean).slice(0, 5),
+        avoidTolls: prefs?.avoidTolls ?? false,
+      },
+    });
+    if (error || !data || data.source !== 'google-routes') return null;
+    return data as TollEstimate;
+  } catch (error) {
+    console.warn('Live toll lookup unavailable:', error);
+    return null;
+  }
+}
+
 const OSRM_SERVERS = [
   'https://router.project-osrm.org/route/v1',
   'https://routing.openstreetmap.de/routed-car/route/v1',
@@ -132,24 +166,28 @@ export async function getRoute(
             const plainData = await plainRes.json();
             const plainRoute = plainData?.routes?.[0];
             if (!plainRoute) throw new Error('No route');
-            return {
+            const result: RouteResult = {
               distance: Math.round((plainRoute.distance / 1000) * 10) / 10,
               duration: Math.round((plainRoute.duration / 3600) * 10) / 10,
               from,
               to,
             };
+            result.tollEstimate = await getRouteTollEstimate(origin, destination, [], prefs);
+            return result;
           }
           throw new Error(`HTTP ${res.status}`);
         }
         const data = await res.json();
         const route = data?.routes?.[0];
         if (!route) throw new Error('No route');
-        return {
+          const result: RouteResult = {
           distance: Math.round((route.distance / 1000) * 10) / 10,
           duration: Math.round((route.duration / 3600) * 10) / 10,
           from,
           to,
         };
+          result.tollEstimate = await getRouteTollEstimate(origin, destination, [], prefs);
+          return result;
       } catch {
         if (attempt === 0) {
           await new Promise((r) => setTimeout(r, 1000));

@@ -12,7 +12,7 @@ const faqs = [
   },
   {
     question: 'How accurate are the toll estimates?',
-    answer: 'Toll estimates are approximate and based on average toll rates per kilometer. Actual toll costs may vary depending on the specific toll plazas on your route.'
+    answer: 'TripMate checks live route toll pricing when Google Routes data is available, including separate totals for each stop-to-stop segment. If live pricing is unavailable, it clearly labels the distance-based amount as approximate.'
   },
   {
     question: 'Can I use the app offline?',

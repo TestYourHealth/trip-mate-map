@@ -18,6 +18,8 @@ interface CurrentTrip {
   origin?: string;
   destination?: string;
   updatedAt?: number;
+  tollSource?: TripCost['tollSource'];
+  tollSegments?: TripCost['tollSegments'];
 }
 
 const readTrip = (): CurrentTrip | null => {
@@ -60,7 +62,11 @@ const BillSplit = () => {
     setIsCalculating(true);
     try {
       const route = await getRoute(o, d);
-      setCustomCost(calculateTripCost(route.distance, route.duration, getDefaultVehicleConfig()));
+      setCustomCost(calculateTripCost(route.distance, route.duration, getDefaultVehicleConfig(), {
+        tollCost: route.tollEstimate?.totalCost,
+        tollSource: route.tollEstimate?.source,
+        tollSegments: route.tollEstimate?.segments,
+      }));
     } catch (err: any) {
       setCustomCost(null);
       toast.error(err?.message || 'Route calculate नहीं हो पाया', {
@@ -85,9 +91,11 @@ const BillSplit = () => {
   }, [from, to, calculate]);
 
   const usingCustom = Boolean(customCost);
-  const fuelCost = usingCustom ? customCost!.fuelCost : trip?.fuelCost || 0;
-  const tollCost = usingCustom ? customCost!.tollCost : trip?.tollCost || 0;
-  const totalCost = usingCustom ? customCost!.totalCost : trip?.totalCost || 0;
+  const activeCost = customCost || trip;
+  const fuelCost = activeCost?.fuelCost || 0;
+  const tollCost = activeCost?.tollCost || 0;
+  const totalCost = activeCost?.totalCost || 0;
+  const tollSource = activeCost?.tollSource || 'fallback';
 
   return (
     <div className="container max-w-2xl mx-auto p-4 md:p-6">
@@ -151,7 +159,7 @@ const BillSplit = () => {
               <span>{customCost.distance} km</span>
               <span>{customCost.duration} hrs</span>
               <span>Fuel ₹{customCost.fuelCost}</span>
-              <span>Toll ₹{customCost.tollCost}</span>
+               <span>Toll {tollSource === 'google-routes' ? '(live)' : '(approx)'} ₹{customCost.tollCost}</span>
               <span className="font-semibold text-primary">Total ₹{customCost.totalCost}</span>
             </div>
           </div>
@@ -185,6 +193,7 @@ const BillSplit = () => {
           tripFuelCost={fuelCost}
           tripTollCost={tollCost}
           tripTotalCost={totalCost}
+           tripTollSource={tollSource}
           origin={usingCustom ? from : trip?.origin || ''}
           destination={usingCustom ? to : trip?.destination || ''}
         />

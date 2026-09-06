@@ -6,6 +6,16 @@ export interface TripCost {
   fuelCost: number;
   tollCost: number;
   totalCost: number;
+  tollSource: 'google-routes' | 'fallback' | 'toll-free';
+  tollSegments?: TollSegment[];
+}
+
+export interface TollSegment {
+  from: string;
+  to: string;
+  cost: number;
+  currencyCode: string;
+  tollCount: number;
 }
 
 export const TOLL_RATE_PER_KM = 1.5;
@@ -13,23 +23,36 @@ export const TOLL_RATE_PER_KM = 1.5;
 /**
  * Shared fuel + toll math used by the map screen and the bill splitter.
  * fuel = distance / mileage * price  (mileage is km/L, km/kg or km/kWh)
- * toll = distance * 1.5
+ * When live toll data is not available, toll = distance * 1.5 as a clearly
+ * labelled fallback estimate.
  */
 export function calculateTripCost(
   distance: number,
   duration: number,
   vehicle: VehicleConfig,
-  options?: { avoidTolls?: boolean },
+  options?: {
+    avoidTolls?: boolean;
+    tollCost?: number;
+    tollSource?: TripCost['tollSource'];
+    tollSegments?: TollSegment[];
+  },
 ): TripCost {
   const mileage = vehicle.mileage > 0 ? vehicle.mileage : 1;
   const fuelCost = (distance / mileage) * vehicle.fuelPrice;
-  const tollCost = options?.avoidTolls ? 0 : distance * TOLL_RATE_PER_KM;
+  const tollCost = options?.avoidTolls
+    ? 0
+    : options?.tollCost ?? distance * TOLL_RATE_PER_KM;
+  const tollSource = options?.avoidTolls
+    ? 'toll-free'
+    : options?.tollSource ?? 'fallback';
   return {
     distance,
     duration,
     fuelCost: Math.round(fuelCost),
     tollCost: Math.round(tollCost),
     totalCost: Math.round(fuelCost + tollCost),
+    tollSource,
+    tollSegments: options?.tollSegments,
   };
 }
 
