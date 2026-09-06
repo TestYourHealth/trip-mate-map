@@ -18,7 +18,8 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useAutoDetectLocation } from '@/hooks/useAutoDetectLocation';
 import { useMapTheme } from '@/hooks/useMapTheme';
 import { Trip } from '@/pages/TripHistory';
-import { calculateTripCost } from '@/lib/tripCost';
+import { calculateTripCost, TripCost } from '@/lib/tripCost';
+import { getRouteTollEstimate } from '@/lib/routeService';
 import { cn } from '@/lib/utils';
 import { RoutePreferences, DEFAULT_ROUTE_PREFERENCES } from '@/types/routePrefs';
 
@@ -106,6 +107,8 @@ const Index = () => {
     fuelCost: number;
     tollCost: number;
     totalCost: number;
+    tollSource: TripCost['tollSource'];
+    tollSegments?: TripCost['tollSegments'];
   } | null>(null);
 
   // Navigation state
@@ -254,7 +257,7 @@ const Index = () => {
     }
   }, [position, isNavigating, navigationSteps, currentStepIndex, tripData, origin, destination, setTripHistory, stopNavigation]);
 
-  const updateTripData = useCallback((route: RouteInfo) => {
+  const updateTripData = useCallback(async (route: RouteInfo, routeOrigin = origin, routeDestination = destination) => {
     // Shared fuel + toll math (see src/lib/tripCost.ts)
     const data = calculateTripCost(route.distance, route.duration, vehicleConfig, { avoidTolls: routePrefs.avoidTolls });
     setTripData(data);
@@ -262,13 +265,32 @@ const Index = () => {
     try {
       localStorage.setItem('currentTrip', JSON.stringify({
         ...data,
-        origin,
-        destination,
+         origin: routeOrigin,
+         destination: routeDestination,
         updatedAt: Date.now(),
       }));
       window.dispatchEvent(new Event('local-storage-change'));
     } catch { /* ignore storage quota errors */ }
-  }, [vehicleConfig, origin, destination, routePrefs.avoidTolls]);
+
+    const liveTolls = await getRouteTollEstimate(routeOrigin, routeDestination, waypoints, routePrefs);
+    if (!liveTolls) return;
+    const liveData = calculateTripCost(route.distance, route.duration, vehicleConfig, {
+      avoidTolls: routePrefs.avoidTolls,
+      tollCost: liveTolls.totalCost,
+      tollSource: liveTolls.source,
+      tollSegments: liveTolls.segments,
+    });
+    setTripData(liveData);
+    try {
+      localStorage.setItem('currentTrip', JSON.stringify({
+        ...liveData,
+        origin: routeOrigin,
+        destination: routeDestination,
+        updatedAt: Date.now(),
+      }));
+      window.dispatchEvent(new Event('local-storage-change'));
+    } catch { /* ignore storage quota errors */ }
+  }, [vehicleConfig, origin, destination, waypoints, routePrefs]);
 
   const handleLocateMe = useCallback(async () => {
     setIsLocating(true);
@@ -353,7 +375,7 @@ const Index = () => {
         setRoutes(result.routes);
         setSelectedRouteIndex(preferred);
         if (preferred > 0) mapRef.current?.selectRoute(preferred);
-        updateTripData(result.routes[preferred]);
+         void updateTripData(result.routes[preferred], tripOrigin, tripDestination);
 
         // Convert instructions to navigation steps
         if (result.instructions && result.instructions.length > 0) {
@@ -427,7 +449,7 @@ const Index = () => {
     setSelectedRouteIndex(index);
     mapRef.current?.selectRoute(index);
     if (routes[index]) {
-      updateTripData(routes[index]);
+      void updateTripData(routes[index]);
     }
   }, [routes, updateTripData]);
 

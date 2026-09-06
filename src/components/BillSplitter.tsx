@@ -17,6 +17,7 @@ interface BillSplitterProps {
   tripTotalCost?: number;
   origin?: string;
   destination?: string;
+  tripTollSource?: 'google-routes' | 'fallback' | 'toll-free';
 }
 
 const BillSplitter: React.FC<BillSplitterProps> = ({
@@ -25,6 +26,7 @@ const BillSplitter: React.FC<BillSplitterProps> = ({
   tripTotalCost = 0,
   origin = '',
   destination = '',
+  tripTollSource = 'fallback',
 }) => {
   const [persons, setPersons] = useState<string[]>(['You']);
   const [newPerson, setNewPerson] = useState('');
@@ -130,7 +132,7 @@ const BillSplitter: React.FC<BillSplitterProps> = ({
         >
           <span className="flex items-center gap-2">
             <ShoppingBag className="w-3.5 h-3.5" />
-            Trip Costs (Fuel ₹{tripFuelCost} + Toll ₹{tripTollCost})
+             Trip Costs (Fuel ₹{tripFuelCost} + Toll {tripTollSource === 'google-routes' ? '(live)' : '(approx)'} ₹{tripTollCost})
           </span>
           <span className="font-semibold">₹{tripTotalCost}</span>
         </button>

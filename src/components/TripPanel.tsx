@@ -42,6 +42,7 @@ interface TripPanelProps {
     fuelCost: number;
     tollCost: number;
     totalCost: number;
+    tollSource: 'google-routes' | 'fallback' | 'toll-free';
   } | null;
   isCalculating: boolean;
   isLocating?: boolean;
@@ -324,7 +325,7 @@ const TripPanel: React.FC<TripPanelProps> = ({
                 
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground flex items-center gap-2">
-                    <DollarSign className="w-3.5 h-3.5" /> Toll (approx)
+                     <DollarSign className="w-3.5 h-3.5" /> Toll ({tripData.tollSource === 'google-routes' ? 'live' : tripData.tollSource === 'toll-free' ? 'avoided' : 'approx'})
                   </span>
                   <span className="text-sm font-semibold text-foreground">₹{tripData.tollCost}</span>
                 </div>
