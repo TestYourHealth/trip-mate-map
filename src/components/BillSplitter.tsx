@@ -132,7 +132,7 @@ const BillSplitter: React.FC<BillSplitterProps> = ({
         >
           <span className="flex items-center gap-2">
             <ShoppingBag className="w-3.5 h-3.5" />
-             Trip Costs (Fuel ₹{tripFuelCost} + Toll {tripTollSource === 'google-routes' ? '(live)' : '(approx)'} ₹{tripTollCost})
+             Trip Costs (Fuel ₹{tripFuelCost} + Toll {tripTollSource === 'google-routes' ? '(live)' : tripTollSource === 'toll-free' ? '(avoided)' : '(approx)'} ₹{tripTollCost})
           </span>
           <span className="font-semibold">₹{tripTotalCost}</span>
         </button>
