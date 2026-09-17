@@ -159,7 +159,9 @@ const BillSplit = () => {
               <span>{customCost.distance} km</span>
               <span>{customCost.duration} hrs</span>
               <span>Fuel ₹{customCost.fuelCost}</span>
-               <span>Toll {tollSource === 'google-routes' ? '(live)' : '(approx)'} ₹{customCost.tollCost}</span>
+               <span>
+                 Toll {tollSource === 'google-routes' ? '(live)' : tollSource === 'toll-free' ? '(avoided)' : '(approx)'} ₹{customCost.tollCost}
+               </span>
               <span className="font-semibold text-primary">Total ₹{customCost.totalCost}</span>
             </div>
           </div>
